@@ -178,7 +178,40 @@ async def websocket_endpoint(
                 except Exception as e:
                     await websocket.send_json({"error": f"Delete error: {str(e)}"})
 
-            # === 5. НЕИЗВЕСТНЫЙ ТИП ===
+            # === 5. ЗАКРЕПЛЕНИЕ (PIN) ===
+            elif event_type == "pin":
+                # Клиент шлет: {"type": "pin", "message_id": 123, "is_pinned": true}
+                try:
+                    msg_id = data.get("message_id")
+                    is_pinned = data.get("is_pinned") # true/false
+                    
+                    if msg_id is None or is_pinned is None:
+                         raise ValueError("Fields 'message_id' and 'is_pinned' required")
+                         
+                    if isinstance(msg_id, float): msg_id = int(msg_id)
+
+                    success = message_service.pin_message(db, msg_id, user_id, is_pinned)
+                    
+                    if success:
+                        # Получаем чат ID для рассылки (можно оптимизировать, вернув его из сервиса)
+                        msg_obj = db.query(models.Message).filter(models.Message.id == msg_id).first()
+                        
+                        pin_notify = {
+                            "type": "message_pinned",
+                            "chat_id": msg_obj.chat_id,
+                            "message_id": msg_id,
+                            "is_pinned": is_pinned
+                        }
+                        parts = message_service.get_chat_participants(db, msg_obj.chat_id)
+                        for pid in parts:
+                            await manager.send_personal_message(pin_notify, pid)
+                    else:
+                        await websocket.send_json({"error": "Pin failed"})
+                        
+                except Exception as e:
+                    await websocket.send_json({"error": f"Pin error: {str(e)}"})
+
+            # === 6. НЕИЗВЕСТНЫЙ ТИП ===
             else:
                 await websocket.send_json({"error": f"Unknown event type: {event_type}"})
 

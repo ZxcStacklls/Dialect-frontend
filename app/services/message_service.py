@@ -93,16 +93,47 @@ def update_message(db: Session, message_id: int, user_id: int, new_content: byte
 
 def delete_message(db: Session, message_id: int, user_id: int):
     """
-    Удаляет сообщение, если его автор == user_id.
+    Удаляет сообщение.
+    Правила:
+    1. Автор может удалить своё.
+    2. Владелец группы может удалить ЛЮБОЕ сообщение в своей группе.
     """
     message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not message: return None
+        
+    # Проверка на автора
+    is_author = (message.sender_id == user_id)
     
-    if not message:
-        return None
+    # Проверка на владельца группы
+    chat = db.query(models.Chat).filter(models.Chat.id == message.chat_id).first()
+    is_owner = (chat and chat.owner_id == user_id)
+
+    if is_author or is_owner:
+        db.delete(message)
+        db.commit()
+        return True
         
-    if message.sender_id != user_id:
-        return False
-        
-    db.delete(message)
+    return False
+
+
+def pin_message(db: Session, message_id: int, user_id: int, is_pinned: bool):
+    """
+    Закрепляет/Открепляет сообщение.
+    (В V1 разрешим это делать любому участнику или только владельцу - давайте сделаем как в ТГ для групп: админы.
+     Но у нас пока только Владелец. Пусть владелец и автор могут закрепить).
+     Для простоты V1: Любой участник может закрепить (как в маленьких группах).
+    """
+    message = db.query(models.Message).filter(models.Message.id == message_id).first()
+    if not message: return None
+    
+    # Проверка, что юзер вообще в этом чате
+    participant = db.query(models.ChatParticipant).filter(
+        models.ChatParticipant.chat_id == message.chat_id,
+        models.ChatParticipant.user_id == user_id
+    ).first()
+    
+    if not participant: return False # Не участник
+    
+    message.is_pinned = is_pinned
     db.commit()
     return True

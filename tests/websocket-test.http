@@ -1,0 +1,11 @@
+# ### 1. LOGIN (Получение токена)
+# # @name auth
+# POST http://127.0.0.1:8000/api/v1/auth/token
+# Content-Type: application/x-www-form-urlencoded
+
+# username=+79084878883
+# password=123456789
+
+### 2. WEBSOCKET CONNECT (Подключение к чату)
+# URL для подключения:
+ws://127.0.0.1:8000/api/v1/messages/ws?token=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIyIiwiZXhwIjoxNzYzNTUyNzUxfQ.7PqIrnUU_EnOb-63dbHu4N-jY1pBK-fW1TvXHawAIaA

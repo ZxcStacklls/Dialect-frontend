@@ -56,6 +56,10 @@ class TokenData(BaseModel):
 
 # --- Схемы Чата (Chat) ---
 
+class ChatParticipantPublic(BaseModel):
+    user_id: int
+    custom_nickname: Optional[str] = None
+
 class ChatBase(BaseModel):
     chat_type: ChatTypeEnum
     chat_name: Optional[str] = None
@@ -67,11 +71,13 @@ class ChatCreate(BaseModel):
     chat_name: Optional[str] = None # Если это группа
 
 class Chat(ChatBase):
-    """Схема для отображения чата (включая участников)"""
     model_config = ConfigDict(from_attributes=True)
     
     id: int
-    participants: List[UserPublic] = [] # Показываем публичные данные участников
+    owner_id: Optional[int] = None # <-- Добавили владельца
+    # Участники теперь могут содержать никнейм, поэтому можно усложнить схему,
+    # но пока оставим список UserPublic, а никнейм будем тянуть отдельно или расширим UserPublic
+    participants: List[UserPublic] = []
 
 
 # --- Схемы Сообщения (Message) ---
@@ -98,3 +104,4 @@ class Message(MessageBase):
     sender_id: Optional[int]
     sent_at: datetime
     status: MessageStatusEnum
+    is_pinned: bool = False
