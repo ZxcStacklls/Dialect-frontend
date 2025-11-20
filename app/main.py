@@ -1,6 +1,7 @@
 import logging
 from fastapi import FastAPI, Depends
 from fastapi.staticfiles import StaticFiles
+from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from contextlib import asynccontextmanager
 import os   
@@ -74,6 +75,14 @@ app = FastAPI(
     title="Dialect Messenger API",
     version="1.0.0",
     lifespan=lifespan  # Подключаем нашу логику старта
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],      # Разрешить все источники (включая Swagger UI)
+    allow_credentials=True,
+    allow_methods=["*"],      # Разрешить все методы (GET, POST, DELETE...)
+    allow_headers=["*"],      # Разрешить все заголовки
 )
 
 # --- Подключение API-роутеров ---

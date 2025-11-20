@@ -3,21 +3,27 @@ from typing import Optional, List
 from datetime import datetime
 import enum
 
-# Импортируем Enum'ы из models, чтобы использовать их в схемах
 from .models import ChatTypeEnum, MessageStatusEnum
 
-# --- Схемы Пользователя (User) ---
+# --- Enum для длительности статуса ---
+class StatusDurationEnum(str, enum.Enum):
+    forever = "forever"
+    min_30 = "30m"
+    hour_1 = "1h"
+    hour_5 = "5h"
+    hour_12 = "12h"
+    hour_24 = "24h"
+
+# --- Схемы Пользователя ---
 
 class UserBase(BaseModel):
-    """Базовая схема пользователя (общие поля)"""
     phone_number: str
     username: Optional[str] = None
     first_name: str
     last_name: Optional[str] = None
 
 class UserCreate(UserBase):
-    """Схема для создания пользователя (регистрация)"""
-    password: str  # Пароль в открытом виде, будет хеширован в сервисе
+    password: str
     public_key: str
 
 class UserUpdate(BaseModel):
@@ -25,6 +31,11 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     bio: Optional[str] = None
+    
+    # Статус
+    status_text: Optional[str] = None
+    # Вместо даты клиент присылает длительность
+    status_duration: Optional[StatusDurationEnum] = None 
 
 class UserPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -37,81 +48,81 @@ class UserPublic(BaseModel):
     
     # Профиль
     avatar_url: Optional[str] = None
+    banner_url: Optional[str] = None
     bio: Optional[str] = None
+    
+    # Статус (отдаем уже рассчитанное время окончания)
+    status_text: Optional[str] = None
+    status_expires_at: Optional[datetime] = None
     
     # Активность
     last_seen_at: datetime
     is_online: bool = False
 
 class UserInDB(UserBase):
-    """Полная схема пользователя (как в БД)"""
     model_config = ConfigDict(from_attributes=True)
-    
     id: int
     public_key: str
     created_at: datetime
 
 
-# --- Схемы Авторизации (Auth & Token) ---
+# --- Остальные схемы (без изменений) ---
 
 class Token(BaseModel):
-    """Схема JWT токена"""
     access_token: str
     token_type: str
 
 class TokenData(BaseModel):
-    """Схема данных, зашитых в JWT токен"""
     user_id: Optional[int] = None
-
-
-# --- Схемы Чата (Chat) ---
 
 class ChatParticipantPublic(BaseModel):
     user_id: int
     custom_nickname: Optional[str] = None
 
+# 1. Схема для создания ЛС (только ID собеседника)
+class ChatCreatePrivate(BaseModel):
+    target_user_id: int
+
+# 2. Схема для создания Группы (название + список ID)
+class ChatCreateGroup(BaseModel):
+    chat_name: str
+    participant_ids: List[int]
+
 class ChatBase(BaseModel):
     chat_type: ChatTypeEnum
     chat_name: Optional[str] = None
-
-class ChatCreate(BaseModel):
-    """Схема для создания нового чата"""
-    chat_type: ChatTypeEnum
-    participant_ids: List[int] # ID пользователей, которых добавляем в чат
-    chat_name: Optional[str] = None # Если это группа
 
 class Chat(ChatBase):
     model_config = ConfigDict(from_attributes=True)
     
     id: int
-    owner_id: Optional[int] = None # <-- Добавили владельца
-    # Участники теперь могут содержать никнейм, поэтому можно усложнить схему,
-    # но пока оставим список UserPublic, а никнейм будем тянуть отдельно или расширим UserPublic
-    participants: List[UserPublic] = []
-
-
-# --- Схемы Сообщения (Message) ---
-
+    owner_id: Optional[int] = None
+    avatar_url: Optional[str] = None
+    participants: List[UserPublic] = [] 
 class MessageBase(BaseModel):
-    content: bytes # В Pydantic BLOB/BINARY = bytes
+    content: bytes
     
 class MessageCreate(BaseModel):
-    """Схема для создания сообщения (отправка по WebSocket)"""
     chat_id: int
-    content: bytes # Клиент шлет зашифрованные байты (или base64, тогда тут str)
+    content: bytes
 
 class MessageUpdate(BaseModel):
-    """Схема для редактирования сообщения"""
     message_id: int
-    content: bytes # Новое зашифрованное содержимое
+    content: bytes
 
 class Message(MessageBase):
-    """Схема для отображения сообщения (получение по WebSocket)"""
     model_config = ConfigDict(from_attributes=True)
-
     id: int
     chat_id: int
     sender_id: Optional[int]
     sent_at: datetime
     status: MessageStatusEnum
     is_pinned: bool = False
+
+class ReadReceipt(BaseModel):
+    """Информация о том, кто и когда прочитал"""
+    model_config = ConfigDict(from_attributes=True)
+    
+    user_id: int
+    read_at: datetime
+    user: UserPublic

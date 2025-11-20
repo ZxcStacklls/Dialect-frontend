@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, Query
+from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File
 from sqlalchemy.orm import Session
 from typing import List
 
@@ -12,54 +12,88 @@ router = APIRouter(
     dependencies=[Depends(get_current_active_user)]
 )
 
-@router.post("/", response_model=schemas.Chat)
-def create_chat(
-    chat_data: schemas.ChatCreate,
+# --- ХЕЛПЕР ДЛЯ ДИНАМИЧЕСКОГО ИМЕНИ И АВАТАРКИ ---
+def _format_chat_response(chat: models.Chat, current_user_id: int) -> schemas.Chat:
+    """
+    Формирует ответ для фронтенда:
+    - Private: Имя = Имя собеседника, Аватар = Аватар собеседника.
+    - Group: Имя = Название группы, Аватар = Аватар группы.
+    """
+    participants = [link.user for link in chat.participant_links]
+    
+    # 1. По умолчанию берем данные из самой группы (для Group)
+    display_name = chat.chat_name
+    display_avatar = chat.avatar_url 
+
+    # 2. Если это ЛС, переписываем данные данными собеседника
+    if chat.chat_type == models.ChatTypeEnum.private:
+        # Ищем того, кто НЕ я
+        other_user = next((u for u in participants if u.id != current_user_id), None)
+        if other_user:
+            display_name = f"{other_user.first_name} {other_user.last_name or ''}".strip()
+            display_avatar = other_user.avatar_url 
+        else:
+            display_name = "Неизвестный"
+
+    return schemas.Chat(
+        id=chat.id,
+        chat_type=chat.chat_type,
+        chat_name=display_name,   # Итоговое имя
+        avatar_url=display_avatar, # Итоговая аватарка
+        owner_id=chat.owner_id,
+        participants=[schemas.UserPublic.from_orm(p) for p in participants]
+    )
+
+
+# 1. СОЗДАТЬ ЛИЧНЫЙ ЧАТ (Private)
+@router.post("/private", response_model=schemas.Chat)
+def create_private_chat(
+    chat_data: schemas.ChatCreatePrivate,
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(database.get_db)
 ):
-    """
-    Создать новый чат.
-    
-    Текущий пользователь (создатель) автоматически
-    добавляется в список участников.
-    """
-    new_chat = chat_service.create_new_chat(db, creator=current_user, chat_data=chat_data)
-    participants = [link.user for link in new_chat.participant_links]
-    
-    chat_response = schemas.Chat(
-        id=new_chat.id,
-        chat_type=new_chat.chat_type,
-        chat_name=new_chat.chat_name,
-        owner_id=new_chat.owner_id,
-        participants=[schemas.UserPublic.from_orm(p) for p in participants]
-    )
-    return chat_response
+    new_chat = chat_service.create_private_chat(db, current_user, chat_data.target_user_id)
+    return _format_chat_response(new_chat, current_user.id)
 
 
+# 2. СОЗДАТЬ ГРУППУ (Group)
+@router.post("/group", response_model=schemas.Chat)
+def create_group_chat(
+    chat_data: schemas.ChatCreateGroup,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(database.get_db)
+):
+    new_chat = chat_service.create_group_chat(db, current_user, chat_data)
+    return _format_chat_response(new_chat, current_user.id)
+
+
+# 3. ПОЛУЧИТЬ СПИСОК (С правильными именами)
 @router.get("/", response_model=List[schemas.Chat])
 def get_my_chats(
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(database.get_db)
 ):
-    """
-    Получить список всех чатов текущего пользователя.
-    """
     chats = chat_service.get_user_chats(db, user_id=current_user.id)
+    # Применяем форматирование ко всем чатам
+    return [_format_chat_response(chat, current_user.id) for chat in chats]
+
+
+# 4. ЗАГРУЗИТЬ АВАТАРКУ ГРУППЫ
+@router.post("/{chat_id}/avatar", response_model=schemas.Chat)
+def upload_group_avatar(
+    chat_id: int,
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(database.get_db)
+):
+    if not file.content_type.startswith("image/"):
+         raise HTTPException(400, detail="Файл должен быть изображением")
+         
+    chat_service.upload_chat_avatar(db, chat_id, current_user.id, file)
     
-    # Конвертируем список моделей SQLAlchemy в список схем Pydantic
-    response_chats = []
-    for chat in chats:
-        participants = [link.user for link in chat.participant_links]
-        chat_dto = schemas.Chat(
-            id=chat.id,
-            chat_type=chat.chat_type,
-            chat_name=chat.chat_name,
-            participants=[schemas.UserPublic.from_orm(p) for p in participants]
-        )
-        response_chats.append(chat_dto)
-        
-    return response_chats
+    # Возвращаем обновленный чат
+    chat = db.query(models.Chat).filter(models.Chat.id == chat_id).first()
+    return _format_chat_response(chat, current_user.id)
 
 
 @router.post("/{chat_id}/users", status_code=status.HTTP_201_CREATED)
@@ -144,3 +178,13 @@ def clear_history_endpoint(
     """
     chat_service.clear_chat_history(db, chat_id, current_user.id, for_everyone)
     return {"message": "History cleared"}
+
+@router.delete("/{chat_id}/avatar", response_model=schemas.Chat)
+def delete_group_avatar(
+    chat_id: int,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(database.get_db)
+):
+    """Удалить аватарку группы (только для владельца)."""
+    updated_chat = chat_service.delete_chat_avatar(db, chat_id, current_user.id)
+    return _format_chat_response(updated_chat, current_user.id) # Используем хеллпер для форматирования

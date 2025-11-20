@@ -37,6 +37,20 @@ def get_chat_history(
     return message_service.get_chat_history(db, chat_id, current_user.id, limit, offset)
 
 
+@router.get("/{message_id}/reads", response_model=List[schemas.ReadReceipt])
+def get_message_reads(
+    message_id: int,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(database.get_db)
+):
+    """
+    Получить список пользователей, прочитавших сообщение, и время прочтения.
+    Для ЛС это будет список из 1 человека (если прочитано).
+    Для Групп - список всех прочитавших.
+    """
+    return message_service.get_message_read_details(db, message_id, current_user.id)
+
+
 # 🟢 1. WebSocket Эндпоинт (Живое общение)
 @router.websocket("/ws")
 async def websocket_endpoint(
