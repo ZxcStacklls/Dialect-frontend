@@ -10,3 +10,4 @@ pybloom-live
 websockets
 python-multipart
 pillow
+firebase-admin

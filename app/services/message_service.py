@@ -4,6 +4,7 @@ from typing import List
 from fastapi import HTTPException, status
 
 from app.db import models, schemas
+from app.services import user_service
 
 def check_is_participant(db: Session, chat_id: int, user_id: int):
     participant = db.query(models.ChatParticipant).filter(
@@ -14,14 +15,37 @@ def check_is_participant(db: Session, chat_id: int, user_id: int):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Вы не участник")
     return participant
 
-def create_message(db: Session, sender_id: int, msg_data: schemas.MessageCreate) -> models.Message:
-    check_is_participant(db, msg_data.chat_id, sender_id)
+def create_message(
+    db: Session, 
+    sender_id: int, 
+    msg_data: schemas.MessageCreate
+) -> models.Message:
+    # 1. Проверка участия
+    participant = check_is_participant(db, msg_data.chat_id, sender_id)
+    
+    # 2. Проверка ЧС (Для ЛС)
+    chat = db.query(models.Chat).filter(models.Chat.id == msg_data.chat_id).first()
+    if chat.chat_type == models.ChatTypeEnum.private:
+        # Ищем собеседника
+        other_participant = db.query(models.ChatParticipant).filter(
+            models.ChatParticipant.chat_id == msg_data.chat_id,
+            models.ChatParticipant.user_id != sender_id
+        ).first()
+        
+        if other_participant:
+            # Проверяем: "Заблокировал ли СОБЕСЕДНИК (other) МЕНЯ (sender)?"
+            if user_service.is_blocked(db, blocker_id=other_participant.user_id, target_id=sender_id):
+                raise HTTPException(status.HTTP_403_FORBIDDEN, "Вы находитесь в черном списке этого пользователя")
+
+    # 3. Создаем запись
     db_msg = models.Message(
         chat_id=msg_data.chat_id,
         sender_id=sender_id,
         content=msg_data.content,
+        message_type=msg_data.message_type,
         status=models.MessageStatusEnum.sent
     )
+    
     db.add(db_msg)
     db.commit()
     db.refresh(db_msg)

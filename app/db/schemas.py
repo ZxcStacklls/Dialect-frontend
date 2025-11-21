@@ -3,9 +3,8 @@ from typing import Optional, List
 from datetime import datetime
 import enum
 
-from .models import ChatTypeEnum, MessageStatusEnum
+from .models import ChatTypeEnum, MessageStatusEnum, MessageTypeEnum
 
-# --- Enum для длительности статуса ---
 class StatusDurationEnum(str, enum.Enum):
     forever = "forever"
     min_30 = "30m"
@@ -14,8 +13,7 @@ class StatusDurationEnum(str, enum.Enum):
     hour_12 = "12h"
     hour_24 = "24h"
 
-# --- Схемы Пользователя ---
-
+# --- User ---
 class UserBase(BaseModel):
     phone_number: str
     username: Optional[str] = None
@@ -27,35 +25,24 @@ class UserCreate(UserBase):
     public_key: str
 
 class UserUpdate(BaseModel):
-    """Схема для обновления профиля"""
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     bio: Optional[str] = None
-    
-    # Статус
     status_text: Optional[str] = None
-    # Вместо даты клиент присылает длительность
     status_duration: Optional[StatusDurationEnum] = None 
 
 class UserPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
     id: int
     username: Optional[str] = None
     first_name: str
     last_name: Optional[str] = None
     public_key: str
-    
-    # Профиль
     avatar_url: Optional[str] = None
     banner_url: Optional[str] = None
     bio: Optional[str] = None
-    
-    # Статус (отдаем уже рассчитанное время окончания)
     status_text: Optional[str] = None
     status_expires_at: Optional[datetime] = None
-    
-    # Активность
     last_seen_at: datetime
     is_online: bool = False
 
@@ -65,25 +52,22 @@ class UserInDB(UserBase):
     public_key: str
     created_at: datetime
 
+# --- Devices & Blocks ---
+class DeviceCreate(BaseModel):
+    fcm_token: str
+    device_type: str = "android"
 
-# --- Остальные схемы (без изменений) ---
+class BlockCreate(BaseModel):
+    blocked_user_id: int
 
-class Token(BaseModel):
-    access_token: str
-    token_type: str
-
-class TokenData(BaseModel):
-    user_id: Optional[int] = None
-
+# --- Chat ---
 class ChatParticipantPublic(BaseModel):
     user_id: int
     custom_nickname: Optional[str] = None
 
-# 1. Схема для создания ЛС (только ID собеседника)
 class ChatCreatePrivate(BaseModel):
     target_user_id: int
 
-# 2. Схема для создания Группы (название + список ID)
 class ChatCreateGroup(BaseModel):
     chat_name: str
     participant_ids: List[int]
@@ -94,17 +78,25 @@ class ChatBase(BaseModel):
 
 class Chat(ChatBase):
     model_config = ConfigDict(from_attributes=True)
-    
     id: int
     owner_id: Optional[int] = None
     avatar_url: Optional[str] = None
-    participants: List[UserPublic] = [] 
+    participants: List[UserPublic] = []
+
+# --- Message ---
+class ReadReceipt(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    user_id: int
+    read_at: datetime
+
 class MessageBase(BaseModel):
     content: bytes
     
 class MessageCreate(BaseModel):
     chat_id: int
     content: bytes
+    # ⭐ НОВОЕ: Тип сообщения (по умолчанию text)
+    message_type: MessageTypeEnum = MessageTypeEnum.text
 
 class MessageUpdate(BaseModel):
     message_id: int
@@ -118,11 +110,12 @@ class Message(MessageBase):
     sent_at: datetime
     status: MessageStatusEnum
     is_pinned: bool = False
+    message_type: MessageTypeEnum
 
-class ReadReceipt(BaseModel):
-    """Информация о том, кто и когда прочитал"""
-    model_config = ConfigDict(from_attributes=True)
-    
-    user_id: int
-    read_at: datetime
-    user: UserPublic
+# --- Auth ---
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+class TokenData(BaseModel):
+    user_id: Optional[int] = None

@@ -1,10 +1,13 @@
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends, Query, UploadFile, File, HTTPException
 from sqlalchemy.orm import Session
 from typing import Dict, List, Any
 from pydantic import ValidationError
+import uuid
+import os
+import shutil
 
 from app.db import database, schemas, models
-from app.services import message_service, user_service
+from app.services import message_service, user_service, notification_service
 from app.services.connection_manager import manager
 from app.core import security
 from app.api.deps import get_current_active_user
@@ -25,33 +28,59 @@ def get_user_from_token(token: str, db: Session):
         return None
 
 
-# 🔵 2. HTTP Эндпоинт (Загрузка истории)
+# 🔵 HTTP Эндпоинт: Загрузка истории
 @router.get("/history/{chat_id}", response_model=List[schemas.Message])
 def get_chat_history(
     chat_id: int,
     limit: int = 50,
     offset: int = 0,
-    current_user: models.User = Depends(get_current_active_user), # <-- ДОБАВИЛИ
+    current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(database.get_db)
 ):
     return message_service.get_chat_history(db, chat_id, current_user.id, limit, offset)
 
 
+# 🔵 HTTP Эндпоинт: Детали прочтения
 @router.get("/{message_id}/reads", response_model=List[schemas.ReadReceipt])
 def get_message_reads(
     message_id: int,
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(database.get_db)
 ):
-    """
-    Получить список пользователей, прочитавших сообщение, и время прочтения.
-    Для ЛС это будет список из 1 человека (если прочитано).
-    Для Групп - список всех прочитавших.
-    """
     return message_service.get_message_read_details(db, message_id, current_user.id)
 
 
-# 🟢 1. WebSocket Эндпоинт (Живое общение)
+# 🔵 HTTP Эндпоинт: Загрузка вложения (Картинка/Файл)
+@router.post("/upload", status_code=200)
+def upload_message_attachment(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_active_user)
+):
+    """
+    Загружает файл и возвращает URL.
+    Клиент должен отправить этот URL в WebSocket как content с типом 'image'/'file'.
+    """
+    # Простая валидация размера (например 50МБ)
+    file.file.seek(0, os.SEEK_END)
+    if file.file.tell() > 50 * 1024 * 1024:
+        raise HTTPException(400, "File too large (Max 50MB)")
+    file.file.seek(0)
+
+    if not os.path.exists("uploads"):
+        os.makedirs("uploads")
+    
+    # Генерируем уникальное имя
+    file_ext = file.filename.split(".")[-1] if "." in file.filename else "bin"
+    file_name = f"attachment_{uuid.uuid4()}.{file_ext}"
+    file_path = f"uploads/{file_name}"
+    
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+        
+    return {"url": f"/static/{file_name}", "filename": file.filename}
+
+
+# 🟢 WebSocket Эндпоинт (Живое общение)
 @router.websocket("/ws")
 async def websocket_endpoint(
     websocket: WebSocket,
@@ -75,7 +104,7 @@ async def websocket_endpoint(
             
             # --- РОУТИНГ СОБЫТИЙ ---
             
-            # === 1. НОВОЕ СООБЩЕНИЕ (type: "new_message" или отсутствует) ===
+            # === 1. НОВОЕ СООБЩЕНИЕ ===
             if event_type in (None, "new_message"):
                 try:
                     # Конвертация строки в байты (для Pydantic)
@@ -83,32 +112,71 @@ async def websocket_endpoint(
                     if isinstance(raw_content, str):
                         raw_content = raw_content.encode('utf-8')
 
+                    # Получаем тип сообщения (text, image, file), по умолчанию text
+                    msg_type_str = data.get("message_type", "text")
+
                     msg_create = schemas.MessageCreate(
                         chat_id=data.get("chat_id"),
-                        content=raw_content
+                        content=raw_content,
+                        message_type=msg_type_str
                     )
                     
+                    # Сохраняем в БД (здесь же внутри проверяется ЧС)
                     new_msg = message_service.create_message(
                         db=db, 
                         sender_id=user_id, 
                         msg_data=msg_create
                     )
 
+                    # Формируем ответ для WebSocket
                     response_data = {
                         "type": "new_message",
                         "id": new_msg.id,
                         "chat_id": new_msg.chat_id,
                         "sender_id": user_id,
                         "content": new_msg.content.decode('utf-8') if isinstance(new_msg.content, bytes) else new_msg.content,
+                        "message_type": new_msg.message_type, # Возвращаем тип
                         "sent_at": new_msg.sent_at.isoformat(),
                         "status": "sent"
                     }
 
                     participant_ids = message_service.get_chat_participants(db, chat_id=new_msg.chat_id)
+                    
+                    # Получаем инфо об отправителе для Пуша
+                    sender = db.query(models.User).filter(models.User.id == user_id).first()
+                    sender_name = f"{sender.first_name} {sender.last_name or ''}".strip()
+
+                    # Рассылка (WS + Push)
                     for pid in participant_ids:
+                        # 1. WebSocket (мгновенно)
                         await manager.send_personal_message(response_data, pid)
                         
+                        # 2. Push-уведомление (если это не мы сами)
+                        if pid != user_id:
+                            # Текст пуша зависит от типа
+                            push_body = "Новое сообщение"
+                            if new_msg.message_type == models.MessageTypeEnum.text:
+                                try:
+                                    push_body = new_msg.content.decode('utf-8')
+                                except:
+                                    push_body = "Текст"
+                            elif new_msg.message_type == models.MessageTypeEnum.image:
+                                push_body = "📷 Изображение"
+                            elif new_msg.message_type == models.MessageTypeEnum.file:
+                                push_body = "📁 Файл"
+                            elif new_msg.message_type == models.MessageTypeEnum.audio:
+                                push_body = "🎤 Голосовое сообщение"
+
+                            # Отправляем пуш (Fire-and-forget)
+                            notification_service.send_push_to_user(
+                                db, pid, 
+                                title=sender_name, 
+                                body=push_body,
+                                data={"chat_id": str(new_msg.chat_id)}
+                            )
+                        
                 except Exception as e:
+                    # Если ошибка (например, ЧС), отправляем её только отправителю
                     await websocket.send_json({"error": f"Message error: {str(e)}"})
 
 
@@ -140,7 +208,6 @@ async def websocket_endpoint(
                     if not msg_id or not new_text:
                         raise ValueError("Fields 'message_id' and 'content' are required")
 
-                    # Приведение типов
                     if isinstance(msg_id, float): msg_id = int(msg_id)
                     if isinstance(new_text, str): new_text = new_text.encode('utf-8')
 
@@ -172,7 +239,6 @@ async def websocket_endpoint(
                         
                     if isinstance(msg_id, float): msg_id = int(msg_id)
 
-                    # Сначала ищем, чтобы узнать chat_id (нужен для рассылки)
                     msg_obj = db.query(models.Message).filter(models.Message.id == msg_id).first()
 
                     if msg_obj and msg_obj.sender_id == user_id:
@@ -196,10 +262,9 @@ async def websocket_endpoint(
 
             # === 5. ЗАКРЕПЛЕНИЕ (PIN) ===
             elif event_type == "pin":
-                # Клиент шлет: {"type": "pin", "message_id": 123, "is_pinned": true}
                 try:
                     msg_id = data.get("message_id")
-                    is_pinned = data.get("is_pinned") # true/false
+                    is_pinned = data.get("is_pinned")
                     
                     if msg_id is None or is_pinned is None:
                          raise ValueError("Fields 'message_id' and 'is_pinned' required")
@@ -209,9 +274,7 @@ async def websocket_endpoint(
                     success = message_service.pin_message(db, msg_id, user_id, is_pinned)
                     
                     if success:
-                        # Получаем чат ID для рассылки (можно оптимизировать, вернув его из сервиса)
                         msg_obj = db.query(models.Message).filter(models.Message.id == msg_id).first()
-                        
                         pin_notify = {
                             "type": "message_pinned",
                             "chat_id": msg_obj.chat_id,

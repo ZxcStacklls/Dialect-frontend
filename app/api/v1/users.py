@@ -116,3 +116,33 @@ def delete_my_banner(
     user_service.delete_banner(db, current_user.id)
     db.refresh(current_user)
     return current_user
+
+@router.post("/device", status_code=200)
+def register_device(
+    device: schemas.DeviceCreate,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(database.get_db)
+):
+    """Регистрация FCM токена для пушей."""
+    user_service.register_device(db, current_user.id, device.fcm_token, device.device_type)
+    return {"message": "Device registered"}
+
+@router.post("/block/{user_id}", status_code=200)
+def block_user(
+    user_id: int,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(database.get_db)
+):
+    """Заблокировать пользователя."""
+    user_service.block_user(db, current_user.id, user_id)
+    return {"message": "User blocked"}
+
+@router.delete("/block/{user_id}", status_code=200)
+def unblock_user(
+    user_id: int,
+    current_user: models.User = Depends(get_current_active_user),
+    db: Session = Depends(database.get_db)
+):
+    """Разблокировать пользователя."""
+    user_service.unblock_user(db, current_user.id, user_id)
+    return {"message": "User unblocked"}

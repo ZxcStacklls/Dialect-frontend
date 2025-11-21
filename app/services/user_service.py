@@ -245,3 +245,50 @@ def delete_banner(db: Session, user_id: int):
     db.commit()
     db.refresh(user)
     return user
+
+def register_device(db: Session, user_id: int, fcm_token: str, device_type: str):
+    """Сохраняет токен устройства для пушей."""
+    # Проверяем, есть ли уже такой токен (может быть у другого юзера, если перелогинился)
+    existing = db.query(models.UserDevice).filter(models.UserDevice.fcm_token == fcm_token).first()
+    
+    if existing:
+        existing.user_id = user_id
+        existing.device_type = device_type
+        existing.last_active_at = func.now()
+    else:
+        new_device = models.UserDevice(
+            user_id=user_id,
+            fcm_token=fcm_token,
+            device_type=device_type
+        )
+        db.add(new_device)
+    
+    db.commit()
+
+# --- ЧЕРНЫЙ СПИСОК ---
+def block_user(db: Session, blocker_id: int, blocked_id: int):
+    if blocker_id == blocked_id:
+        raise HTTPException(400, "Нельзя заблокировать себя")
+        
+    # Проверка существования
+    if not get_user(db, blocked_id):
+        raise HTTPException(404, "Пользователь не найден")
+        
+    # Проверка дубликата
+    existing = db.query(models.UserBlock).filter_by(blocker_id=blocker_id, blocked_id=blocked_id).first()
+    if existing:
+        return # Уже заблокирован
+        
+    block = models.UserBlock(blocker_id=blocker_id, blocked_id=blocked_id)
+    db.add(block)
+    db.commit()
+
+def unblock_user(db: Session, blocker_id: int, blocked_id: int):
+    block = db.query(models.UserBlock).filter_by(blocker_id=blocker_id, blocked_id=blocked_id).first()
+    if block:
+        db.delete(block)
+        db.commit()
+
+def is_blocked(db: Session, blocker_id: int, target_id: int) -> bool:
+    """Проверяет, заблокировал ли blocker_id пользователя target_id."""
+    return db.query(models.UserBlock).filter_by(blocker_id=blocker_id, blocked_id=target_id).first() is not None
