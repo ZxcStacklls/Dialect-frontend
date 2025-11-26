@@ -1,0 +1,330 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    overflow: hidden !important;
+    height: 100%;
+    position: fixed;
+    width: 100%;
+  }
+
+  body {
+    @apply bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+      'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+      sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    margin: 0;
+    padding: 0;
+    overflow: hidden !important; /* Убираем скролл для body */
+    position: relative;
+    height: 100%;
+    width: 100%;
+  }
+
+  #root {
+    overflow: hidden !important;
+    height: 100vh;
+    position: relative;
+    width: 100%;
+  }
+
+  * {
+    @apply box-border;
+  }
+
+  /* Убираем outline у всех интерактивных элементов */
+  button:focus,
+  button:focus-visible,
+  button:focus-within,
+  a:focus,
+  a:focus-visible,
+  a:focus-within,
+  input:focus,
+  input:focus-visible,
+  input:focus-within,
+  textarea:focus,
+  textarea:focus-visible,
+  textarea:focus-within,
+  select:focus,
+  select:focus-visible,
+  select:focus-within,
+  [role="button"]:focus,
+  [role="button"]:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+    border-color: transparent !important;
+  }
+
+  /* Убираем outline при клике */
+  button:active,
+  a:active,
+  [role="button"]:active {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Убираем outline у всех элементов в Electron */
+  body.electron *:focus,
+  body.electron *:focus-visible,
+  body.electron *:focus-within {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Дополнительно убираем outline у всех элементов при любом взаимодействии */
+  * {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-focus-ring-color: transparent;
+  }
+
+  /* Кастомное окно для Electron */
+  .app-container {
+    @apply h-screen flex flex-col;
+  }
+
+  /* Drag область для перемещения окна */
+  .drag-region {
+    -webkit-app-region: drag;
+    cursor: move;
+  }
+
+  /* Область без drag (кнопки) */
+  .no-drag {
+    -webkit-app-region: no-drag;
+  }
+
+  /* Titlebar стили */
+  .titlebar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    z-index: 1000;
+    user-select: none;
+    -webkit-app-region: drag;
+  }
+
+  .titlebar-button {
+    -webkit-app-region: no-drag;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .titlebar-button:active {
+    transform: scale(0.95);
+  }
+
+  .titlebar-button:focus,
+  .titlebar-button:focus-visible {
+    outline: none !important;
+    box-shadow: none !important;
+  }
+
+  /* Контент с отступом для titlebar */
+  .app-content {
+    margin-top: 40px; /* Высота titlebar */
+    height: calc(100vh - 40px);
+    overflow-x: hidden;
+    overflow-y: hidden; /* Полностью отключаем вертикальную прокрутку */
+  }
+
+  /* Для страниц авторизации - отключаем прокрутку полностью */
+  .app-content .auth-page {
+    overflow: hidden !important;
+    height: 100vh;
+    position: fixed;
+    width: 100%;
+    top: 40px; /* Отступ для titlebar */
+    left: 0;
+    right: 0;
+    bottom: 0;
+    overscroll-behavior: none; /* Предотвращаем bounce-эффект */
+  }
+
+  /* В Electron полностью блокируем прокрутку */
+  body.electron .app-content {
+    overflow: hidden !important;
+    touch-action: none; /* Отключаем touch-события для прокрутки */
+    overscroll-behavior: none;
+  }
+
+  body.electron .auth-page {
+    overflow: hidden !important;
+    touch-action: none;
+    overscroll-behavior: none;
+  }
+
+  /* Блокируем прокрутку для всех элементов внутри auth-page */
+  body.electron .auth-page * {
+    overscroll-behavior: none;
+  }
+
+  /* Разрешаем прокрутку только в select menu */
+  .country-selector-dropdown {
+    overflow-y: auto !important;
+    touch-action: auto !important;
+    overscroll-behavior: auto !important;
+  }
+
+  /* В Web версии убираем отступ */
+  body:not(.electron) .app-content {
+    margin-top: 0;
+    height: 100vh;
+  }
+
+  /* Стили для Electron */
+  body.electron {
+    overflow: hidden !important;
+    position: fixed;
+    width: 100%;
+    height: 100%;
+  }
+
+  /* Блокируем прокрутку на всех уровнях в Electron */
+  body.electron,
+  body.electron html,
+  body.electron #root,
+  body.electron .app-container {
+    overflow: hidden !important;
+    height: 100vh !important;
+    max-height: 100vh !important;
+  }
+}
+
+@layer utilities {
+  .glass-effect {
+    @apply bg-gray-800/60 backdrop-blur-xl border border-gray-700/30 shadow-2xl;
+  }
+  
+  /* Плавная анимация появления */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out;
+  }
+
+  /* Анимация перемещения логотипа (исчезновение) */
+  @keyframes logoMove {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+    to {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+
+  .animate-logo-move {
+    animation: logoMove 0.4s ease-in-out forwards;
+  }
+
+  /* Анимация появления логотипа с эффектом "перетаскивания" */
+  @keyframes logoAppear {
+    0% {
+      opacity: 0;
+      transform: scale(0.6) translateY(-30px);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(1.1) translateY(5px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .animate-logo-appear {
+    animation: logoAppear 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  /* Анимация выбора страны */
+  @keyframes countrySelect {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateX(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateX(0);
+    }
+  }
+
+  .animate-country-select {
+    animation: countrySelect 0.3s ease-out forwards;
+  }
+
+  /* Плавное изменение при автоматическом определении */
+  .country-change-transition {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Кастомный скроллер - скрыт по умолчанию, показывается только в select menu */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(55, 65, 81, 0.3);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(59, 130, 246, 0.5);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(59, 130, 246, 0.7);
+  }
+
+  /* Для Firefox */
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(59, 130, 246, 0.5) rgba(55, 65, 81, 0.3);
+  }
+
+  /* Скрываем стандартный скроллбар для body и app-content */
+  body::-webkit-scrollbar,
+  .app-content::-webkit-scrollbar,
+  html::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  body,
+  .app-content,
+  html {
+    -ms-overflow-style: none; /* IE и Edge */
+    scrollbar-width: none; /* Firefox */
+  }
+
+  /* Для страниц авторизации - отключаем прокрутку */
+  .auth-page {
+    overflow: hidden;
+    height: 100vh;
+  }
+
+  /* Разрешаем прокрутку только для select menu */
+  .country-selector-dropdown {
+    overflow-y: auto !important;
+  }
+}
+

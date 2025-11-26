@@ -1,0 +1,38 @@
+appId: com.dialect.messenger
+productName: Dialect
+directories:
+  output: release
+  buildResources: build
+
+files:
+  - dist/**/*
+  - electron/**/*
+  - node_modules/**/*
+  - package.json
+
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+  icon: public/appicon_gradient.png
+
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  installerIcon: public/appicon_gradient.png
+  uninstallerIcon: public/appicon_gradient.png
+  installerHeaderIcon: public/appicon_gradient.png
+
+mac:
+  target: dmg
+  icon: public/appicon_gradient.png
+  category: public.app-category.social-networking
+
+linux:
+  target: AppImage
+  icon: public/appicon_gradient.png
+  category: Network
+
