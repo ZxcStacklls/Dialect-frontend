@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { isElectron, getApiBaseUrl } from '../utils/platform'
+import { getApiBaseUrl } from '../utils/platform'
 
 const API_BASE_URL = getApiBaseUrl()
 
@@ -30,16 +30,11 @@ apiClient.interceptors.response.use(
   (error) => {
     if (error.response?.status === 401) {
       // Не перенаправляем на странице входа/регистрации - там 401 это нормальная ошибка
-      const currentPath = window.location.pathname || window.location.hash.replace('#', '')
+      const currentPath = window.location.hash.replace('#', '') || window.location.pathname
       if (currentPath !== '/login' && currentPath !== '/signup') {
         localStorage.removeItem('access_token')
-        
-        // В Electron используем hash routing, в Web - обычную навигацию
-        if (isElectron()) {
-          window.location.hash = '#/login'
-        } else {
-          window.location.href = '/login'
-        }
+        // Используем hash routing для Electron
+        window.location.hash = '#/login'
       }
     }
     return Promise.reject(error)

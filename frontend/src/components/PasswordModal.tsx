@@ -46,26 +46,33 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ phoneNumber, isOpen, onCl
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/75 backdrop-blur-sm"
         onClick={onClose}
       ></div>
 
       {/* Modal */}
-      <div className="relative glass-effect rounded-3xl p-8 shadow-2xl max-w-md w-full animate-fade-in">
-        <h2 className="text-2xl font-bold text-white mb-2">Введите пароль</h2>
-        <p className="text-gray-400 mb-6">
-          Этот номер уже зарегистрирован. Введите пароль для входа.
-        </p>
+      <div className="relative bg-white/5 backdrop-blur-xl rounded-2xl shadow-2xl max-w-2xl w-full p-10 animate-fade-in">
+        {/* Заголовок */}
+        <div className="mb-12">
+          <h2 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+            Введите пароль<span className="text-primary-500">.</span>
+          </h2>
+          <p className="text-gray-400 text-lg mb-8">
+            Этот номер уже зарегистрирован. Введите пароль для входа.
+          </p>
+        </div>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 text-red-300 px-4 py-3 rounded-xl text-sm backdrop-blur-sm">
+            <div className="bg-red-500/20 border-l-4 border-red-500 text-red-300 px-6 py-4 rounded text-sm">
               {error}
             </div>
           )}
 
-          <div className="space-y-1">
-            <label className="text-sm text-gray-400 px-1">Пароль</label>
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="text-sm text-gray-400 uppercase tracking-wider">Пароль</label>
+            </div>
             <input
               ref={inputRef}
               type="password"
@@ -73,22 +80,22 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ phoneNumber, isOpen, onCl
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full px-4 py-3.5 bg-gray-800/40 border border-gray-700/50 rounded-xl text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-primary-500/50 focus:border-primary-500/50 transition-all backdrop-blur-sm"
+              className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
             />
           </div>
 
-          <div className="flex gap-3 mt-6">
+          <div className="flex gap-4 pt-4">
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 px-6 py-3 bg-gray-800/50 border border-gray-700 text-white rounded-xl font-semibold hover:bg-gray-800 transition-colors"
+              className="px-8 py-4 text-gray-400 hover:text-white transition-colors"
             >
               Отмена
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="flex-1 bg-gradient-to-r from-primary-500 to-primary-600 text-white py-3 rounded-xl font-semibold hover:from-primary-600 hover:to-primary-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-primary-500/20"
+              className="flex-1 bg-primary-500 text-white py-4 px-8 rounded-lg font-semibold hover:bg-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">

@@ -5,6 +5,7 @@ import { useLogoAnimation } from '../contexts/LogoAnimationContext'
 import CountrySelector, { CIS_COUNTRIES, Country } from '../components/CountrySelector'
 import AvatarUpload from '../components/AvatarUpload'
 import PasswordModal from '../components/PasswordModal'
+import AnimatedSlogans from '../components/AnimatedSlogans'
 import { authAPI } from '../api/auth'
 
 type Step = 1 | 2 | 3
@@ -906,12 +907,13 @@ const SignUpPage = () => {
       </div>
 
       {/* Контент */}
-      <div className="relative z-10 w-full flex items-center justify-start px-8 md:px-16 lg:px-24 py-16">
+      <div className="relative z-10 w-full flex items-center justify-between px-8 md:px-16 lg:px-32 xl:px-40 py-16 gap-12">
+        {/* Форма регистрации */}
         <div className={`w-full max-w-2xl transition-all duration-700 ${
           mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
         }`}>
           {/* Логотип и заголовок */}
-          {currentStep === 1 && (
+            {currentStep === 1 && (
             <div
               ref={logoRef}
               className={`mb-12 ${mounted && (!isAnimating || !logoPosition) ? 'animate-logo-appear' : 'opacity-0 scale-90'}`}
@@ -931,9 +933,6 @@ const SignUpPage = () => {
                 <span className="text-white text-lg font-medium">Dialect</span>
               </div>
               
-              <div className="mb-2">
-                <span className="text-xs text-gray-500 uppercase tracking-wider">START FOR FREE</span>
-              </div>
               <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
                 Создать новый аккаунт<span className="text-primary-500">.</span>
               </h1>
@@ -1215,6 +1214,13 @@ const SignUpPage = () => {
             </form>
           )}
         </div>
+
+        {/* Анимированные слоганы (только на первом шаге) */}
+        {currentStep === 1 && (
+          <div className="hidden lg:flex flex-1 items-center justify-center max-w-xl">
+            <AnimatedSlogans />
+          </div>
+        )}
       </div>
 
       {/* Модальное окно для ввода пароля */}

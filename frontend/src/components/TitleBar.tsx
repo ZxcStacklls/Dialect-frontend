@@ -1,11 +1,10 @@
 import { useEffect, useState } from 'react'
-import { isElectron } from '../utils/platform'
 
 const TitleBar = () => {
   const [isMaximized, setIsMaximized] = useState(false)
 
   useEffect(() => {
-    if (!isElectron() || !window.electron) return
+    if (!window.electron) return
 
     // Проверяем состояние окна при загрузке
     const checkMaximized = async () => {
@@ -24,10 +23,6 @@ const TitleBar = () => {
       })
     }
   }, [])
-
-  if (!isElectron()) {
-    return null // В Web версии не показываем titlebar
-  }
 
   const handleMinimize = () => {
     if (window.electron) {

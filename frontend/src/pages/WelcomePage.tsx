@@ -98,7 +98,7 @@ const WelcomePage = () => {
             target.style.display = 'none'
           }}
         />
-        <div className="absolute inset-0 bg-black/70 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-black/75"></div>
       </div>
 
       {/* Контент */}

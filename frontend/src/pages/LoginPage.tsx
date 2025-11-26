@@ -135,48 +135,45 @@ const LoginPage = () => {
       </div>
 
       {/* Контент */}
-      <div className="relative z-10 w-full flex items-center justify-start px-8 md:px-16 lg:px-24 py-16">
+      <div className="relative z-10 w-full flex items-center justify-start px-8 md:px-16 lg:px-32 xl:px-40 py-16">
         <div className={`w-full max-w-2xl transition-all duration-700 ${
           mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
         }`}>
           {/* Логотип и заголовок */}
-          <div
-            ref={logoRef}
-            className={`mb-12 ${mounted && (!isAnimating || !logoPosition) ? 'animate-logo-appear' : 'opacity-0 scale-90'}`}
-          >
-            <div className="flex items-center gap-3 mb-8">
-              <div className="w-10 h-10 rounded-lg overflow-hidden">
-                <img
-                  src="/appicon_gradient.png"
-                  alt="Dialect"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement
-                    target.src = '/appicon_default.png'
-                  }}
-                />
+            <div
+              ref={logoRef}
+              className={`mb-12 ${mounted && (!isAnimating || !logoPosition) ? 'animate-logo-appear' : 'opacity-0 scale-90'}`}
+            >
+              <div className="flex items-center gap-3 mb-8">
+                <div className="w-10 h-10 rounded-lg overflow-hidden">
+                  <img
+                    src="/appicon_gradient.png"
+                    alt="Dialect"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement
+                      target.src = '/appicon_default.png'
+                    }}
+                  />
+                </div>
+                <span className="text-white text-lg font-medium">Dialect</span>
               </div>
-              <span className="text-white text-lg font-medium">Dialect</span>
+              
+              <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+                Вход в Dialect<span className="text-primary-500">.</span>
+              </h1>
+              <p className="text-gray-400 text-lg mb-8">
+                Уже есть аккаунт?{' '}
+                <Link
+                  to="/signup"
+                  className="text-primary-400 hover:text-primary-300 transition-colors"
+                >
+                  Зарегистрироваться
+                </Link>
+              </p>
             </div>
-            
-            <div className="mb-2">
-              <span className="text-xs text-gray-500 uppercase tracking-wider">START FOR FREE</span>
-            </div>
-            <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
-              Вход в Dialect<span className="text-primary-500">.</span>
-            </h1>
-            <p className="text-gray-400 text-lg mb-8">
-              Уже есть аккаунт?{' '}
-              <Link
-                to="/signup"
-                className="text-primary-400 hover:text-primary-300 transition-colors"
-              >
-                Зарегистрироваться
-              </Link>
-            </p>
-          </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="bg-red-500/20 border-l-4 border-red-500 text-red-300 px-6 py-4 rounded text-sm">
                 {error}
@@ -216,13 +213,6 @@ const LoginPage = () => {
             </div>
 
             <div className="flex gap-4 pt-4">
-              <button
-                type="button"
-                onClick={() => navigate('/signup')}
-                className="px-8 py-4 text-gray-400 hover:text-white transition-colors"
-              >
-                Изменить метод
-              </button>
               <button
                 type="submit"
                 disabled={loading}

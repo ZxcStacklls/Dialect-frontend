@@ -2,12 +2,10 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { isElectron } from './utils/platform'
 
+// Приложение работает только в Electron
 // Добавляем класс для Electron в body
-if (isElectron()) {
-  document.body.classList.add('electron')
-}
+document.body.classList.add('electron')
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
