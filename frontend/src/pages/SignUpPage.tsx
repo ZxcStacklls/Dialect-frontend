@@ -251,13 +251,13 @@ const SignUpPage = () => {
   }
 
   const getPhonePlaceholder = (): string => {
-    if (!formData.country) return '000000000'
+    if (!formData.country) return ''
     
     const dialCode = formData.country.dialCode
     const maxLength = formData.country.maxLength
     
     // Placeholder в зависимости от страны
-    if (dialCode === '+7') return '000 000 0000'
+    if (dialCode === '+7') return '0 00 000 00 00'
     if (dialCode === '+375') return '00 000-00-00'
     if (dialCode === '+996') return '000 000-000'
     if (dialCode === '+992') return '00 000-00-00'
@@ -309,14 +309,18 @@ const SignUpPage = () => {
     
     const dialCode = formData.country.dialCode
     
-    // Форматирование для России и Казахстана (+7): XXX XXX-XX-XX
+    // Форматирование для России и Казахстана (+7): X XX XXX XX XX (например: 9 12 345 67 89)
     if (dialCode === '+7' && digits.length > 0) {
-      if (digits.length <= 3) {
+      if (digits.length <= 1) {
         return digits
+      } else if (digits.length <= 3) {
+        return `${digits.slice(0, 1)} ${digits.slice(1)}`
       } else if (digits.length <= 6) {
-        return `${digits.slice(0, 3)} ${digits.slice(3)}`
+        return `${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3)}`
+      } else if (digits.length <= 8) {
+        return `${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
       } else {
-        return `${digits.slice(0, 3)} ${digits.slice(3, 6)} ${digits.slice(6)}`
+        return `${digits.slice(0, 1)} ${digits.slice(1, 3)} ${digits.slice(3, 6)} ${digits.slice(6, 8)} ${digits.slice(8)}`
       }
     }
     
@@ -546,7 +550,15 @@ const SignUpPage = () => {
       }
     }
     
-    // Для остальных стран - просто цифры без форматирования
+    // Универсальное форматирование для остальных стран: группы по 3 цифры с пробелами
+    if (digits.length > 0) {
+      const parts: string[] = []
+      for (let i = 0; i < digits.length; i += 3) {
+        parts.push(digits.slice(i, i + 3))
+      }
+      return parts.join(' ')
+    }
+    
     return digits
   }
 
@@ -986,8 +998,8 @@ const SignUpPage = () => {
 
               <div className="space-y-2 min-w-0">
                 <label className="text-sm text-gray-400 uppercase tracking-wider">Номер телефона</label>
-                <div className="relative flex items-center border-b-2 border-gray-600/50 focus-within:border-primary-500 transition-all min-w-0">
-                  <div className="px-3 py-5 text-gray-300 text-lg border-0 select-none flex-shrink-0">+</div>
+                <div className="relative flex items-center border-b-2 border-gray-600/50 focus-within:border-primary-500 transition-all min-w-0 rounded-t-sm">
+                  <div className="px-2 py-5 text-gray-400 text-base font-medium border-0 select-none flex-shrink-0">+</div>
                   <input
                     ref={countryCodeInputRef}
                     type="text"
@@ -1001,11 +1013,11 @@ const SignUpPage = () => {
                         e.preventDefault()
                       }
                     }}
-                    className="w-20 px-2 py-5 bg-transparent text-gray-300 focus:outline-none text-lg border-0 flex-shrink-0"
+                    className="w-14 px-1.5 py-5 bg-transparent text-gray-300 focus:outline-none text-base border-0 flex-shrink-0 font-medium"
                     maxLength={4}
-                    placeholder="7"
+                    placeholder=""
                   />
-                  <div className="w-px h-8 bg-gray-600 flex-shrink-0"></div>
+                  <div className="w-px h-6 bg-gray-600/60 flex-shrink-0"></div>
                   <input
                     ref={phoneNumberInputRef}
                     type="text"

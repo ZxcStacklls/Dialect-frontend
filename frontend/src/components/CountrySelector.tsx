@@ -84,11 +84,11 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ selectedCountry, onCo
   }, [selectedCountry])
 
   return (
-    <div className="relative" ref={dropdownRef}>
+    <div className="relative select-none" ref={dropdownRef}>
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg flex items-center justify-between hover:border-primary-500 focus:outline-none focus:border-primary-500 transition-all"
+        className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg flex items-center justify-between hover:border-primary-500 focus:outline-none focus:border-primary-500 transition-all select-none"
       >
         {selectedCountry ? (
           <>
@@ -135,8 +135,8 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ selectedCountry, onCo
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-gray-900/98 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl max-h-64 overflow-hidden animate-fade-in">
-          <div className="country-selector-dropdown overflow-y-auto max-h-64 custom-scrollbar">
+        <div className="absolute z-50 w-full mt-2 bg-gray-900/98 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl max-h-64 overflow-hidden animate-fade-in select-none">
+          <div className="country-selector-dropdown overflow-y-auto max-h-64 custom-scrollbar select-none">
             {CIS_COUNTRIES.map((country) => (
               <button
                 key={country.code}
@@ -145,7 +145,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ selectedCountry, onCo
                   onCountryChange(country)
                   setIsOpen(false)
                 }}
-                className={`w-full px-6 py-4 flex items-center gap-3 hover:bg-white/5 transition-all duration-200 ${
+                className={`w-full px-6 py-4 flex items-center gap-3 hover:bg-white/5 transition-all duration-200 select-none ${
                   selectedCountry?.code === country.code ? 'bg-primary-500/20' : ''
                 }`}
               >

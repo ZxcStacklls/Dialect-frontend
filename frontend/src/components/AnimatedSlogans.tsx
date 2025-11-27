@@ -111,4 +111,3 @@ const AnimatedSlogans = () => {
 }
 
 export default AnimatedSlogans
-
