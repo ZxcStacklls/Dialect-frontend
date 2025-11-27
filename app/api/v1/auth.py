@@ -1,10 +1,16 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Body
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
+from typing import Dict
+from pydantic import BaseModel
 
 from app.db import schemas, database
-from app.services import auth_service
+from app.services import auth_service, user_service
 from app.core.security import create_access_token
+
+
+class PhoneCheckRequest(BaseModel):
+    phone_number: str
 
 # Создаем "роутер" - мини-приложение FastAPI для этого модуля.
 # prefix="/v1/auth" означает, что все URL в этом файле
@@ -34,6 +40,30 @@ def register_user(
     # а возвращаем Pydantic-схему UserPublic, которая сама
     # отфильтрует нужные поля (id, username, first_name и т.д.).
     return new_user
+
+
+@router.post("/check-phone", response_model=Dict[str, bool])
+def check_phone_exists(
+    phone_data: PhoneCheckRequest,
+    db: Session = Depends(database.get_db)
+):
+    """
+    Эндпоинт для проверки существования номера телефона.
+    Не создает пользователя, только проверяет наличие номера в БД.
+    
+    Принимает JSON: {"phone_number": "+79123456789"}
+    Возвращает: {"exists": true/false}
+    """
+    if not phone_data.phone_number:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Номер телефона обязателен"
+        )
+    
+    user = user_service.get_user_by_phone(db, phone_number=phone_data.phone_number)
+    exists = user is not None
+    
+    return {"exists": exists}
 
 
 @router.post("/token", response_model=schemas.Token)

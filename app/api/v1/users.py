@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, status, UploadFile, File, Query
 from sqlalchemy.orm import Session
 from typing import Dict, List
 
@@ -76,13 +76,35 @@ def check_username_availability(
 
 @router.get("/search", response_model=List[schemas.UserPublic])
 def search_for_users(
-    q: str,
+    q: str = Query(..., min_length=1), # Минимальная длина 1, чтобы ловить быстрый ввод
+    limit: int = 20,
+    offset: int = 0,
     current_user: models.User = Depends(get_current_active_user),
     db: Session = Depends(database.get_db)
 ):
-    if len(q) < 3:
-        raise HTTPException(status.HTTP_400_BAD_REQUEST, "Запрос слишком короткий")
-    return user_service.search_users(db, query_str=q)
+    """
+    Глобальный поиск пользователей.
+    Ищет по телефону, юзернейму, имени и фамилии.
+    """
+    # Если запрос слишком короткий и это не цифры (не часть телефона), можно отбить
+    if len(q) < 3 and not q.isdigit():
+         # Можно вернуть пустой список или ошибку, но для UX лучше пустой список
+         return []
+        
+    users = user_service.search_users(
+        db, 
+        query_str=q, 
+        exclude_user_id=current_user.id, # Не ищем себя
+        limit=limit, 
+        offset=offset
+    )
+    
+    # Для каждого найденного проверяем онлайн статус
+    for user in users:
+        user_public = schemas.UserPublic.from_orm(user)
+        user_public.is_online = manager.is_user_online(user.id)
+        
+    return users
 
 @router.get("/{user_id}", response_model=schemas.UserPublic)
 def read_user_by_id(

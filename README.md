@@ -39,6 +39,7 @@
 | **Push Notifications** | Firebase Admin SDK | ✅ Готово |
 | **File Storage** | Local uploads/ | ✅ Готово |
 | **Optimization** | Bloom Filter (pybloom-live) | ✅ Готово |
+| **Android Frontend** | Kotlin + Jetpack Compose | ✅ Готово |
 | **Testing** | Pytest + HTTP тесты | 🔄 В разработке |
 | **CI/CD** | GitHub Actions | 📋 Планируется |
 | **Deployment** | Docker | 📋 Планируется |
@@ -105,6 +106,32 @@ uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
 
 ### ✅ Готово! Сервер доступен: http://localhost:8000
 
+## 📱 Android Frontend
+
+Проект включает полноценный Android клиент на Kotlin с Jetpack Compose!
+
+### Быстрый старт Android приложения
+
+1. **Откройте проект в Android Studio:**
+   ```bash
+   cd frontend
+   # Откройте папку frontend в Android Studio
+   ```
+
+2. **Настройте BASE_URL:**
+   - Откройте `app/src/main/java/com/dialect/messenger/data/api/ApiClient.kt`
+   - Для эмулятора: `http://10.0.2.2:8000/api/` (уже настроено)
+   - Для реального устройства: замените на IP вашего компьютера
+
+3. **Запустите бэкенд:**
+   ```bash
+   uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+   ```
+
+4. **Запустите приложение в Android Studio**
+
+📖 **Подробная инструкция:** См. [frontend/README.md](frontend/README.md)
+
 
 ## 📚 API Документация
 ### 📖 Интерактивные документы
@@ -168,7 +195,7 @@ POST   /api/v1/messages/upload        — Загрузить файл
 ## 🏗️ Структура проекта
 ```
 dialect/
-├── 📁 app/
+├── 📁 app/                        # Backend (FastAPI)
 │   ├── main.py                    # Точка входа
 │   ├── 📁 api/v1/
 │   │   ├── auth.py               # Аутентификация
@@ -189,6 +216,13 @@ dialect/
 │       ├── message_service.py    # Работа с сообщениями
 │       ├── connection_manager.py # WebSocket управление
 │       └── notification_service.py # Push-уведомления
+├── 📁 frontend/                   # Android Frontend
+│   ├── 📁 app/
+│   │   └── src/main/java/com/dialect/messenger/
+│   │       ├── data/             # API клиент, модели, репозитории
+│   │       ├── ui/               # Jetpack Compose UI
+│   │       └── util/             # Утилиты
+│   └── README.md                 # Инструкция по запуску
 ├── 📁 tests/
 │   └── websocket-test.http       # HTTP тесты
 ├── 📁 uploads/                    # Хранилище файлов
@@ -205,6 +239,7 @@ dialect/
 * <input checked="" disabled="" type="checkbox"> WebSocket real-time
 * <input checked="" disabled="" type="checkbox"> Загрузка файлов
 * <input checked="" disabled="" type="checkbox"> Push-уведомления (Firebase)
+* <input checked="" disabled="" type="checkbox"> Android приложение (Kotlin + Compose)
 
 **v1.1 (В разработке)**
 * <input disabled="" type="checkbox"> Unit & Integration тесты

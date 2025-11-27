@@ -5,6 +5,7 @@ PyMySQL
 pydantic
 pydantic-settings
 passlib[bcrypt]
+argon2-cffi
 python-jose[cryptography]
 pybloom-live
 websockets

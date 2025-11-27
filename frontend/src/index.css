@@ -12,6 +12,9 @@
 
   body {
     @apply bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white;
+    /* Fallback background color на случай, если Tailwind не загрузится */
+    background: linear-gradient(to bottom right, #111827, #1f2937, #111827);
+    background-color: #111827;
     font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
       'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
       sans-serif;
@@ -30,6 +33,9 @@
     height: 100vh;
     position: relative;
     width: 100%;
+    /* Убеждаемся, что root имеет фон */
+    background: linear-gradient(to bottom right, #111827, #1f2937, #111827);
+    background-color: #111827;
   }
 
   * {
@@ -67,10 +73,10 @@
     box-shadow: none !important;
   }
 
-  /* Убираем outline у всех элементов в Electron */
-  body.electron *:focus,
-  body.electron *:focus-visible,
-  body.electron *:focus-within {
+  /* Убираем outline у всех элементов */
+  *:focus,
+  *:focus-visible,
+  *:focus-within {
     outline: none !important;
     box-shadow: none !important;
   }
@@ -146,21 +152,21 @@
     display: flex;
   }
 
-  /* В Electron полностью блокируем прокрутку */
-  body.electron .app-content {
+  /* Полностью блокируем прокрутку */
+  .app-content {
     overflow: hidden !important;
     touch-action: none; /* Отключаем touch-события для прокрутки */
     overscroll-behavior: none;
   }
 
-  body.electron .auth-page {
+  .auth-page {
     overflow: hidden !important;
     touch-action: none;
     overscroll-behavior: none;
   }
 
   /* Блокируем прокрутку для всех элементов внутри auth-page */
-  body.electron .auth-page * {
+  .auth-page * {
     overscroll-behavior: none;
   }
 
@@ -171,36 +177,20 @@
     overscroll-behavior: auto !important;
   }
 
-  /* В Web версии убираем отступ */
-  body:not(.electron) .app-content {
-    margin-top: 0 !important;
-    height: 100vh;
-    position: relative;
-    width: 100%;
-  }
-
-  body:not(.electron) .auth-page {
-    height: 100vh !important;
-    min-height: 100vh !important;
-    width: 100%;
-  }
-
-  /* Стили для Electron */
-  body.electron {
-    overflow: hidden !important;
-    position: fixed;
-    width: 100%;
-    height: 100%;
-  }
-
-  /* Блокируем прокрутку на всех уровнях в Electron */
-  body.electron,
-  body.electron html,
-  body.electron #root,
-  body.electron .app-container {
+  /* Блокируем прокрутку на всех уровнях */
+  body,
+  html,
+  #root,
+  .app-container {
     overflow: hidden !important;
     height: 100vh !important;
     max-height: 100vh !important;
+  }
+  
+  body {
+    position: fixed;
+    width: 100%;
+    height: 100%;
   }
 }
 

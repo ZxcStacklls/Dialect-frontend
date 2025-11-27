@@ -907,9 +907,9 @@ const SignUpPage = () => {
       </div>
 
       {/* Контент */}
-      <div className="relative z-10 w-full flex items-center justify-between px-8 md:px-16 lg:px-32 xl:px-40 py-16 gap-12">
+      <div className="relative z-10 w-full flex items-center justify-between px-4 sm:px-8 md:px-16 lg:px-32 xl:px-40 py-16 gap-6 lg:gap-12">
         {/* Форма регистрации */}
-        <div className={`w-full max-w-2xl transition-all duration-700 ${
+        <div className={`w-full max-w-2xl min-w-0 sm:min-w-[500px] flex-shrink-0 transition-all duration-700 ${
           mounted ? 'opacity-100 translate-x-0' : 'opacity-0 translate-x-8'
         }`}>
           {/* Логотип и заголовок */}
@@ -933,7 +933,7 @@ const SignUpPage = () => {
                 <span className="text-white text-lg font-medium">Dialect</span>
               </div>
               
-              <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight break-words">
                 Создать новый аккаунт<span className="text-primary-500">.</span>
               </h1>
               <p className="text-gray-400 text-lg mb-8">
@@ -957,7 +957,7 @@ const SignUpPage = () => {
                   {currentStep === 3 && 'ШАГ 3 ИЗ 3'}
                 </span>
               </div>
-              <h1 className="text-5xl md:text-6xl font-bold text-white mb-4 leading-tight">
+              <h1 className="text-4xl md:text-5xl lg:text-6xl font-bold text-white mb-4 leading-tight break-words">
                 {currentStep === 2 && 'Пароль'}
                 {currentStep === 3 && 'Расскажите о себе'}
               </h1>
@@ -974,7 +974,7 @@ const SignUpPage = () => {
           {/* Шаг 1: Номер телефона */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm text-gray-400 uppercase tracking-wider">Страна</label>
                 <div className={countryJustChanged ? 'animate-country-select' : ''}>
                   <CountrySelector
@@ -984,10 +984,10 @@ const SignUpPage = () => {
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm text-gray-400 uppercase tracking-wider">Номер телефона</label>
-                <div className="relative flex items-center border-b-2 border-gray-600/50 focus-within:border-primary-500 transition-all">
-                  <div className="px-3 py-5 text-gray-300 text-lg border-0 select-none">+</div>
+                <div className="relative flex items-center border-b-2 border-gray-600/50 focus-within:border-primary-500 transition-all min-w-0">
+                  <div className="px-3 py-5 text-gray-300 text-lg border-0 select-none flex-shrink-0">+</div>
                   <input
                     ref={countryCodeInputRef}
                     type="text"
@@ -1001,11 +1001,11 @@ const SignUpPage = () => {
                         e.preventDefault()
                       }
                     }}
-                    className="w-20 px-2 py-5 bg-transparent text-gray-300 focus:outline-none text-lg border-0"
+                    className="w-20 px-2 py-5 bg-transparent text-gray-300 focus:outline-none text-lg border-0 flex-shrink-0"
                     maxLength={4}
                     placeholder="7"
                   />
-                  <div className="w-px h-8 bg-gray-600"></div>
+                  <div className="w-px h-8 bg-gray-600 flex-shrink-0"></div>
                   <input
                     ref={phoneNumberInputRef}
                     type="text"
@@ -1014,7 +1014,7 @@ const SignUpPage = () => {
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     onKeyDown={handlePhoneKeyDown}
                     maxLength={(formData.country?.maxLength || 10) + 5}
-                    className="flex-1 px-4 py-5 bg-transparent text-white text-lg placeholder-gray-500 focus:outline-none border-0"
+                    className="flex-1 min-w-0 px-4 py-5 bg-transparent text-white text-lg placeholder-gray-500 focus:outline-none border-0"
                   />
                 </div>
               </div>
@@ -1052,7 +1052,7 @@ const SignUpPage = () => {
           {/* Шаг 2: Пароль */}
           {currentStep === 2 && (
             <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-6">
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm text-gray-400 uppercase tracking-wider">Пароль</label>
                 <input
                   type="password"
@@ -1061,7 +1061,7 @@ const SignUpPage = () => {
                   value={formData.password}
                   onChange={handleChange}
                   required
-                  className={`w-full px-6 py-5 bg-white/5 border-b-2 text-white text-lg placeholder-gray-500 focus:outline-none transition-all ${
+                  className={`w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 text-white text-lg placeholder-gray-500 focus:outline-none transition-all ${
                     passwordError
                       ? 'border-red-500'
                       : 'border-gray-600/50 focus:border-primary-500'
@@ -1085,7 +1085,7 @@ const SignUpPage = () => {
                 )}
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm text-gray-400 uppercase tracking-wider">Подтвердите пароль</label>
                 <input
                   type="password"
@@ -1094,7 +1094,7 @@ const SignUpPage = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   required
-                  className={`w-full px-6 py-5 bg-white/5 border-b-2 text-white text-lg placeholder-gray-500 focus:outline-none transition-all ${
+                  className={`w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 text-white text-lg placeholder-gray-500 focus:outline-none transition-all ${
                     confirmPasswordError
                       ? 'border-red-500'
                       : formData.confirmPassword && formData.confirmPassword === formData.password
@@ -1145,8 +1145,8 @@ const SignUpPage = () => {
                 onImageChange={(file) => setFormData({ ...formData, avatar: file })}
               />
 
-              <div className="grid grid-cols-2 gap-6">
-                <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-6 min-w-0">
+                <div className="space-y-2 min-w-0">
                   <label className="text-sm text-gray-400 uppercase tracking-wider">Имя</label>
                   <input
                     type="text"
@@ -1155,11 +1155,11 @@ const SignUpPage = () => {
                     value={formData.first_name}
                     onChange={handleChange}
                     required
-                    className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
+                    className="w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
                   />
                 </div>
 
-                <div className="space-y-2">
+                <div className="space-y-2 min-w-0">
                   <label className="text-sm text-gray-400 uppercase tracking-wider">Фамилия</label>
                   <input
                     type="text"
@@ -1167,12 +1167,12 @@ const SignUpPage = () => {
                     placeholder="Введите фамилию"
                     value={formData.last_name}
                     onChange={handleChange}
-                    className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
+                    className="w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="space-y-2 min-w-0">
                 <label className="text-sm text-gray-400 uppercase tracking-wider">Имя пользователя</label>
                 <input
                   type="text"
@@ -1181,7 +1181,7 @@ const SignUpPage = () => {
                   value={formData.username}
                   onChange={handleChange}
                   required
-                  className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
+                  className="w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
                 />
               </div>
 
@@ -1217,7 +1217,7 @@ const SignUpPage = () => {
 
         {/* Анимированные слоганы (только на первом шаге) */}
         {currentStep === 1 && (
-          <div className="hidden lg:flex flex-1 items-center justify-center max-w-xl">
+          <div className="hidden lg:flex flex-1 items-center justify-center max-w-xl min-w-0 flex-shrink">
             <AnimatedSlogans />
           </div>
         )}

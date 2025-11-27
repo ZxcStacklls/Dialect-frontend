@@ -5,11 +5,12 @@
   "main": "electron/main.cjs",
   "scripts": {
     "dev": "vite",
-    "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development electron .\"",
+    "dev:electron": "concurrently \"npm run dev\" \"wait-on http://localhost:3000 && cross-env NODE_ENV=development USE_DEV_SERVER=true electron .\"",
     "build": "tsc && vite build",
     "build:electron": "npm run build && electron-builder",
     "preview": "vite preview",
-    "electron": "cross-env NODE_ENV=development electron .",
+    "electron": "electron .",
+    "electron:dev": "cross-env NODE_ENV=development USE_DEV_SERVER=true electron .",
     "electron:pack": "npm run build && electron-builder --dir",
     "electron:dist": "npm run build && electron-builder",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"

@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from typing import Optional
 from datetime import datetime, timedelta
 from PIL import Image, UnidentifiedImageError # <-- Нужен Pillow
@@ -125,19 +125,82 @@ def create_user(db: Session, user_data: schemas.UserCreate) -> models.User:
     db.refresh(db_user)
     return db_user
 
-def search_users(db: Session, query_str: str, limit: int = 10) -> list[models.User]:
-    if not query_str: return []
-    search_pattern = f"%{query_str}%"
-    users = db.query(models.User).filter(
-        or_(
-            models.User.username.like(search_pattern),
-            models.User.first_name.like(search_pattern),
-            models.User.last_name.like(search_pattern),
-            models.User.phone_number.like(search_pattern)
-        )
-    ).limit(limit).all()
-    for u in users: check_status_expiration(u)
-    return users
+def search_users(
+    db: Session, 
+    query_str: str, 
+    exclude_user_id: Optional[int] = None, # Кого исключаем из поиска (обычно себя)
+    limit: int = 20, 
+    offset: int = 0
+) -> list[models.User]:
+    """
+    Умный поиск пользователей.
+    Ищет по:
+    1. Точному совпадению username.
+    2. Номеру телефона (игнорируя скобки и пробелы).
+    3. Имени, Фамилии и их сочетанию ("Иван Петров").
+    """
+    if not query_str:
+        return []
+        
+    query_str = query_str.strip()
+    
+    # Базовый запрос
+    query = db.query(models.User)
+    
+    # Исключаем себя, если передан ID
+    if exclude_user_id:
+        query = query.filter(models.User.id != exclude_user_id)
+
+    conditions = []
+
+    # --- 1. Поиск по телефону (очищаем от мусора) ---
+    # Если пользователь ввел цифры, ищем их в телефоне
+    clean_phone = "".join(filter(str.isdigit, query_str))
+    if clean_phone and len(clean_phone) >= 3:
+        # Ищем вхождение цифр
+        conditions.append(models.User.phone_number.like(f"%{clean_phone}%"))
+
+    # --- 2. Поиск по Username (@username) ---
+    # Убираем @ если есть
+    clean_username = query_str.lstrip("@")
+    conditions.append(models.User.username.like(f"%{clean_username}%"))
+
+    # --- 3. Поиск по Имени и Фамилии (Smart Search) ---
+    parts = query_str.split()
+    
+    if len(parts) == 1:
+        # Одно слово -> ищем его в Имени ИЛИ Фамилии
+        term = parts[0]
+        conditions.append(models.User.first_name.like(f"%{term}%"))
+        conditions.append(models.User.last_name.like(f"%{term}%"))
+        
+    elif len(parts) >= 2:
+        # Два слова ("Иван Петров") -> ищем сочетание
+        part1 = parts[0]
+        part2 = parts[1]
+        
+        # Вариант А: Имя=part1, Фамилия=part2
+        conditions.append(and_(
+            models.User.first_name.like(f"%{part1}%"),
+            models.User.last_name.like(f"%{part2}%")
+        ))
+        # Вариант Б: Фамилия=part1, Имя=part2 (если ввели наоборот "Петров Иван")
+        conditions.append(and_(
+            models.User.first_name.like(f"%{part2}%"),
+            models.User.last_name.like(f"%{part1}%")
+        ))
+
+    # Применяем условия через OR (хотя бы одно должно совпасть)
+    query = query.filter(or_(*conditions))
+    
+    # Обрабатываем результаты
+    results = query.limit(limit).offset(offset).all()
+    
+    # Проверяем статусы (чтобы не показывать просроченные)
+    for u in results:
+        check_status_expiration(u)
+        
+    return results
 
 # --- UPDATE ---
 
