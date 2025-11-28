@@ -88,16 +88,20 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ selectedCountry, onCo
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg flex items-center justify-between hover:border-primary-500 focus:outline-none focus:border-primary-500 transition-all select-none"
+        className={`w-full px-5 py-5 border-2 rounded-xl text-white text-lg flex items-center justify-between transition-all shadow-lg select-none ${
+          isOpen
+            ? 'border-primary-500/60 bg-primary-500/10 shadow-primary-500/20'
+            : 'border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus:outline-none focus:border-primary-500/60 focus:bg-primary-500/10 focus:shadow-primary-500/20'
+        }`}
       >
         {selectedCountry ? (
           <>
             <div className={`flex items-center gap-3 country-change-transition ${isChanging ? 'animate-country-select' : ''}`}>
-              <span className="text-xl transition-transform duration-300">{selectedCountry.flag}</span>
-              <span className="text-lg">{selectedCountry.name}</span>
+              <span className="text-2xl transition-transform duration-300">{selectedCountry.flag}</span>
+              <span className="text-lg font-medium">{selectedCountry.name}</span>
             </div>
             <svg
-              className={`w-5 h-5 transition-all duration-300 ease-in-out ${isOpen ? 'rotate-180' : 'rotate-0'}`}
+              className={`w-5 h-5 text-primary-400 transition-all duration-300 ease-in-out ${isOpen ? 'rotate-180' : 'rotate-0'}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -114,9 +118,9 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ selectedCountry, onCo
           </>
         ) : (
           <>
-            <span className="text-sm text-gray-400">Страна</span>
+            <span className="text-base text-gray-500/70 font-medium">Выберите страну</span>
             <svg
-              className={`w-5 h-5 text-gray-400 transition-all duration-300 ease-in-out ${isOpen ? 'rotate-90' : 'rotate-0'}`}
+              className={`w-5 h-5 text-gray-500 transition-all duration-300 ease-in-out ${isOpen ? 'rotate-180' : 'rotate-0'}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -126,7 +130,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ selectedCountry, onCo
                 strokeLinecap="round" 
                 strokeLinejoin="round" 
                 strokeWidth={2} 
-                d="M9 5l7 7-7 7"
+                d="M19 9l-7 7-7-7"
                 className="transition-all duration-300"
               />
             </svg>
@@ -135,7 +139,7 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ selectedCountry, onCo
       </button>
 
       {isOpen && (
-        <div className="absolute z-50 w-full mt-2 bg-gray-900/98 backdrop-blur-xl border border-gray-700/50 rounded-lg shadow-2xl max-h-64 overflow-hidden animate-fade-in select-none">
+        <div className="absolute z-50 w-full mt-2 bg-gray-900/98 backdrop-blur-xl border-2 border-gray-700/60 rounded-xl shadow-2xl max-h-64 overflow-hidden select-none animate-slide-up">
           <div className="country-selector-dropdown overflow-y-auto max-h-64 custom-scrollbar select-none">
             {CIS_COUNTRIES.map((country) => (
               <button
@@ -145,13 +149,13 @@ const CountrySelector: React.FC<CountrySelectorProps> = ({ selectedCountry, onCo
                   onCountryChange(country)
                   setIsOpen(false)
                 }}
-                className={`w-full px-6 py-4 flex items-center gap-3 hover:bg-white/5 transition-all duration-200 select-none ${
-                  selectedCountry?.code === country.code ? 'bg-primary-500/20' : ''
+                className={`w-full px-5 py-4 flex items-center gap-3 hover:bg-primary-500/10 transition-all duration-200 select-none ${
+                  selectedCountry?.code === country.code ? 'bg-primary-500/20 border-l-4 border-l-primary-500' : ''
                 }`}
               >
-                <span className="text-xl">{country.flag}</span>
-                <span className="text-white flex-1 text-left text-lg">{country.name}</span>
-                <span className="text-gray-400">{country.dialCode}</span>
+                <span className="text-2xl">{country.flag}</span>
+                <span className="text-white flex-1 text-left text-lg font-medium">{country.name}</span>
+                <span className="text-gray-400 font-medium">{country.dialCode}</span>
               </button>
             ))}
           </div>

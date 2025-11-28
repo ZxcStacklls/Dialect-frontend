@@ -163,7 +163,7 @@ const LoginPage = () => {
                 Вход в Dialect<span className="text-primary-500">.</span>
               </h1>
               <p className="text-gray-400 text-lg mb-8">
-                Уже есть аккаунт?{' '}
+                Нет аккаунта?{' '}
                 <Link
                   to="/signup"
                   className="text-primary-400 hover:text-primary-300 transition-colors"
@@ -180,21 +180,26 @@ const LoginPage = () => {
               </div>
             )}
 
-            <div className="space-y-2">
-              <label className="text-sm text-gray-400 uppercase tracking-wider">Номер телефона</label>
-              <input
-                type="text"
-                placeholder="+7 (999) 123-45-67"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
-                required
-                className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
-              />
+            <div className="space-y-3">
+              <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Номер телефона</label>
+              <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
+                <input
+                  type="text"
+                  placeholder="+7 (999) 123-45-67"
+                  value={phoneNumber}
+                  onChange={(e) => setPhoneNumber(e.target.value)}
+                  required
+                  className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
+                />
+              </div>
+              <p className="text-xs text-gray-500/80">
+                Введите номер телефона, который вы использовали при регистрации
+              </p>
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <label className="text-sm text-gray-400 uppercase tracking-wider">Пароль</label>
+                <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Пароль</label>
                 <Link
                   to="/forgot-password"
                   className="text-sm text-primary-400 hover:text-primary-300 transition-colors"
@@ -202,14 +207,16 @@ const LoginPage = () => {
                   Забыли пароль?
                 </Link>
               </div>
-              <input
-                type="password"
-                placeholder="Введите пароль"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="w-full px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
-              />
+              <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
+                <input
+                  type="password"
+                  placeholder="Введите ваш пароль"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
+                />
+              </div>
             </div>
 
             <div className="flex gap-4 pt-4">

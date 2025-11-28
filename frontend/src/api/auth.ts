@@ -74,5 +74,19 @@ export const authAPI = {
     })
     return response.data
   },
+
+  checkUsernameAvailability: async (username: string): Promise<boolean> => {
+    try {
+      if (!username || username.length < 3) {
+        return false
+      }
+      const response = await apiClient.get(`/v1/users/check-username/${encodeURIComponent(username)}`)
+      return response.data.is_available || false
+    } catch (error: any) {
+      // Если произошла ошибка, считаем что username недоступен
+      console.warn('Ошибка при проверке уникальности username:', error)
+      return false
+    }
+  },
 }
 

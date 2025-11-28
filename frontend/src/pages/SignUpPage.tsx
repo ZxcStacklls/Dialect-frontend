@@ -43,9 +43,14 @@ const SignUpPage = () => {
   const [existingPhoneNumber, setExistingPhoneNumber] = useState('')
   const [countryJustChanged, setCountryJustChanged] = useState(false)
   const [, setPhoneExists] = useState(false)
+  const [avatarError, setAvatarError] = useState<string | null>(null)
+  const [usernameError, setUsernameError] = useState('')
+  const [checkingUsername, setCheckingUsername] = useState(false)
+  const [usernameAvailable, setUsernameAvailable] = useState(false)
   
   const passwordTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const confirmPasswordTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const usernameTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   // Блокировка Tab навигации и прокрутки
   useEffect(() => {
@@ -204,6 +209,7 @@ const SignUpPage = () => {
     return () => {
       if (passwordTimeoutRef.current) clearTimeout(passwordTimeoutRef.current)
       if (confirmPasswordTimeoutRef.current) clearTimeout(confirmPasswordTimeoutRef.current)
+      if (usernameTimeoutRef.current) clearTimeout(usernameTimeoutRef.current)
     }
   }, [logoPosition, isAnimating, setAnimating])
 
@@ -609,6 +615,11 @@ const SignUpPage = () => {
         setCountryJustChanged(true)
         setTimeout(() => setCountryJustChanged(false), 300)
       }
+      
+      // Автоматически переводим курсор на поле ввода номера
+      setTimeout(() => {
+        phoneNumberInputRef.current?.focus()
+      }, 50)
     } else {
       // Если код не найден, оставляем код как есть, но убираем страну
       setFormData(prev => ({ 
@@ -624,7 +635,32 @@ const SignUpPage = () => {
   }
 
   const handlePhoneChange = (value: string) => {
-    const formatted = formatPhoneNumber(value)
+    if (!formData.country) {
+      // Если страна не выбрана, просто сохраняем цифры
+      const digits = value.replace(/\D/g, '')
+      setFormData({ ...formData, phoneNumber: digits })
+      setError('')
+      setPhoneExists(false)
+      return
+    }
+    
+    // Получаем только цифры из введенного значения
+    const digits = value.replace(/\D/g, '')
+    
+    // Проверяем, не превышает ли длина максимальную
+    const maxLength = formData.country.maxLength
+    if (digits.length > maxLength) {
+      // Если превышает, обрезаем до максимальной длины
+      const trimmedDigits = digits.slice(0, maxLength)
+      const formatted = formatPhoneNumber(trimmedDigits)
+      setFormData({ ...formData, phoneNumber: formatted })
+      setError('')
+      setPhoneExists(false)
+      return
+    }
+    
+    // Форматируем номер
+    const formatted = formatPhoneNumber(digits)
     setFormData({ ...formData, phoneNumber: formatted })
     setError('')
     setPhoneExists(false)
@@ -647,6 +683,61 @@ const SignUpPage = () => {
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target
+    
+    // Обрабатываем username отдельно (убираем @ и проверяем уникальность)
+    if (name === 'username') {
+      // Убираем @ если пользователь его ввел
+      const cleanUsername = value.replace(/^@+/, '')
+      
+      // Обновляем значение без @
+      const newFormData = {
+        ...formData,
+        [name]: cleanUsername,
+      }
+      setFormData(newFormData)
+      
+      // Сбрасываем состояние проверки
+      if (usernameTimeoutRef.current) {
+        clearTimeout(usernameTimeoutRef.current)
+      }
+      
+      if (!cleanUsername) {
+        setUsernameError('')
+        setUsernameAvailable(false)
+        setCheckingUsername(false)
+        return
+      }
+
+      // Проверяем минимальную длину
+      if (cleanUsername.length < 3) {
+        setUsernameError('Имя пользователя должно содержать минимум 3 символа')
+        setUsernameAvailable(false)
+        setCheckingUsername(false)
+        return
+      }
+
+      // Проверка уникальности с debounce
+      setCheckingUsername(true)
+      usernameTimeoutRef.current = setTimeout(async () => {
+        try {
+          const isAvailable = await authAPI.checkUsernameAvailability(cleanUsername)
+          setCheckingUsername(false)
+          if (isAvailable) {
+            setUsernameError('')
+            setUsernameAvailable(true)
+          } else {
+            setUsernameError('Это имя пользователя уже занято')
+            setUsernameAvailable(false)
+          }
+        } catch (error) {
+          setCheckingUsername(false)
+          setUsernameError('Ошибка при проверке имени пользователя')
+          setUsernameAvailable(false)
+        }
+      }, 500)
+      return
+    }
+
     const newFormData = {
       ...formData,
       [name]: value,
@@ -796,6 +887,32 @@ const SignUpPage = () => {
     
     if (!formData.username.trim()) {
       setError('Имя пользователя обязательно')
+      return false
+    }
+
+    if (formData.username.trim().length < 3) {
+      setError('Имя пользователя должно содержать минимум 3 символа')
+      return false
+    }
+
+    if (usernameError) {
+      setError(usernameError)
+      return false
+    }
+
+    if (checkingUsername) {
+      setError('Пожалуйста, дождитесь завершения проверки имени пользователя')
+      return false
+    }
+
+    if (!usernameAvailable && formData.username.trim().length >= 3) {
+      setError('Это имя пользователя уже занято. Выберите другое.')
+      return false
+    }
+    
+    // Проверка аватара, если он был загружен
+    if (formData.avatar && avatarError) {
+      setError(avatarError)
       return false
     }
     
@@ -986,20 +1103,23 @@ const SignUpPage = () => {
           {/* Шаг 1: Номер телефона */}
           {currentStep === 1 && (
             <div className="space-y-6">
-              <div className="space-y-2 min-w-0">
-                <label className="text-sm text-gray-400 uppercase tracking-wider">Страна</label>
+              <div className="space-y-3 min-w-0">
+                <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Страна</label>
                 <div className={countryJustChanged ? 'animate-country-select' : ''}>
                   <CountrySelector
                     selectedCountry={formData.country}
                     onCountryChange={handleCountryChange}
                   />
                 </div>
+                <p className="text-xs text-gray-500/80">
+                  Выберите страну для определения кода страны
+                </p>
               </div>
 
-              <div className="space-y-2 min-w-0">
-                <label className="text-sm text-gray-400 uppercase tracking-wider">Номер телефона</label>
-                <div className="relative flex items-center border-b-2 border-gray-600/50 focus-within:border-primary-500 transition-all min-w-0 rounded-t-sm">
-                  <div className="px-2 py-5 text-gray-400 text-base font-medium border-0 select-none flex-shrink-0">+</div>
+              <div className="space-y-3 min-w-0">
+                <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Номер телефона</label>
+                <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
+                  <div className="px-5 py-5 text-primary-400 text-xl font-bold border-0 select-none flex-shrink-0">+</div>
                   <input
                     ref={countryCodeInputRef}
                     type="text"
@@ -1013,22 +1133,25 @@ const SignUpPage = () => {
                         e.preventDefault()
                       }
                     }}
-                    className="w-14 px-1.5 py-5 bg-transparent text-gray-300 focus:outline-none text-base border-0 flex-shrink-0 font-medium"
+                    className="w-16 px-2 py-5 bg-transparent text-gray-300 focus:outline-none text-base border-0 flex-shrink-0 font-medium"
                     maxLength={4}
                     placeholder=""
                   />
-                  <div className="w-px h-6 bg-gray-600/60 flex-shrink-0"></div>
+                  <div className="w-px h-8 bg-gray-600/50 flex-shrink-0"></div>
                   <input
                     ref={phoneNumberInputRef}
                     type="text"
-                    placeholder={getPhonePlaceholder()}
+                    placeholder={getPhonePlaceholder() || "Введите номер телефона"}
                     value={formData.phoneNumber}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     onKeyDown={handlePhoneKeyDown}
                     maxLength={(formData.country?.maxLength || 10) + 5}
-                    className="flex-1 min-w-0 px-4 py-5 bg-transparent text-white text-lg placeholder-gray-500 focus:outline-none border-0"
+                    className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
                   />
                 </div>
+                <p className="text-xs text-gray-500/80">
+                  Мы отправим SMS с кодом подтверждения на этот номер
+                </p>
               </div>
 
               <div className="flex gap-4 pt-4">
@@ -1064,71 +1187,105 @@ const SignUpPage = () => {
           {/* Шаг 2: Пароль */}
           {currentStep === 2 && (
             <form onSubmit={(e) => { e.preventDefault(); handleNext(); }} className="space-y-6">
-              <div className="space-y-2 min-w-0">
-                <label className="text-sm text-gray-400 uppercase tracking-wider">Пароль</label>
-                <input
-                  type="password"
-                  name="password"
-                  placeholder="Минимум 6 символов"
-                  value={formData.password}
-                  onChange={handleChange}
-                  required
-                  className={`w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 text-white text-lg placeholder-gray-500 focus:outline-none transition-all ${
+              <div className="space-y-3 min-w-0">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Пароль</label>
+                  {formData.password.length > 0 && (
+                    <span className="text-xs text-gray-500">
+                      {formData.password.length} символов
+                    </span>
+                  )}
+                </div>
+                <div className={`relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg ${
                     passwordError
-                      ? 'border-red-500'
-                      : 'border-gray-600/50 focus:border-primary-500'
+                      ? 'border-red-500/60 bg-red-500/10 shadow-red-500/10'
+                      : formData.password.length >= 6
+                      ? 'border-green-500/60 bg-green-500/10 shadow-green-500/10'
+                      : 'border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20'
                   }`}
-                />
-                {passwordError && (
-                  <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
-                    {passwordError}
+                >
+                  <input
+                    type="password"
+                    name="password"
+                    placeholder="Придумайте надежный пароль"
+                    value={formData.password}
+                    onChange={handleChange}
+                    required
+                    className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
+                  />
+                  {formData.password.length >= 6 && !passwordError && (
+                    <div className="absolute right-4">
+                      <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                {!passwordError && formData.password.length > 0 && formData.password.length < 6 && (
+                  <p className="text-xs text-gray-500/80">
+                    Пароль должен содержать минимум 6 символов
                   </p>
                 )}
-                {!passwordError && formData.password.length > 0 && formData.password.length >= 6 && (
-                  <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                {passwordError && (
+                  <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <p className="text-xs text-red-300 leading-relaxed">{passwordError}</p>
+                  </div>
+                )}
+                {!passwordError && formData.password.length >= 6 && (
+                  <div className="flex items-start gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    Пароль соответствует требованиям
-                  </p>
+                    <p className="text-xs text-green-300 font-medium leading-relaxed">Пароль соответствует требованиям</p>
+                  </div>
                 )}
               </div>
 
-              <div className="space-y-2 min-w-0">
-                <label className="text-sm text-gray-400 uppercase tracking-wider">Подтвердите пароль</label>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  placeholder="Повторите пароль"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  required
-                  className={`w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 text-white text-lg placeholder-gray-500 focus:outline-none transition-all ${
+              <div className="space-y-3 min-w-0">
+                <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Подтвердите пароль</label>
+                <div className={`relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg ${
                     confirmPasswordError
-                      ? 'border-red-500'
+                      ? 'border-red-500/60 bg-red-500/10 shadow-red-500/10'
                       : formData.confirmPassword && formData.confirmPassword === formData.password
-                      ? 'border-green-500'
-                      : 'border-gray-600/50 focus:border-primary-500'
+                      ? 'border-green-500/60 bg-green-500/10 shadow-green-500/10'
+                      : 'border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20'
                   }`}
-                />
+                >
+                  <input
+                    type="password"
+                    name="confirmPassword"
+                    placeholder="Введите пароль еще раз"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    required
+                    className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
+                  />
+                  {!confirmPasswordError && formData.confirmPassword && formData.confirmPassword === formData.password && (
+                    <div className="absolute right-4">
+                      <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
                 {confirmPasswordError && (
-                  <p className="text-xs text-red-400 mt-1 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                     </svg>
-                    {confirmPasswordError}
-                  </p>
+                    <p className="text-xs text-red-300 leading-relaxed">{confirmPasswordError}</p>
+                  </div>
                 )}
                 {!confirmPasswordError && formData.confirmPassword && formData.confirmPassword === formData.password && (
-                  <p className="text-xs text-green-400 mt-1 flex items-center gap-1">
-                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                  <div className="flex items-start gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
                     </svg>
-                    Пароли совпадают
-                  </p>
+                    <p className="text-xs text-green-300 font-medium leading-relaxed">Пароли совпадают</p>
+                  </div>
                 )}
               </div>
 
@@ -1154,47 +1311,142 @@ const SignUpPage = () => {
           {currentStep === 3 && (
             <form onSubmit={handleSubmit} className="space-y-6">
               <AvatarUpload
-                onImageChange={(file) => setFormData({ ...formData, avatar: file })}
+                onImageChange={(file) => {
+                  setFormData({ ...formData, avatar: file })
+                  // Если файл удален, сбрасываем ошибку
+                  if (!file) {
+                    setAvatarError(null)
+                  }
+                }}
+                onValidationError={(error) => {
+                  setAvatarError(error)
+                  // Если есть ошибка валидации, убираем файл из formData
+                  if (error) {
+                    setFormData(prev => ({ ...prev, avatar: null }))
+                  }
+                }}
+                validationError={avatarError}
               />
 
               <div className="grid grid-cols-2 gap-6 min-w-0">
-                <div className="space-y-2 min-w-0">
-                  <label className="text-sm text-gray-400 uppercase tracking-wider">Имя</label>
-                  <input
-                    type="text"
-                    name="first_name"
-                    placeholder="Введите имя"
-                    value={formData.first_name}
-                    onChange={handleChange}
-                    required
-                    className="w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
-                  />
+                <div className="space-y-3 min-w-0">
+                  <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Имя</label>
+                  <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
+                    <input
+                      type="text"
+                      name="first_name"
+                      placeholder="Ваше имя"
+                      value={formData.first_name}
+                      onChange={handleChange}
+                      required
+                      className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
+                    />
+                  </div>
                 </div>
 
-                <div className="space-y-2 min-w-0">
-                  <label className="text-sm text-gray-400 uppercase tracking-wider">Фамилия</label>
-                  <input
-                    type="text"
-                    name="last_name"
-                    placeholder="Введите фамилию"
-                    value={formData.last_name}
-                    onChange={handleChange}
-                    className="w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
-                  />
+                <div className="space-y-3 min-w-0">
+                  <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Фамилия</label>
+                  <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
+                    <input
+                      type="text"
+                      name="last_name"
+                      placeholder="Ваша фамилия"
+                      value={formData.last_name}
+                      onChange={handleChange}
+                      className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2 min-w-0">
-                <label className="text-sm text-gray-400 uppercase tracking-wider">Имя пользователя</label>
-                <input
-                  type="text"
-                  name="username"
-                  placeholder="ivan_user"
-                  value={formData.username}
-                  onChange={handleChange}
-                  required
-                  className="w-full min-w-0 px-6 py-5 bg-white/5 border-b-2 border-gray-600/50 text-white text-lg placeholder-gray-500 focus:outline-none focus:border-primary-500 transition-all"
-                />
+              <div className="space-y-3 min-w-0">
+                <div className="flex items-center justify-between">
+                  <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Имя пользователя</label>
+                  {formData.username.length > 0 && (
+                    <span className="text-xs text-gray-500">
+                      {formData.username.length}/20
+                    </span>
+                  )}
+                </div>
+                <div className={`relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg ${
+                    usernameError
+                      ? 'border-red-500/60 bg-red-500/10 shadow-red-500/10'
+                      : usernameAvailable && formData.username.length >= 3
+                      ? 'border-green-500/60 bg-green-500/10 shadow-green-500/10'
+                      : 'border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20'
+                  }`}
+                >
+                  <div className="px-5 py-5 text-primary-400 text-xl font-bold border-0 select-none flex-shrink-0">@</div>
+                  <div className="w-px h-8 bg-gray-600/50 flex-shrink-0"></div>
+                  <input
+                    type="text"
+                    name="username"
+                    placeholder="выберите_уникальное_имя"
+                    value={formData.username}
+                    onChange={handleChange}
+                    maxLength={20}
+                    onPaste={(e) => {
+                      e.preventDefault()
+                      const pastedText = e.clipboardData.getData('text').replace(/^@+/, '')
+                      if (pastedText) {
+                        const syntheticEvent = {
+                          target: {
+                            name: 'username',
+                            value: pastedText,
+                          },
+                        } as React.ChangeEvent<HTMLInputElement>
+                        handleChange(syntheticEvent)
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      // Предотвращаем ввод @ напрямую
+                      if (e.key === '@') {
+                        e.preventDefault()
+                      }
+                    }}
+                    required
+                    className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
+                  />
+                  {checkingUsername && (
+                    <div className="absolute right-4">
+                      <svg className="animate-spin h-5 w-5 text-primary-400" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                    </div>
+                  )}
+                  {!checkingUsername && usernameAvailable && formData.username.length >= 3 && (
+                    <div className="absolute right-4">
+                      <svg className="w-5 h-5 text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                    </div>
+                  )}
+                </div>
+                {!usernameError && !usernameAvailable && (
+                  <p className="text-xs text-gray-500/80">
+                    Это имя будет отображаться в вашем профиле. Можно использовать буквы, цифры и подчеркивание.
+                  </p>
+                )}
+                {usernameError && (
+                  <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                    <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                    <p className="text-xs text-red-300 leading-relaxed">{usernameError}</p>
+                  </div>
+                )}
+                {!usernameError && usernameAvailable && formData.username.length >= 3 && (
+                  <div className="flex items-start gap-2 p-3 bg-green-500/10 border border-green-500/20 rounded-lg">
+                    <svg className="w-4 h-4 text-green-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                    </svg>
+                    <div>
+                      <p className="text-xs text-green-300 font-medium leading-relaxed">Отлично! Это имя доступно</p>
+                      <p className="text-xs text-green-400/70 mt-0.5">Вы сможете изменить его позже в настройках профиля</p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-4 pt-4">
