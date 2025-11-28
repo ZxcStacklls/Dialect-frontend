@@ -14,6 +14,7 @@ interface AuthContextType {
     public_key: string
   }) => Promise<void>
   logout: () => void
+  refreshUser: () => Promise<void>
   isAuthenticated: boolean
   loading: boolean
 }
@@ -37,15 +38,40 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const loadUser = async (token: string) => {
+    try {
+      const userData = await authAPI.getCurrentUser()
+      setUser(userData)
+    } catch (error) {
+      console.error('Ошибка при загрузке данных пользователя:', error)
+      setUser(null)
+    }
+  }
+
   useEffect(() => {
     const storedToken = localStorage.getItem('access_token')
     if (storedToken) {
       setToken(storedToken)
-      // Здесь можно загрузить данные пользователя
-      // Для простоты оставим как есть
+      loadUser(storedToken)
     }
     setLoading(false)
   }, [])
+
+  // Автоматическое обновление профиля каждые 30 секунд
+  useEffect(() => {
+    if (!token) return
+
+    const interval = setInterval(async () => {
+      try {
+        await loadUser(token)
+      } catch (error) {
+        console.error('Ошибка при автообновлении профиля:', error)
+      }
+    }, 30000) // Обновляем каждые 30 секунд
+
+    return () => clearInterval(interval)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token])
 
   const login = async (phone_number: string, password: string) => {
     try {
@@ -53,7 +79,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const accessToken = response.access_token
       localStorage.setItem('access_token', accessToken)
       setToken(accessToken)
-      // Здесь можно загрузить данные пользователя через API
+      await loadUser(accessToken)
     } catch (error) {
       throw error
     }
@@ -82,12 +108,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setUser(null)
   }
 
+  const refreshUser = async () => {
+    if (token) {
+      await loadUser(token)
+    }
+  }
+
   const value: AuthContextType = {
     user,
     token,
     login,
     register,
     logout,
+    refreshUser,
     isAuthenticated: !!token,
     loading,
   }

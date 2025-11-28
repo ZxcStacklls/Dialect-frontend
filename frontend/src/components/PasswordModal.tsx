@@ -29,7 +29,7 @@ const PasswordModal: React.FC<PasswordModalProps> = ({ phoneNumber, isOpen, onCl
 
     try {
       await login(phoneNumber, password)
-      navigate('/dashboard')
+      navigate('/messenger')
     } catch (err: any) {
       setError(
         err.response?.data?.detail ||

@@ -91,9 +91,9 @@ const LoginPage = () => {
     }
   }, [])
 
-  // Если уже авторизован, перенаправляем на dashboard
+  // Если уже авторизован, перенаправляем на messenger
   if (isAuthenticated) {
-    navigate('/dashboard')
+    navigate('/messenger')
     return null
   }
 
@@ -106,7 +106,7 @@ const LoginPage = () => {
 
     try {
       await login(phoneNumber, password)
-      navigate('/dashboard')
+      navigate('/messenger')
     } catch (err: any) {
       // Обрабатываем ошибку без перезагрузки страницы
       const errorMessage = err.response?.data?.detail || 

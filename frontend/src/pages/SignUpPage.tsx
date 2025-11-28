@@ -213,9 +213,9 @@ const SignUpPage = () => {
     }
   }, [logoPosition, isAnimating, setAnimating])
 
-  // Если уже авторизован, перенаправляем на dashboard
+  // Если уже авторизован, перенаправляем на messenger
   if (isAuthenticated) {
-    navigate('/dashboard')
+    navigate('/messenger')
     return null
   }
 
@@ -997,7 +997,7 @@ const SignUpPage = () => {
       // Очищаем сохраненные данные после успешной регистрации
       localStorage.removeItem('pending_registration')
       
-      navigate('/dashboard')
+      navigate('/messenger')
     } catch (err: any) {
       const errorMessage = err.response?.data?.detail || 'Ошибка при регистрации. Попробуйте снова.'
       

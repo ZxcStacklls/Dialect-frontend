@@ -26,6 +26,7 @@ export interface User {
   last_name?: string
   avatar_url?: string
   bio?: string
+  status_text?: string
   is_online: boolean
 }
 
@@ -87,6 +88,11 @@ export const authAPI = {
       console.warn('Ошибка при проверке уникальности username:', error)
       return false
     }
+  },
+
+  getCurrentUser: async (): Promise<User> => {
+    const response = await apiClient.get('/v1/users/me')
+    return response.data
   },
 }
 

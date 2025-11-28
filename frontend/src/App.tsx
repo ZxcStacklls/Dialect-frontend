@@ -6,6 +6,7 @@ import WelcomePage from './pages/WelcomePage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
 import Dashboard from './pages/Dashboard'
+import MessengerPage from './pages/MessengerPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import ParticleBackground from './components/ParticleBackground'
 
@@ -26,6 +27,14 @@ const AppContent = () => {
         <Route path="/" element={<WelcomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route
+          path="/messenger"
+          element={
+            <ProtectedRoute>
+              <MessengerPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="/dashboard"
           element={
