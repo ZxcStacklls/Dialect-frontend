@@ -11,6 +11,7 @@ const MessengerPage: React.FC = () => {
   const [isResizing, setIsResizing] = useState(false)
   const [activeNavItem, setActiveNavItem] = useState<string>('chats')
   const [avatarError, setAvatarError] = useState(false)
+  const [indicatorPosition, setIndicatorPosition] = useState<number | null>(null)
   const chatsPanelRef = useRef<HTMLDivElement>(null)
   const MIN_WIDTH = 80 // Минимальный размер равен ширине навигационной панели
   const MAX_WIDTH = 500
@@ -66,6 +67,23 @@ const MessengerPage: React.FC = () => {
     { id: 'chats', icon: 'chat', label: 'Чаты' },
     { id: 'settings', icon: 'settings', label: 'Настройки' },
   ]
+  
+  // Вычисление позиции индикатора для анимации
+  useEffect(() => {
+    const activeIndex = navItems.findIndex(item => item.id === activeNavItem)
+    if (activeIndex !== -1) {
+      // Фиксированные размеры
+      const BUTTON_HEIGHT = 48 // w-12 h-12
+      const GAP = 16 // gap-4
+      const INDICATOR_HEIGHT = 32 // h-8
+      
+      // Расчет позиции: индекс * (высота + отступ) + половина кнопки - половина индикатора
+      // Поскольку индикатор находится внутри того же flex-контейнера с gap, его 'top: 0' совпадает с верхом первой кнопки
+      const position = activeIndex * (BUTTON_HEIGHT + GAP) + BUTTON_HEIGHT / 2 - INDICATOR_HEIGHT / 2
+      
+      setIndicatorPosition(position)
+    }
+  }, [activeNavItem])
 
   // Обработка ресайза панели с автоматическим сворачиванием
   useEffect(() => {
@@ -161,27 +179,38 @@ const MessengerPage: React.FC = () => {
     <div className="flex h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white overflow-hidden select-none">
       {/* Левая навигационная панель (фиксированная, без масштабирования) */}
       <div className="w-20 flex-shrink-0 border-r border-gray-700/50 bg-gray-800/30 flex flex-col">
-        <div className="flex flex-col items-center justify-center h-full gap-4">
-          {navItems.map((item) => {
-            const isActive = activeNavItem === item.id
-            return (
-              <button
-                key={item.id}
-                onClick={() => setActiveNavItem(item.id)}
-                className={`relative w-12 h-12 flex items-center justify-center rounded-xl transition-all ${
-                  isActive
-                    ? 'text-primary-400'
-                    : 'text-gray-400 hover:text-white hover:bg-white/5'
-                }`}
-                title={item.label}
-              >
-                {getIcon(item.icon)}
-                {isActive && (
-                  <div className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 rounded-r-full" />
-                )}
-              </button>
-            )
-          })}
+        <div className="flex flex-col items-center justify-center h-full w-full">
+          {/* Контейнер для кнопок с относительным позиционированием */}
+          <div className="relative flex flex-col gap-4">
+            {/* Анимированный индикатор активного элемента */}
+            {indicatorPosition !== null && (
+              <div
+                className="absolute left-[-12px] w-1 h-8 bg-primary-500 rounded-r-full transition-all duration-300 ease-out"
+                style={{
+                  transform: `translateY(${indicatorPosition}px)`,
+                  top: 0, // Явно задаем начало отсчета
+                }}
+              />
+            )}
+            
+            {navItems.map((item) => {
+              const isActive = activeNavItem === item.id
+              return (
+                <button
+                  key={item.id}
+                  onClick={() => setActiveNavItem(item.id)}
+                  className={`relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 ease-out ${
+                    isActive
+                      ? 'text-primary-400 scale-105'
+                      : 'text-gray-400 hover:text-white hover:bg-white/5'
+                  }`}
+                  title={item.label}
+                >
+                  {getIcon(item.icon)}
+                </button>
+              )
+            })}
+          </div>
         </div>
       </div>
 
