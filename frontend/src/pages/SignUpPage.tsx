@@ -45,6 +45,7 @@ const SignUpPage = () => {
   const [, setPhoneExists] = useState(false)
   const [avatarError, setAvatarError] = useState<string | null>(null)
   const [usernameError, setUsernameError] = useState('')
+  const [firstNameError, setFirstNameError] = useState('')
   const [checkingUsername, setCheckingUsername] = useState(false)
   const [usernameAvailable, setUsernameAvailable] = useState(false)
   
@@ -751,6 +752,9 @@ const SignUpPage = () => {
       }
       
       if (!value) {
+        // Не показываем ошибку сразу при очистке, только если пользователь ушел с поля или нажал "Далее"
+        // Но если мы уже показывали ошибку "Заполните это поле", то можно оставить или убрать
+        // Лучше убрать ошибку при начале ввода или очистке, валидация сработает при сабмите
         setPasswordError('')
         if (formData.confirmPassword) {
           if (confirmPasswordTimeoutRef.current) {
@@ -807,6 +811,11 @@ const SignUpPage = () => {
         }
       }, 500)
     }
+    if (name === 'first_name') {
+      if (value.trim()) {
+        setFirstNameError('')
+      }
+    }
   }
 
   const validateStep1 = async (): Promise<boolean> => {
@@ -861,43 +870,43 @@ const SignUpPage = () => {
   }
 
   const validateStep2 = (): boolean => {
+    let isValid = true
+    
     if (!formData.password) {
-      setError('Пароль обязателен')
-      return false
+      setPasswordError('Заполните это поле')
+      isValid = false
+    } else if (formData.password.length < 6) {
+      setPasswordError('Пароль должен содержать минимум 6 символов')
+      isValid = false
     }
     
-    if (formData.password.length < 6) {
-      setError('Пароль должен содержать минимум 6 символов')
-      return false
+    if (formData.confirmPassword && formData.password && formData.password !== formData.confirmPassword) {
+      setConfirmPasswordError('Пароли не совпадают')
+      isValid = false
     }
     
-    if (formData.password !== formData.confirmPassword) {
-      setError('Пароли не совпадают')
-      return false
-    }
-    
-    return true
+    return isValid
   }
 
   const validateStep3 = (): boolean => {
+    let isValid = true
+
     if (!formData.first_name.trim()) {
-      setError('Имя обязательно')
-      return false
+      setFirstNameError('Заполните это поле')
+      isValid = false
     }
     
     if (!formData.username.trim()) {
-      setError('Имя пользователя обязательно')
-      return false
+      setUsernameError('Заполните это поле')
+      isValid = false
+    } else if (formData.username.trim().length < 3) {
+      setUsernameError('Имя пользователя должно содержать минимум 3 символа')
+      isValid = false
     }
 
-    if (formData.username.trim().length < 3) {
-      setError('Имя пользователя должно содержать минимум 3 символа')
-      return false
-    }
-
-    if (usernameError) {
-      setError(usernameError)
-      return false
+    if (usernameError && usernameError !== 'Заполните это поле') {
+      // Если есть другая ошибка (например, занято), то не валидно
+      isValid = false
     }
 
     if (checkingUsername) {
@@ -906,17 +915,17 @@ const SignUpPage = () => {
     }
 
     if (!usernameAvailable && formData.username.trim().length >= 3) {
-      setError('Это имя пользователя уже занято. Выберите другое.')
-      return false
+      setUsernameError('Это имя пользователя уже занято. Выберите другое.')
+      isValid = false
     }
     
     // Проверка аватара, если он был загружен
     if (formData.avatar && avatarError) {
       setError(avatarError)
-      return false
+      isValid = false
     }
     
-    return true
+    return isValid
   }
 
   const handleNext = async () => {
@@ -957,6 +966,7 @@ const SignUpPage = () => {
       last_name: formData.last_name.trim() || undefined,
       password: formData.password,
       public_key: formData.public_key,
+      country: formData.country?.code || undefined,
     }
 
     // Сохраняем данные локально перед регистрацией
@@ -1210,7 +1220,6 @@ const SignUpPage = () => {
                     placeholder="Придумайте надежный пароль"
                     value={formData.password}
                     onChange={handleChange}
-                    required
                     className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
                   />
                   {formData.password.length >= 6 && !passwordError && (
@@ -1260,7 +1269,6 @@ const SignUpPage = () => {
                     placeholder="Введите пароль еще раз"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    required
                     className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
                   />
                   {!confirmPasswordError && formData.confirmPassword && formData.confirmPassword === formData.password && (
@@ -1331,17 +1339,29 @@ const SignUpPage = () => {
               <div className="grid grid-cols-2 gap-6 min-w-0">
                 <div className="space-y-3 min-w-0">
                   <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Имя</label>
-                  <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
+                  <div className={`relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg ${
+                      firstNameError
+                        ? 'border-red-500/60 bg-red-500/10 shadow-red-500/10'
+                        : 'border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20'
+                    }`}
+                  >
                     <input
                       type="text"
                       name="first_name"
                       placeholder="Ваше имя"
                       value={formData.first_name}
                       onChange={handleChange}
-                      required
                       className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
                     />
                   </div>
+                  {firstNameError && (
+                    <div className="flex items-start gap-2 p-3 bg-red-500/10 border border-red-500/20 rounded-lg">
+                      <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                      </svg>
+                      <p className="text-xs text-red-300 leading-relaxed">{firstNameError}</p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="space-y-3 min-w-0">
@@ -1404,7 +1424,6 @@ const SignUpPage = () => {
                         e.preventDefault()
                       }
                     }}
-                    required
                     className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
                   />
                   {checkingUsername && (

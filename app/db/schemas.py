@@ -23,6 +23,7 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
     public_key: str
+    country: Optional[str] = None  # Код страны (например, 'RU', 'KZ', 'BY')
 
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None

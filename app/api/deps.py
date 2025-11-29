@@ -57,7 +57,7 @@ def get_current_user(
 
     if user is None:
         # Если токен верный, но юзера уже удалили из БД
-        raise credentials_fallback_exception
+        raise credentials_exception
 
     # 3. Возвращаем полную модель пользователя
     return user

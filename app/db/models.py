@@ -36,6 +36,7 @@ class User(Base):
     last_name = Column(String(100), nullable=True)
     password_hash = Column(String(255), nullable=False)
     public_key = Column(TEXT, nullable=False)
+    country = Column(String(10), nullable=True)  # Код страны (например, 'RU', 'KZ', 'BY')
     
     avatar_url = Column(String(255), nullable=True)
     banner_url = Column(String(255), nullable=True)

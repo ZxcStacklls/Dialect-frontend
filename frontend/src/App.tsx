@@ -1,6 +1,7 @@
 import { HashRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { LogoAnimationProvider } from './contexts/LogoAnimationContext'
+import { ToastProvider } from './contexts/ToastContext'
 import TitleBar from './components/TitleBar'
 import WelcomePage from './pages/WelcomePage'
 import LoginPage from './pages/LoginPage'
@@ -50,16 +51,18 @@ const AppContent = () => {
 
 function App() {
   return (
-    <AuthProvider>
-      <LogoAnimationProvider>
-        <div className="app-container">
-          <TitleBar />
-          <HashRouter>
-            <AppContent />
-          </HashRouter>
-        </div>
-      </LogoAnimationProvider>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <LogoAnimationProvider>
+          <div className="app-container">
+            <TitleBar />
+            <HashRouter>
+              <AppContent />
+            </HashRouter>
+          </div>
+        </LogoAnimationProvider>
+      </AuthProvider>
+    </ToastProvider>
   )
 }
 

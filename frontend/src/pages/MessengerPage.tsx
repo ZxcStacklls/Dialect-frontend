@@ -2,9 +2,10 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import DefaultAvatar from '../components/DefaultAvatar'
 import { getApiBaseUrl } from '../utils/platform'
+import { canSendRequests } from '../utils/appState'
 
 const MessengerPage: React.FC = () => {
-  const { user, refreshUser } = useAuth()
+  const { user, refreshUser, logout } = useAuth()
   const [selectedChat, setSelectedChat] = useState<number | null>(null)
   const [chatsPanelWidth, setChatsPanelWidth] = useState(380)
   const [hoveredStatus, setHoveredStatus] = useState(false)
@@ -12,7 +13,9 @@ const MessengerPage: React.FC = () => {
   const [activeNavItem, setActiveNavItem] = useState<string>('chats')
   const [avatarError, setAvatarError] = useState(false)
   const [indicatorPosition, setIndicatorPosition] = useState<number | null>(null)
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
   const chatsPanelRef = useRef<HTMLDivElement>(null)
+  const profileMenuRef = useRef<HTMLDivElement>(null)
   const MIN_WIDTH = 80 // Минимальный размер равен ширине навигационной панели
   const MAX_WIDTH = 500
   const COMPACT_WIDTH = 200 // Ширина для компактного режима
@@ -35,14 +38,35 @@ const MessengerPage: React.FC = () => {
     return `${baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`
   }
   
+  // Обработка клика вне меню профиля
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
+        setIsProfileMenuOpen(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside)
+    }
+  }, [])
+
   // Сброс ошибки аватарки при изменении user
   useEffect(() => {
     setAvatarError(false)
   }, [user?.avatar_url])
   
   // Автоматическое обновление профиля каждые 10 секунд (дублируем в компоненте для надежности)
+  // НЕ отправляет запросы, если приложение закрыто или нет интернета
   useEffect(() => {
     const interval = setInterval(async () => {
+      // Проверяем, можно ли отправлять запросы
+      if (!canSendRequests()) {
+        console.log('Пропуск обновления профиля: приложение не видно или нет интернета')
+        return
+      }
+
       try {
         await refreshUser()
       } catch (error) {
@@ -50,7 +74,32 @@ const MessengerPage: React.FC = () => {
       }
     }, 10000) // Обновляем каждые 10 секунд
 
-    return () => clearInterval(interval)
+    // Обновляем профиль при возврате приложения в фокус
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && canSendRequests()) {
+        refreshUser().catch(err => 
+          console.error('Ошибка при обновлении профиля после возврата в фокус:', err)
+        )
+      }
+    }
+
+    // Обновляем профиль при восстановлении интернета
+    const handleOnline = () => {
+      if (canSendRequests()) {
+        refreshUser().catch(err => 
+          console.error('Ошибка при обновлении профиля после восстановления интернета:', err)
+        )
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('online', handleOnline)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('online', handleOnline)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
   
@@ -306,11 +355,36 @@ const MessengerPage: React.FC = () => {
               </div>
             )}
             {!isMinimized && (
-              <button className="text-gray-400 hover:text-white transition-colors flex-shrink-0 p-1 rounded-lg hover:bg-white/5">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                </svg>
-              </button>
+              <div className="relative" ref={profileMenuRef}>
+                <button 
+                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                  className={`text-gray-400 hover:text-white transition-colors flex-shrink-0 p-1 rounded-lg hover:bg-white/5 ${isProfileMenuOpen ? 'text-white bg-white/5' : ''}`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                  </svg>
+                </button>
+                
+                {/* Выпадающее меню */}
+                {isProfileMenuOpen && (
+                  <div className="absolute right-0 top-full mt-2 w-48 bg-gray-800 border border-gray-700 rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in">
+                    <div className="py-1">
+                      <button
+                        onClick={() => {
+                          logout()
+                          setIsProfileMenuOpen(false)
+                        }}
+                        className="w-full text-left px-4 py-2 text-sm text-red-400 hover:bg-white/5 hover:text-red-300 transition-colors flex items-center gap-2"
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        Выйти
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
             )}
           </div>
         </div>

@@ -118,7 +118,8 @@ def create_user(db: Session, user_data: schemas.UserCreate) -> models.User:
         first_name=user_data.first_name,
         last_name=user_data.last_name,
         public_key=user_data.public_key,
-        password_hash=hashed_password
+        password_hash=hashed_password,
+        country=user_data.country
     )
     db.add(db_user)
     db.commit()

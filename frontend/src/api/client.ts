@@ -24,22 +24,8 @@ apiClient.interceptors.request.use(
   }
 )
 
-// Interceptor для обработки ошибок
-apiClient.interceptors.response.use(
-  (response) => response,
-  (error) => {
-      if (error.response?.status === 401) {
-      // Не перенаправляем на странице входа/регистрации - там 401 это нормальная ошибка
-      const currentPath = window.location.hash.replace('#', '') || window.location.pathname
-      if (currentPath !== '/login' && currentPath !== '/signup') {
-        localStorage.removeItem('access_token')
-        // Используем hash routing
-        window.location.hash = '#/login'
-      }
-    }
-    return Promise.reject(error)
-  }
-)
+// Interceptor для обработки ошибок будет настроен в AuthContext
+// чтобы иметь доступ к функции logout и уведомлениям
 
 export default apiClient
 

@@ -1,5 +1,9 @@
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react'
+import React, { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react'
 import { authAPI, User } from '../api/auth'
+import apiClient from '../api/client'
+import { setupAxiosInterceptors } from '../utils/axiosInterceptors'
+import { useToast } from './ToastContext'
+import { canSendRequests, useVisibilityChange, useOnlineStatus } from '../utils/appState'
 
 interface AuthContextType {
   user: User | null
@@ -37,6 +41,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
+  const { addToast } = useToast()
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('access_token')
+    setToken(null)
+    setUser(null)
+    // Редирект на страницу логина
+    if (!window.location.hash.includes('/login') && !window.location.hash.includes('/signup')) {
+      window.location.hash = '#/login'
+    }
+  }, [])
+
+  // Настройка interceptors при монтировании
+  useEffect(() => {
+    setupAxiosInterceptors(apiClient, logout, addToast)
+  }, [logout, addToast])
 
   const loadUser = async (token: string) => {
     try {
@@ -58,10 +78,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [])
 
   // Автоматическое обновление профиля каждые 30 секунд
+  // НЕ отправляет запросы, если приложение закрыто или нет интернета
   useEffect(() => {
     if (!token) return
 
     const interval = setInterval(async () => {
+      // Проверяем, можно ли отправлять запросы
+      if (!canSendRequests()) {
+        console.log('Пропуск обновления профиля: приложение не видно или нет интернета')
+        return
+      }
+
       try {
         await loadUser(token)
       } catch (error) {
@@ -69,7 +96,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
     }, 30000) // Обновляем каждые 30 секунд
 
-    return () => clearInterval(interval)
+    // Обновляем профиль при возврате приложения в фокус
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible' && canSendRequests()) {
+        loadUser(token).catch(err => 
+          console.error('Ошибка при обновлении профиля после возврата в фокус:', err)
+        )
+      }
+    }
+
+    // Обновляем профиль при восстановлении интернета
+    const handleOnline = () => {
+      if (canSendRequests()) {
+        loadUser(token).catch(err => 
+          console.error('Ошибка при обновлении профиля после восстановления интернета:', err)
+        )
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    window.addEventListener('online', handleOnline)
+
+    return () => {
+      clearInterval(interval)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+      window.removeEventListener('online', handleOnline)
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token])
 
@@ -100,12 +152,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } catch (error) {
       throw error
     }
-  }
-
-  const logout = () => {
-    localStorage.removeItem('access_token')
-    setToken(null)
-    setUser(null)
   }
 
   const refreshUser = async () => {

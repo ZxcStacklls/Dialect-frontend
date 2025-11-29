@@ -7,6 +7,7 @@ export interface RegisterData {
   last_name?: string
   password: string
   public_key: string
+  country?: string  // Код страны (например, 'RU', 'KZ', 'BY')
 }
 
 export interface LoginData {
