@@ -2,8 +2,10 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import DefaultAvatar from '../components/DefaultAvatar'
+import ProfileEditPanel from '../components/ProfileEditPanel'
 import { getApiBaseUrl } from '../utils/platform'
 import { canSendRequests, isOnline, isServerAvailable } from '../utils/appState'
+import apiClient from '../api/client'
 
 const MessengerPage: React.FC = () => {
   const { user, refreshUser, logout } = useAuth()
@@ -20,19 +22,28 @@ const MessengerPage: React.FC = () => {
   const [isSearchActive, setIsSearchActive] = useState(false)
   const [wasMinimizedBeforeSearch, setWasMinimizedBeforeSearch] = useState(false)
   const [isProfileVisible, setIsProfileVisible] = useState(true)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<any[]>([])
+  const [isSearching, setIsSearching] = useState(false)
+  const [activeSearchTab, setActiveSearchTab] = useState<string>('users')
+  const [hoveredUserStatus, setHoveredUserStatus] = useState<number | null>(null)
+  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false)
   const chatsPanelRef = useRef<HTMLDivElement>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+  const searchTabsRef = useRef<HTMLDivElement>(null)
+  const initialWidthRef = useRef<number>(380)
   const MIN_WIDTH = 80 // Минимальный размер равен ширине навигационной панели
   const MAX_WIDTH = 500
   const COMPACT_WIDTH = 200 // Ширина для компактного режима
   const AUTO_COLLAPSE_THRESHOLD = 280 // Порог для автоматического сворачивания (увеличен)
+  const AUTO_EXPAND_THRESHOLD = AUTO_COLLAPSE_THRESHOLD / 2 // Порог для автоматического разворачивания (в 2 раза меньше порога сворачивания)
   
   // Обработчики поиска
   const handleSearchIconClick = () => {
     setWasMinimizedBeforeSearch(true)
     setIsProfileVisible(false)
-    setChatsPanelWidth(380)
+    setChatsPanelWidth(280)
     setIsSearchActive(true)
     setTimeout(() => searchInputRef.current?.focus(), 100)
   }
@@ -47,6 +58,8 @@ const MessengerPage: React.FC = () => {
 
   const handleSearchClose = () => {
     setIsSearchActive(false)
+    setSearchQuery('')
+    setSearchResults([])
     if (wasMinimizedBeforeSearch) {
       // Сначала скрываем профиль, если он был виден
       setIsProfileVisible(false)
@@ -62,6 +75,63 @@ const MessengerPage: React.FC = () => {
       setIsProfileVisible(true)
     }
   }
+
+  // Поиск пользователей (буквальный поиск)
+  const searchUsers = async (query: string) => {
+    if (!query.trim() || query.length < 1) {
+      setSearchResults([])
+      return
+    }
+
+    setIsSearching(true)
+    try {
+      const response = await apiClient.get('/v1/users/search', {
+        params: { q: query.trim() }
+      })
+      const allResults = response.data || []
+      
+      // Фильтруем результаты для буквального поиска
+      // Ищем точное совпадение в username, first_name, last_name или phone_number
+      const queryLower = query.trim().toLowerCase()
+      const filteredResults = allResults.filter((user: any) => {
+        const username = (user.username || '').toLowerCase()
+        const firstName = (user.first_name || '').toLowerCase()
+        const lastName = (user.last_name || '').toLowerCase()
+        const phoneNumber = (user.phone_number || '').replace(/\D/g, '') // Убираем все нецифровые символы
+        const queryDigits = queryLower.replace(/\D/g, '')
+        
+        return (
+          username.includes(queryLower) ||
+          firstName.includes(queryLower) ||
+          lastName.includes(queryLower) ||
+          (queryDigits.length >= 3 && phoneNumber.includes(queryDigits))
+        )
+      })
+      
+      setSearchResults(filteredResults)
+    } catch (error) {
+      console.error('Ошибка при поиске пользователей:', error)
+      setSearchResults([])
+    } finally {
+      setIsSearching(false)
+    }
+  }
+
+  // Debounce для поиска
+  useEffect(() => {
+    if (!isSearchActive) return
+
+    const timeoutId = setTimeout(() => {
+      if (activeSearchTab === 'users') {
+        searchUsers(searchQuery)
+      } else {
+        // Для других вкладок пока пусто
+        setSearchResults([])
+      }
+    }, 300) // Задержка 300ms
+
+    return () => clearTimeout(timeoutId)
+  }, [searchQuery, isSearchActive, activeSearchTab])
 
   // Получить полный URL аватарки
   const getAvatarUrl = (avatarUrl?: string | null): string | null => {
@@ -133,6 +203,32 @@ const MessengerPage: React.FC = () => {
   useEffect(() => {
     setAvatarError(false)
   }, [user?.avatar_url])
+
+  // Обработка горизонтальной прокрутки вкладок поиска колесиком мыши
+  useEffect(() => {
+    const tabsContainer = searchTabsRef.current
+    if (!tabsContainer) return
+
+    const handleWheel = (e: WheelEvent) => {
+      // Проверяем, что прокрутка происходит по горизонтали (deltaX) или вертикали (deltaY)
+      // Если есть горизонтальная прокрутка, используем её, иначе конвертируем вертикальную
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) {
+        // Горизонтальная прокрутка
+        e.preventDefault()
+        tabsContainer.scrollLeft += e.deltaX
+      } else if (e.deltaY !== 0) {
+        // Вертикальная прокрутка - конвертируем в горизонтальную
+        e.preventDefault()
+        tabsContainer.scrollLeft += e.deltaY
+      }
+    }
+
+    tabsContainer.addEventListener('wheel', handleWheel, { passive: false })
+
+    return () => {
+      tabsContainer.removeEventListener('wheel', handleWheel)
+    }
+  }, [isSearchActive])
   
   // Автоматическое обновление профиля каждые 10 секунд (дублируем в компоненте для надежности)
   // НЕ отправляет запросы, если приложение закрыто или нет интернета
@@ -218,9 +314,22 @@ const MessengerPage: React.FC = () => {
       
       const newWidth = e.clientX - 80 // 80px - ширина навигационной панели
       
-      // Автоматическое сворачивание при достижении порога (как в Telegram)
-      if (newWidth < AUTO_COLLAPSE_THRESHOLD) {
-        // Сворачиваем до минимума
+      // Автоматическое разворачивание: если панель была минимальна и достигли порога разворачивания
+      if (initialWidthRef.current <= MIN_WIDTH && newWidth >= AUTO_EXPAND_THRESHOLD) {
+        // Если еще не достигли стандартного размера, устанавливаем его
+        if (newWidth < 280) {
+          setChatsPanelWidth(280)
+        } else {
+          // Если уже прошли стандартный размер, продолжаем следовать за курсором
+          if (newWidth <= MAX_WIDTH) {
+            setChatsPanelWidth(newWidth)
+          } else {
+            setChatsPanelWidth(MAX_WIDTH)
+          }
+
+        }
+      } else if (newWidth < AUTO_COLLAPSE_THRESHOLD) {
+        // Автоматическое сворачивание при достижении порога (как в Telegram)
         setChatsPanelWidth(MIN_WIDTH)
       } else if (newWidth >= AUTO_COLLAPSE_THRESHOLD && newWidth < COMPACT_WIDTH) {
         // Устанавливаем компактный размер при разворачивании
@@ -355,23 +464,27 @@ const MessengerPage: React.FC = () => {
       {/* Панель с чатами (масштабируемая) */}
       <div
         ref={chatsPanelRef}
-        className={`relative flex flex-col border-r transition-none overflow-hidden ${
-          isDark
-            ? 'border-gray-800/50 bg-gray-900/40'
-            : 'border-gray-300/50 bg-white/90'
-        }`}
-        style={{ width: `${chatsPanelWidth}px` }}
+        className={`relative flex flex-col border-r overflow-hidden ${isDark ? 'border-gray-800/50 bg-gray-900/40' : 'border-gray-300/50 bg-white/90'}`}
+        style={{
+          width: `${chatsPanelWidth}px`,
+          transition: isResizing ? 'none' : 'width 0.3s ease'
+        }}
       >
         {/* Блок профиля пользователя */}
         <div
-          className={`transition-all duration-300 ease-in-out overflow-hidden ${
-            (isSearchActive && !isMinimized) || (!isProfileVisible && !isMinimized) ? 'opacity-0 max-h-0 m-0 p-0' : 'opacity-100 max-h-[200px]'
+          className={`transition-all duration-300 ease-in-out ${
+            (isSearchActive && !isMinimized) || (!isProfileVisible && !isMinimized) ? 'opacity-0 max-h-0 m-0 p-0 overflow-hidden' : 'opacity-100 max-h-[200px] overflow-visible'
           }`}
         >
-          <div className={`mx-4 mt-3 mb-1 px-3 py-2 flex-shrink-0`}>
-            <div className={`flex items-center ${isMinimized ? 'justify-center gap-0' : 'gap-3'}`}>
-              <div className="relative flex-shrink-0 w-10 h-10">
-                <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-green-500/60">
+          <div className={`mx-4 mt-3 mb-1 px-3 py-2 flex-shrink-0 transition-all duration-300 ease-in-out`}>
+            <div className={`flex items-center transition-all duration-300 ease-in-out ${isMinimized ? 'justify-center gap-0' : 'gap-3'}`}>
+              <div 
+                className="relative flex-shrink-0 w-10 h-10 cursor-pointer"
+                onClick={() => setIsProfileEditOpen(true)}
+              >
+                <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${
+                  isOnlineState ? 'border-green-500/60' : 'border-gray-600/40'
+                }`}>
                   {user?.avatar_url && avatarUrl && !avatarError ? (
                     <img
                       src={avatarUrl}
@@ -405,10 +518,24 @@ const MessengerPage: React.FC = () => {
                   )}
                 </div>
                 {/* Индикатор онлайн (зеленое кольцо) - поверх аватарки */}
-                <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" style={{ zIndex: 20 }}></div>
+                <div 
+                  className={`absolute top-0 right-0 w-4 h-4 rounded-full border-2 ${
+                    isOnlineState 
+                      ? 'bg-green-500 border-gray-800' 
+                      : 'bg-gray-500 border-gray-800'
+                  } shadow-lg transition-all duration-300 ease-in-out`}
+                  style={{ 
+                    zIndex: 20,
+                    opacity: isMinimized ? 0 : 1,
+                    transform: isMinimized ? 'scale(0)' : 'scale(1)'
+                  }}
+                ></div>
               </div>
               {!isMinimized && (
-                <div className="flex-1 min-w-0">
+                <div 
+                  className="flex-1 min-w-0 cursor-pointer"
+                  onClick={() => setIsProfileEditOpen(true)}
+                >
                   <div className={`font-semibold text-sm truncate mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {user?.first_name || 'Пользователь'} {user?.last_name || ''}
                   </div>
@@ -466,7 +593,7 @@ const MessengerPage: React.FC = () => {
                 </div>
               )}
               {!isMinimized && (
-                <div className="relative" ref={profileMenuRef}>
+                <div className="relative z-50" ref={profileMenuRef}>
                   <button 
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                     className={`transition-colors flex-shrink-0 p-1 rounded-lg ${
@@ -482,12 +609,29 @@ const MessengerPage: React.FC = () => {
                   
                   {/* Выпадающее меню */}
                   {isProfileMenuOpen && (
-                    <div className={`absolute right-0 top-full mt-2 w-48 backdrop-blur-xl rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in ${
+                    <div className={`absolute right-0 top-full mt-2 w-48 backdrop-blur-xl rounded-xl shadow-xl z-[100] overflow-hidden animate-fade-in ${
                       isDark
                         ? 'bg-gray-900/95 border border-gray-800/50'
                         : 'bg-white/95 border border-gray-200/50'
                     }`}>
                       <div className="py-1">
+                        <button
+                          onClick={() => {
+                            setIsProfileEditOpen(true)
+                            setIsProfileMenuOpen(false)
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                            isDark
+                              ? 'text-gray-300 hover:bg-white/5'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                          </svg>
+                          Редактировать профиль
+                        </button>
+                        <div className={`border-t my-1 ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'}`}></div>
                         <button
                           onClick={() => {
                             toggleTheme()
@@ -559,7 +703,7 @@ const MessengerPage: React.FC = () => {
             </button>
           </div>
         ) : (
-          <div className={`mx-4 px-3 py-2 flex-shrink-0 transition-all duration-300 ease-in-out ${
+          <div className={`mx-4 px-3 py-2 flex-shrink-0 transition-all duration-300 ease-in-out relative z-10 ${
             isSearchActive ? 'mt-3 mb-2' : 'mt-1 mb-2'
           }`}>
             <div className="flex items-center gap-2">
@@ -567,6 +711,8 @@ const MessengerPage: React.FC = () => {
                 ref={searchInputRef}
                 type="text"
                 placeholder="Поиск"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
                 onFocus={handleSearchFocus}
                 className={`flex-1 px-4 py-2 border-2 rounded-xl text-sm placeholder-gray-500/60 focus:outline-none focus:border-primary-500/60 focus:bg-primary-500/10 transition-all shadow-lg select-text ${
                   isDark
@@ -593,14 +739,222 @@ const MessengerPage: React.FC = () => {
         )}
 
         {/* Разделительная линия после поиска */}
-        <div className={`mx-4 border-t mb-2 ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`}></div>
+        <div className={`mx-4 border-t mb-2 transition-opacity duration-300 ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`}></div>
+
+        {/* Вкладки для поиска */}
+        {!isMinimized && isSearchActive && (
+          <div className={`mx-4 mb-2 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`}>
+            <div 
+              ref={searchTabsRef}
+              className="flex gap-1 overflow-x-auto scrollbar-hide"
+            >
+              {[
+                { id: 'users', label: 'Users' },
+                { id: 'chats', label: 'Chats' },
+                { id: 'channels', label: 'Channels' },
+                { id: 'groups', label: 'Groups' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveSearchTab(tab.id)}
+                  className={`px-4 py-2 text-sm font-medium transition-colors relative flex-shrink-0 ${
+                    activeSearchTab === tab.id
+                      ? isDark
+                        ? 'text-primary-400'
+                        : 'text-primary-500'
+                      : isDark
+                        ? 'text-gray-500 hover:text-gray-300'
+                        : 'text-gray-500 hover:text-gray-700'
+                  }`}
+                >
+                  {tab.label}
+                  {activeSearchTab === tab.id && (
+                    <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${
+                      isDark ? 'bg-primary-400' : 'bg-primary-500'
+                    }`} />
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {!isMinimized && (
           <>
-            {/* Блок списка чатов */}
-            <div className={`flex-1 overflow-y-auto ${isDark ? 'bg-gray-900/20' : 'bg-gray-50/30'}`}>
-              <div className="py-2">
-                {chats.length > 0 ? (
+            {/* Блок результатов поиска или списка чатов */}
+            <div className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isDark ? 'bg-gray-900/20' : 'bg-gray-50/30'}`}>
+              <div className="py-2 transition-all duration-300 ease-in-out">
+                {isSearchActive ? (
+                  activeSearchTab === 'users' ? (
+                    <>
+                      {isSearching ? (
+                        <div className="flex items-center justify-center py-8">
+                          <div className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                            Поиск...
+                          </div>
+                        </div>
+                      ) : searchQuery.trim() ? (
+                        searchResults.length > 0 ? (
+                          searchResults.map((foundUser: any) => {
+                            const foundUserAvatarUrl = getAvatarUrl(foundUser.avatar_url)
+                            return (
+                              <button
+                                key={foundUser.id}
+                                className={`w-full px-6 py-3 transition-colors text-left ${
+                                  isDark 
+                                    ? 'hover:bg-primary-500/10' 
+                                    : 'hover:bg-primary-500/5'
+                                }`}
+                              >
+                                <div className="flex items-center gap-3">
+                                  <div className="relative flex-shrink-0 w-12 h-12">
+                                    <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${
+                                      foundUser.is_online ? 'border-green-500/60' : 'border-gray-600/40'
+                                    }`}>
+                                      {foundUser.avatar_url && foundUserAvatarUrl ? (
+                                        <img
+                                          src={foundUserAvatarUrl}
+                                          alt={`${foundUser.first_name} ${foundUser.last_name || ''}`}
+                                          className="w-full h-full"
+                                          style={{ 
+                                            objectFit: 'cover',
+                                            objectPosition: 'center',
+                                            width: '100%',
+                                            height: '100%',
+                                            display: 'block',
+                                            aspectRatio: '1/1'
+                                          }}
+                                        />
+                                      ) : (
+                                        <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-600 rounded-full">
+                                          <DefaultAvatar
+                                            firstName={foundUser.first_name || 'П'}
+                                            lastName={foundUser.last_name}
+                                            size={48}
+                                            className="border-0"
+                                          />
+                                        </div>
+                                      )}
+                                    </div>
+                                    <div 
+                                      className={`absolute top-0 right-0 w-4 h-4 rounded-full border-2 ${
+                                        foundUser.is_online 
+                                          ? 'bg-green-500 border-gray-800' 
+                                          : 'bg-gray-500 border-gray-800'
+                                      } shadow-lg transition-all duration-300 ease-in-out`}
+                                      style={{ zIndex: 20 }}
+                                    ></div>
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className={`font-semibold text-sm truncate mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                      {foundUser.first_name || 'Пользователь'} {foundUser.last_name || ''}
+                                    </div>
+                                    <div
+                                      className="relative h-4 overflow-hidden"
+                                      onMouseEnter={() => setHoveredUserStatus(foundUser.id)}
+                                      onMouseLeave={() => setHoveredUserStatus(null)}
+                                    >
+                                      {foundUser.status_text ? (
+                                        <>
+                                          {/* Статус */}
+                                          <div 
+                                            className={`text-xs truncate cursor-pointer transition-all duration-300 absolute inset-0 ${
+                                              isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                                            }`}
+                                            style={{
+                                              transform: hoveredUserStatus === foundUser.id ? 'translateY(-100%)' : 'translateY(0)',
+                                              opacity: hoveredUserStatus === foundUser.id ? 0 : 1
+                                            }}
+                                          >
+                                            {foundUser.status_text}
+                                          </div>
+                                          {/* Username */}
+                                          {foundUser.username && (
+                                            <div 
+                                              className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0"
+                                              style={{
+                                                transform: hoveredUserStatus === foundUser.id ? 'translateY(0)' : 'translateY(100%)',
+                                                opacity: hoveredUserStatus === foundUser.id ? 1 : 0
+                                              }}
+                                            >
+                                              @{foundUser.username}
+                                            </div>
+                                          )}
+                                        </>
+                                      ) : foundUser.username ? (
+                                        <div className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                                          @{foundUser.username}
+                                        </div>
+                                      ) : (
+                                        <div className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                                          {foundUser.phone_number || ''}
+                                        </div>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </button>
+                            )
+                          })
+                        ) : (
+                          <div className="flex items-center justify-center min-h-[calc(100vh-300px)] w-full">
+                            <div className="flex flex-col items-center justify-center text-center">
+                              <div className="mb-3 flex items-center justify-center">
+                                <svg
+                                  className="w-16 h-16 text-gray-600 transition-all duration-300"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={1.5}
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                  />
+                                </svg>
+                              </div>
+                              <p className={`text-sm transition-opacity duration-300 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                                Ничего не найдено
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      ) : (
+                        <div className="flex items-center justify-center min-h-[calc(100vh-300px)] w-full">
+                          <div className="flex flex-col items-center justify-center text-center">
+                            <div className="mb-3 flex items-center justify-center">
+                              <svg
+                                className="w-16 h-16 text-gray-600 transition-all duration-300"
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={1.5}
+                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+                                />
+                              </svg>
+                            </div>
+                            <p className={`text-sm transition-opacity duration-300 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                              Введите запрос для поиска
+                            </p>
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-center min-h-[calc(100vh-300px)] w-full">
+                      <div className="flex flex-col items-center justify-center text-center">
+                        <p className={`text-sm transition-opacity duration-300 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                          Вкладка &quot;{activeSearchTab}&quot; пока не реализована
+                        </p>
+                      </div>
+                    </div>
+                  )
+                ) : chats.length > 0 ? (
                   chats.map((_chat, index) => (
                     <button
                       key={index}
@@ -616,7 +970,7 @@ const MessengerPage: React.FC = () => {
                           <div className={`${isCompact ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-2 flex-shrink-0 ${
                             isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
                           }`} />
-                          <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
+                          <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800 transition-all duration-300 ease-in-out"></div>
                         </div>
                         {!isCompact && (
                           <div className="flex-1 min-w-0">
@@ -663,7 +1017,7 @@ const MessengerPage: React.FC = () => {
                   <div className={`w-10 h-10 rounded-full border-2 ${
                     isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
                   }`}></div>
-                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
+                  <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
                 </div>
               ))
             ) : (
@@ -694,6 +1048,7 @@ const MessengerPage: React.FC = () => {
           onMouseDown={(e) => {
             e.preventDefault()
             e.stopPropagation()
+            initialWidthRef.current = chatsPanelWidth
             setIsResizing(true)
           }}
         >
@@ -705,11 +1060,18 @@ const MessengerPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Центральная область - чат или пустое состояние */}
-      <div className={`flex-1 flex items-center justify-center ${
-        isDark ? 'bg-gray-950/50' : 'bg-gray-100/50'
-      }`}>
-        {hasSelectedChat ? (
+      {/* Центральная область - чат, пустое состояние или редактирование профиля */}
+      <div className={`flex-1 flex ${
+        isProfileEditOpen ? 'items-stretch' : 'items-center justify-center'
+      } ${isDark ? 'bg-gray-950/50' : 'bg-gray-100/50'}`}>
+        {isProfileEditOpen ? (
+          <div className="w-full h-full">
+            <ProfileEditPanel 
+              onClose={() => setIsProfileEditOpen(false)} 
+              isDark={isDark}
+            />
+          </div>
+        ) : hasSelectedChat ? (
           // TODO: Область открытого чата
           <div className="text-center">
             <p className={isDark ? 'text-gray-500' : 'text-gray-500'}>Чат открыт</p>
@@ -791,3 +1153,4 @@ const MessengerPage: React.FC = () => {
 }
 
 export default MessengerPage
+
