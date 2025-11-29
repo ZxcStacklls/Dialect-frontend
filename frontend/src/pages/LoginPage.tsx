@@ -10,6 +10,10 @@ const LoginPage = () => {
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
+  const [fieldErrors, setFieldErrors] = useState<{
+    phoneNumber?: string
+    password?: string
+  }>({})
   const [mounted, setMounted] = useState(false)
   const logoRef = useRef<HTMLDivElement>(null)
   const { logoPosition, setTargetPosition, setAnimating, isAnimating } = useLogoAnimation()
@@ -97,11 +101,36 @@ const LoginPage = () => {
     return null
   }
 
+  const validateForm = (): boolean => {
+    const errors: { phoneNumber?: string; password?: string } = {}
+    
+    if (!phoneNumber.trim()) {
+      errors.phoneNumber = 'Пожалуйста, введите номер телефона'
+    } else if (phoneNumber.trim().length < 10) {
+      errors.phoneNumber = 'Номер телефона слишком короткий'
+    }
+    
+    if (!password.trim()) {
+      errors.password = 'Пожалуйста, введите пароль'
+    } else if (password.length < 6) {
+      errors.password = 'Пароль должен содержать минимум 6 символов'
+    }
+    
+    setFieldErrors(errors)
+    return Object.keys(errors).length === 0
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     e.stopPropagation()
     
+    // Валидация полей
+    if (!validateForm()) {
+      return
+    }
+    
     setError('')
+    setFieldErrors({})
     setLoading(true)
 
     try {
@@ -115,6 +144,22 @@ const LoginPage = () => {
       setError(errorMessage)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handlePhoneNumberChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhoneNumber(e.target.value)
+    // Очищаем ошибку при вводе
+    if (fieldErrors.phoneNumber) {
+      setFieldErrors(prev => ({ ...prev, phoneNumber: undefined }))
+    }
+  }
+
+  const handlePasswordChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value)
+    // Очищаем ошибку при вводе
+    if (fieldErrors.password) {
+      setFieldErrors(prev => ({ ...prev, password: undefined }))
     }
   }
 
@@ -182,19 +227,38 @@ const LoginPage = () => {
 
             <div className="space-y-3">
               <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Номер телефона</label>
-              <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
+              <div className={`relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg ${
+                fieldErrors.phoneNumber
+                  ? 'border-red-500/60 bg-red-500/10 focus-within:border-red-500/80 focus-within:bg-red-500/15'
+                  : 'border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20'
+              }`}>
                 <input
                   type="text"
                   placeholder="+7 (999) 123-45-67"
                   value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value)}
-                  required
+                  onChange={handlePhoneNumberChange}
                   className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
                 />
+                {fieldErrors.phoneNumber && (
+                  <div className="absolute right-3 flex items-center">
+                    <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-gray-500/80">
-                Введите номер телефона, который вы использовали при регистрации
-              </p>
+              {fieldErrors.phoneNumber ? (
+                <p className="text-xs text-red-400 flex items-center gap-1.5">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {fieldErrors.phoneNumber}
+                </p>
+              ) : (
+                <p className="text-xs text-gray-500/80">
+                  Введите номер телефона, который вы использовали при регистрации
+                </p>
+              )}
             </div>
 
             <div className="space-y-3">
@@ -207,16 +271,34 @@ const LoginPage = () => {
                   Забыли пароль?
                 </Link>
               </div>
-              <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
+              <div className={`relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg ${
+                fieldErrors.password
+                  ? 'border-red-500/60 bg-red-500/10 focus-within:border-red-500/80 focus-within:bg-red-500/15'
+                  : 'border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20'
+              }`}>
                 <input
                   type="password"
                   placeholder="Введите ваш пароль"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                  onChange={handlePasswordChange}
                   className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
                 />
+                {fieldErrors.password && (
+                  <div className="absolute right-3 flex items-center">
+                    <svg className="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
               </div>
+              {fieldErrors.password && (
+                <p className="text-xs text-red-400 flex items-center gap-1.5">
+                  <svg className="w-4 h-4 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                  </svg>
+                  {fieldErrors.password}
+                </p>
+              )}
             </div>
 
             <div className="flex gap-4 pt-4">

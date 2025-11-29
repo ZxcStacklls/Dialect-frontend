@@ -17,7 +17,8 @@ class Settings(BaseSettings):
     # --- Настройки JWT (из .env) ---
     SECRET_KEY: str
     ALGORITHM: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 # 1 час
+    # Время жизни токена - 365 дней (в минутах), чтобы сессия не слетала
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 365
 
     @computed_field
     @property

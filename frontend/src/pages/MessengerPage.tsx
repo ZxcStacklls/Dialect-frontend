@@ -17,13 +17,52 @@ const MessengerPage: React.FC = () => {
   const [avatarError, setAvatarError] = useState(false)
   const [indicatorPosition, setIndicatorPosition] = useState<number | null>(null)
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false)
+  const [isSearchActive, setIsSearchActive] = useState(false)
+  const [wasMinimizedBeforeSearch, setWasMinimizedBeforeSearch] = useState(false)
+  const [isProfileVisible, setIsProfileVisible] = useState(true)
   const chatsPanelRef = useRef<HTMLDivElement>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
   const MIN_WIDTH = 80 // Минимальный размер равен ширине навигационной панели
   const MAX_WIDTH = 500
   const COMPACT_WIDTH = 200 // Ширина для компактного режима
   const AUTO_COLLAPSE_THRESHOLD = 280 // Порог для автоматического сворачивания (увеличен)
   
+  // Обработчики поиска
+  const handleSearchIconClick = () => {
+    setWasMinimizedBeforeSearch(true)
+    setIsProfileVisible(false)
+    setChatsPanelWidth(380)
+    setIsSearchActive(true)
+    setTimeout(() => searchInputRef.current?.focus(), 100)
+  }
+
+  const handleSearchFocus = () => {
+    if (!isSearchActive) {
+      setWasMinimizedBeforeSearch(false)
+      setIsProfileVisible(false)
+      setIsSearchActive(true)
+    }
+  }
+
+  const handleSearchClose = () => {
+    setIsSearchActive(false)
+    if (wasMinimizedBeforeSearch) {
+      // Сначала скрываем профиль, если он был виден
+      setIsProfileVisible(false)
+      // Сворачиваем панель
+      setChatsPanelWidth(MIN_WIDTH)
+      // Ждем завершения анимации сворачивания (300ms) и показываем профиль
+      setTimeout(() => {
+        setIsProfileVisible(true)
+        setWasMinimizedBeforeSearch(false)
+      }, 350) // Немного больше времени на анимацию
+    } else {
+      // Если поиск был открыт из обычного режима, сразу показываем профиль
+      setIsProfileVisible(true)
+    }
+  }
+
   // Получить полный URL аватарки
   const getAvatarUrl = (avatarUrl?: string | null): string | null => {
     if (!avatarUrl || avatarUrl.trim() === '') return null
@@ -324,203 +363,232 @@ const MessengerPage: React.FC = () => {
         style={{ width: `${chatsPanelWidth}px` }}
       >
         {/* Блок профиля пользователя */}
-        <div className={`mx-4 mt-3 mb-1 px-3 py-2 flex-shrink-0`}>
-          <div className={`flex items-center ${isMinimized ? 'justify-center gap-0' : 'gap-3'}`}>
-            <div className="relative flex-shrink-0 w-10 h-10">
-              <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-green-500/60">
-                {user?.avatar_url && avatarUrl && !avatarError ? (
-                  <img
-                    src={avatarUrl}
-                    alt={`${user?.first_name} ${user?.last_name || ''}`}
-                    className="w-full h-full"
-                    style={{ 
-                      objectFit: 'cover',
-                      objectPosition: 'center',
-                      width: '100%',
-                      height: '100%',
-                      display: 'block',
-                      aspectRatio: '1/1'
-                    }}
-                    onError={() => {
-                      console.error('Ошибка загрузки аватарки:', avatarUrl)
-                      setAvatarError(true)
-                    }}
-                    onLoad={() => {
-                      setAvatarError(false)
-                    }}
-                  />
-                ) : (
-                  <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-600 rounded-full">
-                    <DefaultAvatar
-                      firstName={user?.first_name || 'П'}
-                      lastName={user?.last_name}
-                      size={40}
-                      className="border-0"
+        <div
+          className={`transition-all duration-300 ease-in-out overflow-hidden ${
+            (isSearchActive && !isMinimized) || (!isProfileVisible && !isMinimized) ? 'opacity-0 max-h-0 m-0 p-0' : 'opacity-100 max-h-[200px]'
+          }`}
+        >
+          <div className={`mx-4 mt-3 mb-1 px-3 py-2 flex-shrink-0`}>
+            <div className={`flex items-center ${isMinimized ? 'justify-center gap-0' : 'gap-3'}`}>
+              <div className="relative flex-shrink-0 w-10 h-10">
+                <div className="relative w-full h-full rounded-full overflow-hidden border-2 border-green-500/60">
+                  {user?.avatar_url && avatarUrl && !avatarError ? (
+                    <img
+                      src={avatarUrl}
+                      alt={`${user?.first_name} ${user?.last_name || ''}`}
+                      className="w-full h-full"
+                      style={{ 
+                        objectFit: 'cover',
+                        objectPosition: 'center',
+                        width: '100%',
+                        height: '100%',
+                        display: 'block',
+                        aspectRatio: '1/1'
+                      }}
+                      onError={() => {
+                        console.error('Ошибка загрузки аватарки:', avatarUrl)
+                        setAvatarError(true)
+                      }}
+                      onLoad={() => {
+                        setAvatarError(false)
+                      }}
                     />
-                  </div>
-                )}
-              </div>
-              {/* Индикатор онлайн (зеленое кольцо) - поверх аватарки */}
-              <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" style={{ zIndex: 20 }}></div>
-            </div>
-            {!isMinimized && (
-              <div className="flex-1 min-w-0">
-                <div className={`font-semibold text-sm truncate mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                  {user?.first_name || 'Пользователь'} {user?.last_name || ''}
-                </div>
-                <div
-                  className="relative h-4 overflow-hidden"
-                  onMouseEnter={() => setHoveredStatus(true)}
-                  onMouseLeave={() => setHoveredStatus(false)}
-                >
-                  {!isOnlineState ? (
-                    <div className={`text-xs truncate flex items-center gap-1 ${
-                      isDark ? 'text-primary-400' : 'text-primary-500'
-                    }`}>
-                      <span>Connecting</span>
-                      <span className="flex gap-0.5">
-                        <span className="connecting-dot">.</span>
-                        <span className="connecting-dot">.</span>
-                        <span className="connecting-dot">.</span>
-                      </span>
-                    </div>
-                  ) : userStatus ? (
-                    <>
-                      {/* Статус */}
-                      <div 
-                        className={`text-xs truncate cursor-pointer transition-all duration-300 absolute inset-0 ${
-                          isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                        }`}
-                        style={{
-                          transform: hoveredStatus ? 'translateY(-100%)' : 'translateY(0)',
-                          opacity: hoveredStatus ? 0 : 1
-                        }}
-                      >
-                        {userStatus}
-                      </div>
-                      {/* Username */}
-                      {user?.username && (
-                        <div 
-                          className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0"
-                          style={{
-                            transform: hoveredStatus ? 'translateY(0)' : 'translateY(100%)',
-                            opacity: hoveredStatus ? 1 : 0
-                          }}
-                        >
-                          @{user.username}
-                        </div>
-                      )}
-                    </>
                   ) : (
-                    user?.username && (
-                      <div className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
-                        @{user.username}
-                      </div>
-                    )
+                    <div className="absolute inset-0 w-full h-full flex items-center justify-center bg-gray-600 rounded-full">
+                      <DefaultAvatar
+                        firstName={user?.first_name || 'П'}
+                        lastName={user?.last_name}
+                        size={40}
+                        className="border-0"
+                      />
+                    </div>
                   )}
                 </div>
+                {/* Индикатор онлайн (зеленое кольцо) - поверх аватарки */}
+                <div className="absolute bottom-0 right-0 w-4 h-4 bg-green-500 rounded-full border-2 border-gray-800 shadow-lg" style={{ zIndex: 20 }}></div>
               </div>
-            )}
-            {!isMinimized && (
-              <div className="relative" ref={profileMenuRef}>
-                <button 
-                  onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                  className={`transition-colors flex-shrink-0 p-1 rounded-lg ${
-                    isDark
-                      ? `text-gray-500 hover:text-primary-300 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-400 bg-primary-500/10' : ''}`
-                      : `text-gray-400 hover:text-primary-500 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-500 bg-primary-500/10' : ''}`
-                  }`}
-                >
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-                  </svg>
-                </button>
-                
-                {/* Выпадающее меню */}
-                {isProfileMenuOpen && (
-                  <div className={`absolute right-0 top-full mt-2 w-48 backdrop-blur-xl rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in ${
-                    isDark
-                      ? 'bg-gray-900/95 border border-gray-800/50'
-                      : 'bg-white/95 border border-gray-200/50'
-                  }`}>
-                    <div className="py-1">
-                      <button
-                        onClick={() => {
-                          toggleTheme()
-                          setIsProfileMenuOpen(false)
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                          isDark
-                            ? 'text-gray-300 hover:bg-white/5'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {theme === 'dark' ? (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                            </svg>
-                            Светлая тема
-                          </>
-                        ) : (
-                          <>
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                            </svg>
-                            Темная тема
-                          </>
-                        )}
-                      </button>
-                      <div className={`border-t my-1 ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'}`}></div>
-                      <button
-                        onClick={() => {
-                          logout()
-                          setIsProfileMenuOpen(false)
-                        }}
-                        className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                          isDark
-                            ? 'text-red-400 hover:bg-white/5 hover:text-red-300'
-                            : 'text-red-500 hover:bg-red-50 hover:text-red-600'
-                        }`}
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                        </svg>
-                        Выйти
-                      </button>
-                    </div>
+              {!isMinimized && (
+                <div className="flex-1 min-w-0">
+                  <div className={`font-semibold text-sm truncate mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {user?.first_name || 'Пользователь'} {user?.last_name || ''}
                   </div>
-                )}
-              </div>
-            )}
+                  <div
+                    className="relative h-4 overflow-hidden"
+                    onMouseEnter={() => setHoveredStatus(true)}
+                    onMouseLeave={() => setHoveredStatus(false)}
+                  >
+                    {!isOnlineState ? (
+                      <div className={`text-xs truncate flex items-center gap-1 ${
+                        isDark ? 'text-primary-400' : 'text-primary-500'
+                      }`}>
+                        <span>Connecting</span>
+                        <span className="flex gap-0.5">
+                          <span className="connecting-dot">.</span>
+                          <span className="connecting-dot">.</span>
+                          <span className="connecting-dot">.</span>
+                        </span>
+                      </div>
+                    ) : userStatus ? (
+                      <>
+                        {/* Статус */}
+                        <div 
+                          className={`text-xs truncate cursor-pointer transition-all duration-300 absolute inset-0 ${
+                            isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                          }`}
+                          style={{
+                            transform: hoveredStatus ? 'translateY(-100%)' : 'translateY(0)',
+                            opacity: hoveredStatus ? 0 : 1
+                          }}
+                        >
+                          {userStatus}
+                        </div>
+                        {/* Username */}
+                        {user?.username && (
+                          <div 
+                            className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0"
+                            style={{
+                              transform: hoveredStatus ? 'translateY(0)' : 'translateY(100%)',
+                              opacity: hoveredStatus ? 1 : 0
+                            }}
+                          >
+                            @{user.username}
+                          </div>
+                        )}
+                      </>
+                    ) : (
+                      user?.username && (
+                        <div className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                          @{user.username}
+                        </div>
+                      )
+                    )}
+                  </div>
+                </div>
+              )}
+              {!isMinimized && (
+                <div className="relative" ref={profileMenuRef}>
+                  <button 
+                    onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
+                    className={`transition-colors flex-shrink-0 p-1 rounded-lg ${
+                      isDark
+                        ? `text-gray-500 hover:text-primary-300 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-400 bg-primary-500/10' : ''}`
+                        : `text-gray-400 hover:text-primary-500 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-500 bg-primary-500/10' : ''}`
+                    }`}
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                    </svg>
+                  </button>
+                  
+                  {/* Выпадающее меню */}
+                  {isProfileMenuOpen && (
+                    <div className={`absolute right-0 top-full mt-2 w-48 backdrop-blur-xl rounded-xl shadow-xl z-50 overflow-hidden animate-fade-in ${
+                      isDark
+                        ? 'bg-gray-900/95 border border-gray-800/50'
+                        : 'bg-white/95 border border-gray-200/50'
+                    }`}>
+                      <div className="py-1">
+                        <button
+                          onClick={() => {
+                            toggleTheme()
+                            setIsProfileMenuOpen(false)
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                            isDark
+                              ? 'text-gray-300 hover:bg-white/5'
+                              : 'text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {theme === 'dark' ? (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                              </svg>
+                              Светлая тема
+                            </>
+                          ) : (
+                            <>
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                              </svg>
+                              Темная тема
+                            </>
+                          )}
+                        </button>
+                        <div className={`border-t my-1 ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'}`}></div>
+                        <button
+                          onClick={() => {
+                            logout()
+                            setIsProfileMenuOpen(false)
+                          }}
+                          className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
+                            isDark
+                              ? 'text-red-400 hover:bg-white/5 hover:text-red-300'
+                              : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+                          }`}
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                          </svg>
+                          Выйти
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* Разделительная линия между профилем и поиском */}
-        <div className={`mx-4 border-t my-1 ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'}`}></div>
+          {/* Разделительная линия между профилем и поиском */}
+          <div className={`mx-4 border-t my-1 ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'}`}></div>
+        </div>
 
         {/* Блок поиска */}
         {isMinimized ? (
           <div className="mx-4 mt-3 mb-2 flex items-center justify-center flex-shrink-0">
-            <button className={`transition-colors p-2 ${
-              isDark ? 'text-gray-500 hover:text-primary-300' : 'text-gray-400 hover:text-primary-500'
-            }`}>
+            <button
+              onClick={handleSearchIconClick}
+              className={`transition-colors p-2 ${
+                isDark ? 'text-gray-500 hover:text-primary-300' : 'text-gray-400 hover:text-primary-500'
+              }`}
+            >
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
               </svg>
             </button>
           </div>
         ) : (
-          <div className="mx-4 mt-1 mb-2 px-3 py-2 flex-shrink-0">
-            <input
-              type="text"
-              placeholder="Поиск"
-              className={`w-full px-4 py-2 border-2 rounded-xl text-sm placeholder-gray-500/60 focus:outline-none focus:border-primary-500/60 focus:bg-primary-500/10 transition-all shadow-lg select-text ${
-                isDark
-                  ? 'bg-gray-800/30 border-gray-700/40 text-white'
-                  : 'bg-white border-gray-300/60 text-gray-900'
-              }`}
-            />
+          <div className={`mx-4 px-3 py-2 flex-shrink-0 transition-all duration-300 ease-in-out ${
+            isSearchActive ? 'mt-3 mb-2' : 'mt-1 mb-2'
+          }`}>
+            <div className="flex items-center gap-2">
+              <input
+                ref={searchInputRef}
+                type="text"
+                placeholder="Поиск"
+                onFocus={handleSearchFocus}
+                className={`flex-1 px-4 py-2 border-2 rounded-xl text-sm placeholder-gray-500/60 focus:outline-none focus:border-primary-500/60 focus:bg-primary-500/10 transition-all shadow-lg select-text ${
+                  isDark
+                    ? 'bg-gray-800/30 border-gray-700/40 text-white'
+                    : 'bg-white border-gray-300/60 text-gray-900'
+                }`}
+              />
+              {isSearchActive && (
+                <button
+                  onClick={handleSearchClose}
+                  className={`p-1.5 rounded-lg transition-all ${
+                    isDark
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              )}
+            </div>
           </div>
         )}
 
@@ -700,8 +768,15 @@ const MessengerPage: React.FC = () => {
               </p>
               <button
                 onClick={() => {
-                  // TODO: Реализовать переход к поиску друзей
-                  console.log('Найти друзей')
+                  if (isMinimized) {
+                    setWasMinimizedBeforeSearch(true)
+                    setChatsPanelWidth(380)
+                  } else {
+                    setWasMinimizedBeforeSearch(false)
+                  }
+                  setIsProfileVisible(false)
+                  setIsSearchActive(true)
+                  setTimeout(() => searchInputRef.current?.focus(), 300)
                 }}
                 className="px-8 py-3 bg-primary-500 hover:bg-primary-400 rounded-lg transition-colors text-white font-semibold text-base shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50"
               >
