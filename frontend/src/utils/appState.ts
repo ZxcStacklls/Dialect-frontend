@@ -29,6 +29,55 @@ export const isOnline = (): boolean => {
 }
 
 /**
+ * Проверяет доступность сервера
+ * @returns Promise<boolean> true если сервер доступен, false если нет
+ */
+let serverCheckCache: { result: boolean; timestamp: number } | null = null
+const SERVER_CHECK_CACHE_DURATION = 10000 // Кешируем результат на 10 секунд
+
+export const isServerAvailable = async (): Promise<boolean> => {
+  // Проверяем кеш
+  if (serverCheckCache && Date.now() - serverCheckCache.timestamp < SERVER_CHECK_CACHE_DURATION) {
+    return serverCheckCache.result
+  }
+
+  // Сначала проверяем базовое подключение к интернету
+  if (!isOnline()) {
+    serverCheckCache = { result: false, timestamp: Date.now() }
+    return false
+  }
+
+  try {
+    // Импортируем getApiBaseUrl динамически, чтобы избежать циклических зависимостей
+    const { getApiBaseUrl } = await import('./platform')
+    const apiBaseUrl = getApiBaseUrl()
+    
+    // Убираем /api из базового URL, чтобы получить корневой URL сервера
+    const baseUrl = apiBaseUrl.replace('/api', '').replace(/\/$/, '')
+    
+    // Используем корневой эндпоинт "/" для проверки доступности сервера
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), 3000) // Таймаут 3 секунды
+    
+    const response = await fetch(`${baseUrl}/`, {
+      method: 'GET', // Используем GET вместо HEAD, так как HEAD возвращает 405
+      signal: controller.signal,
+      cache: 'no-cache'
+    }).catch(() => null)
+    
+    clearTimeout(timeoutId)
+    
+    // Сервер доступен, если получили успешный ответ
+    const isAvailable = response !== null && response.ok
+    serverCheckCache = { result: isAvailable, timestamp: Date.now() }
+    return isAvailable
+  } catch (error) {
+    serverCheckCache = { result: false, timestamp: Date.now() }
+    return false
+  }
+}
+
+/**
  * Проверяет, можно ли отправлять запросы к серверу
  * @returns true если можно отправлять запросы, false если нельзя
  */

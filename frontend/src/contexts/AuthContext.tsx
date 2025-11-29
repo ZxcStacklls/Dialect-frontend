@@ -37,14 +37,41 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
+const USER_STORAGE_KEY = 'dialect_user_data'
+
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<User | null>(() => {
+    // Загружаем данные пользователя из localStorage при инициализации
+    try {
+      const storedUser = localStorage.getItem(USER_STORAGE_KEY)
+      if (storedUser) {
+        return JSON.parse(storedUser)
+      }
+    } catch (error) {
+      console.error('Ошибка при загрузке данных пользователя из localStorage:', error)
+    }
+    return null
+  })
   const [token, setToken] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const { addToast } = useToast()
 
+  // Сохраняем данные пользователя в localStorage при изменении
+  useEffect(() => {
+    if (user) {
+      try {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
+      } catch (error) {
+        console.error('Ошибка при сохранении данных пользователя в localStorage:', error)
+      }
+    } else {
+      localStorage.removeItem(USER_STORAGE_KEY)
+    }
+  }, [user])
+
   const logout = useCallback(() => {
     localStorage.removeItem('access_token')
+    localStorage.removeItem(USER_STORAGE_KEY)
     setToken(null)
     setUser(null)
     // Редирект на страницу логина
@@ -62,9 +89,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const userData = await authAPI.getCurrentUser()
       setUser(userData)
+      // Сохраняем в localStorage при успешной загрузке
+      try {
+        localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(userData))
+      } catch (error) {
+        console.error('Ошибка при сохранении данных пользователя:', error)
+      }
     } catch (error) {
       console.error('Ошибка при загрузке данных пользователя:', error)
-      setUser(null)
+      // Не сбрасываем пользователя при ошибке - используем кешированные данные
+      // setUser(null) - убрано, чтобы профиль не пропадал
     }
   }
 
@@ -77,7 +111,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     setLoading(false)
   }, [])
 
-  // Автоматическое обновление профиля каждые 30 секунд
+  // Автоматическое обновление профиля каждые 60 секунд
   // НЕ отправляет запросы, если приложение закрыто или нет интернета
   useEffect(() => {
     if (!token) return
@@ -94,7 +128,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } catch (error) {
         console.error('Ошибка при автообновлении профиля:', error)
       }
-    }, 30000) // Обновляем каждые 30 секунд
+    }, 60000) // Обновляем каждые 60 секунд
 
     // Обновляем профиль при возврате приложения в фокус
     const handleVisibilityChange = () => {

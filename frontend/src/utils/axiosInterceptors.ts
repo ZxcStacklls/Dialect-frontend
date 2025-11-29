@@ -48,9 +48,19 @@ export const setupAxiosInterceptors = (
         return Promise.reject(error)
       }
 
-      // Глобальная обработка сетевых ошибок (500 и т.д.)
-      if (!error.response && error.message === 'Network Error') {
-        addToast('Ошибка сети. Проверьте подключение к интернету.', 'error')
+      // Глобальная обработка сетевых ошибок
+      // Не показываем ошибку при отсутствии интернета или недоступности сервера - это обрабатывается в UI
+      if (!error.response) {
+        // Это сетевая ошибка (Network Error, ECONNREFUSED и т.д.)
+        // Не показываем toast, просто возвращаем ошибку
+        return Promise.reject(error)
+      }
+
+      // Для других ошибок (500, 502, 503, 504) тоже не показываем toast
+      // если это связано с недоступностью сервера
+      if (error.response.status >= 500 && error.response.status < 600) {
+        // Серверная ошибка - не показываем toast
+        return Promise.reject(error)
       }
 
       return Promise.reject(error)

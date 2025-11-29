@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useTheme } from '../contexts/ThemeContext'
 
 const TitleBar = () => {
+  const { theme } = useTheme()
   const [isMaximized, setIsMaximized] = useState(false)
+  const isDark = theme === 'dark'
 
   useEffect(() => {
     if (!window.electron) return
@@ -44,7 +47,16 @@ const TitleBar = () => {
   }
 
   return (
-    <div className="titlebar flex items-center justify-between bg-gray-900/90 backdrop-blur-xl border-b border-gray-800/50 h-10 px-4 select-none shadow-lg">
+    <div 
+      className={`titlebar flex items-center justify-between backdrop-blur-xl border-b h-10 px-4 select-none shadow-lg ${
+        isDark
+          ? 'bg-gray-900/90 border-gray-800/50'
+          : 'bg-white/90 border-gray-200/50'
+      }`}
+      style={{
+        transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+      }}
+    >
       {/* Левая часть - Drag область с логотипом */}
       <div className="flex items-center gap-3 flex-1 drag-region cursor-move">
         <div className="w-6 h-6 rounded overflow-hidden flex-shrink-0">
@@ -58,7 +70,14 @@ const TitleBar = () => {
             }}
           />
         </div>
-        <span className="text-sm font-semibold text-gray-200">Dialect</span>
+        <span 
+          className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}
+          style={{
+            transition: 'color 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+          }}
+        >
+          Dialect
+        </span>
       </div>
 
       {/* Правая часть - Кнопки управления */}
@@ -66,7 +85,14 @@ const TitleBar = () => {
         {/* Кнопка свернуть */}
         <button
           onClick={handleMinimize}
-          className="titlebar-button w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all duration-200 rounded-sm"
+          className={`titlebar-button w-10 h-10 flex items-center justify-center rounded-sm ${
+            isDark
+              ? 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
+          }`}
+          style={{
+            transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease'
+          }}
           title="Свернуть"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -77,7 +103,14 @@ const TitleBar = () => {
         {/* Кнопка развернуть/восстановить */}
         <button
           onClick={handleMaximize}
-          className="titlebar-button w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-gray-700/50 transition-all duration-200 rounded-sm"
+          className={`titlebar-button w-10 h-10 flex items-center justify-center rounded-sm ${
+            isDark
+              ? 'text-gray-400 hover:text-white hover:bg-gray-700/50'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
+          }`}
+          style={{
+            transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease'
+          }}
           title={isMaximized ? "Восстановить" : "Развернуть"}
         >
           {isMaximized ? (
@@ -94,7 +127,14 @@ const TitleBar = () => {
         {/* Кнопка закрыть */}
         <button
           onClick={handleClose}
-          className="titlebar-button w-10 h-10 flex items-center justify-center text-gray-400 hover:text-white hover:bg-red-600/80 transition-all duration-200 rounded-sm"
+          className={`titlebar-button w-10 h-10 flex items-center justify-center rounded-sm ${
+            isDark
+              ? 'text-gray-400 hover:text-white hover:bg-red-600/80'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-red-100'
+          }`}
+          style={{
+            transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease'
+          }}
           title="Закрыть"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
