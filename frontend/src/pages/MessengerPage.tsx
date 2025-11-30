@@ -28,6 +28,20 @@ const MessengerPage: React.FC = () => {
   const [activeSearchTab, setActiveSearchTab] = useState<string>('users')
   const [hoveredUserStatus, setHoveredUserStatus] = useState<number | null>(null)
   const [isProfileEditOpen, setIsProfileEditOpen] = useState(false)
+  const [settingsActiveTab, setSettingsActiveTab] = useState<string>('profile')
+
+  // Автоматически выбирать иконку настроек при открытии панели настроек
+  useEffect(() => {
+    if (isProfileEditOpen) {
+      setActiveNavItem('settings')
+    }
+  }, [isProfileEditOpen])
+
+  // Обработчик закрытия панели настроек - выбирает вкладку чаты
+  const handleCloseSettings = () => {
+    setIsProfileEditOpen(false)
+    setActiveNavItem('chats')
+  }
   const chatsPanelRef = useRef<HTMLDivElement>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
@@ -443,7 +457,14 @@ const MessengerPage: React.FC = () => {
               return (
                 <button
                   key={item.id}
-                  onClick={() => setActiveNavItem(item.id)}
+                  onClick={() => {
+                    setActiveNavItem(item.id)
+                    if (item.id === 'settings') {
+                      setIsProfileEditOpen(true)
+                    } else {
+                      handleCloseSettings()
+                    }
+                  }}
                   className={`relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 ease-out ${
                     isActive
                       ? 'text-primary-500 scale-105'
@@ -519,11 +540,11 @@ const MessengerPage: React.FC = () => {
                 </div>
                 {/* Индикатор онлайн (зеленое кольцо) - поверх аватарки */}
                 <div 
-                  className={`absolute top-0 right-0 w-4 h-4 rounded-full border-2 ${
+                  className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${
                     isOnlineState 
-                      ? 'bg-green-500 border-gray-800' 
-                      : 'bg-gray-500 border-gray-800'
-                  } shadow-lg transition-all duration-300 ease-in-out`}
+                      ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]' 
+                      : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
+                  }`}
                   style={{ 
                     zIndex: 20,
                     opacity: isMinimized ? 0 : 1,
@@ -779,7 +800,18 @@ const MessengerPage: React.FC = () => {
           </div>
         )}
 
-        {!isMinimized && (
+        {/* Панель навигации настроек - показывается поверх списка чатов */}
+        {isProfileEditOpen && !isMinimized ? (
+          <div className="absolute inset-0 z-50">
+            <ProfileEditPanel 
+              onClose={handleCloseSettings} 
+              isDark={isDark}
+              mode="navigation"
+              activeTab={settingsActiveTab}
+              onTabChange={setSettingsActiveTab}
+            />
+          </div>
+        ) : !isMinimized && (
           <>
             {/* Блок результатов поиска или списка чатов */}
             <div className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isDark ? 'bg-gray-900/20' : 'bg-gray-50/30'}`}>
@@ -837,11 +869,11 @@ const MessengerPage: React.FC = () => {
                                       )}
                                     </div>
                                     <div 
-                                      className={`absolute top-0 right-0 w-4 h-4 rounded-full border-2 ${
+                                      className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${
                                         foundUser.is_online 
-                                          ? 'bg-green-500 border-gray-800' 
-                                          : 'bg-gray-500 border-gray-800'
-                                      } shadow-lg transition-all duration-300 ease-in-out`}
+                                          ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]' 
+                                          : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
+                                      }`}
                                       style={{ zIndex: 20 }}
                                     ></div>
                                   </div>
@@ -970,7 +1002,7 @@ const MessengerPage: React.FC = () => {
                           <div className={`${isCompact ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-2 flex-shrink-0 ${
                             isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
                           }`} />
-                          <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800 transition-all duration-300 ease-in-out"></div>
+                          <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)] transition-all duration-300 ease-in-out"></div>
                         </div>
                         {!isCompact && (
                           <div className="flex-1 min-w-0">
@@ -1017,7 +1049,7 @@ const MessengerPage: React.FC = () => {
                   <div className={`w-10 h-10 rounded-full border-2 ${
                     isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
                   }`}></div>
-                  <div className="absolute top-0 right-0 w-3 h-3 bg-green-500 rounded-full border-2 border-gray-800"></div>
+                  <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)]"></div>
                 </div>
               ))
             ) : (
@@ -1060,15 +1092,17 @@ const MessengerPage: React.FC = () => {
         </div>
       </div>
 
-      {/* Центральная область - чат, пустое состояние или редактирование профиля */}
-      <div className={`flex-1 flex ${
-        isProfileEditOpen ? 'items-stretch' : 'items-center justify-center'
-      } ${isDark ? 'bg-gray-950/50' : 'bg-gray-100/50'}`}>
+      {/* Центральная область - чат, пустое состояние */}
+      <div className={`flex-1 flex items-center justify-center relative ${isDark ? 'bg-gray-950/50' : 'bg-gray-100/50'}`}>
+        {/* Панель редактирования - показывается поверх центральной области */}
         {isProfileEditOpen ? (
-          <div className="w-full h-full">
+          <div className="absolute inset-0 z-50 flex">
             <ProfileEditPanel 
-              onClose={() => setIsProfileEditOpen(false)} 
+              onClose={handleCloseSettings} 
               isDark={isDark}
+              mode="content"
+              activeTab={settingsActiveTab}
+              onTabChange={setSettingsActiveTab}
             />
           </div>
         ) : hasSelectedChat ? (
