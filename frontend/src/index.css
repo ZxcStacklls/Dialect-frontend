@@ -474,5 +474,81 @@
   .scrollbar-hide::-webkit-scrollbar {
     display: none; /* Chrome, Safari, Opera */
   }
+
+  /* Кастомный скроллбар для панели чатов - темная тема */
+  .chat-panel-scrollbar::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .chat-panel-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .chat-panel-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(75, 85, 99, 0.4);
+    border-radius: 10px;
+    transition: background 0.2s ease;
+  }
+
+  .chat-panel-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(75, 85, 99, 0.6);
+  }
+
+  /* Кастомный скроллбар для панели чатов - светлая тема */
+  [data-theme="light"] .chat-panel-scrollbar::-webkit-scrollbar-thumb {
+    background: rgba(209, 213, 219, 0.5);
+  }
+
+  [data-theme="light"] .chat-panel-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: rgba(209, 213, 219, 0.7);
+  }
+
+  /* Для Firefox */
+  .chat-panel-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(75, 85, 99, 0.4) transparent;
+  }
+
+  [data-theme="light"] .chat-panel-scrollbar {
+    scrollbar-color: rgba(209, 213, 219, 0.5) transparent;
+  }
+
+  /* Тонкий скроллбар для модальных окон */
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(75, 85, 99, 0.4);
+    border-radius: 10px;
+    transition: background 0.2s ease;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(75, 85, 99, 0.6);
+  }
+
+  /* Для светлой темы */
+  [data-theme="light"] .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: rgba(209, 213, 219, 0.5);
+  }
+
+  [data-theme="light"] .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: rgba(209, 213, 219, 0.7);
+  }
+
+  /* Для Firefox */
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(75, 85, 99, 0.4) transparent;
+  }
+
+  [data-theme="light"] .scrollbar-thin {
+    scrollbar-color: rgba(209, 213, 219, 0.5) transparent;
+  }
 }
 

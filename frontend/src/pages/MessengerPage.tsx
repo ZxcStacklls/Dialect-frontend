@@ -2,17 +2,31 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import DefaultAvatar from '../components/DefaultAvatar'
-import ProfileEditPanel from '../components/ProfileEditPanel'
+import SettingsModal from '../components/SettingsModal'
 import { getApiBaseUrl } from '../utils/platform'
 import { canSendRequests, isOnline, isServerAvailable } from '../utils/appState'
 import apiClient from '../api/client'
+
+const formatChatTimestamp = (value?: string | number | Date | null): string | null => {
+  if (!value) return null
+
+  const date = value instanceof Date ? value : new Date(value)
+  if (Number.isNaN(date.getTime())) {
+    return null
+  }
+
+  return date.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit'
+  })
+}
 
 const MessengerPage: React.FC = () => {
   const { user, refreshUser, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const [selectedChat, setSelectedChat] = useState<number | null>(null)
   const [isOnlineState, setIsOnlineState] = useState(isOnline())
-  const [chatsPanelWidth, setChatsPanelWidth] = useState(380)
+  const [chatsPanelWidth, setChatsPanelWidth] = useState(300)
   const [hoveredStatus, setHoveredStatus] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
   const [activeNavItem, setActiveNavItem] = useState<string>('chats')
@@ -27,37 +41,73 @@ const MessengerPage: React.FC = () => {
   const [isSearching, setIsSearching] = useState(false)
   const [activeSearchTab, setActiveSearchTab] = useState<string>('users')
   const [hoveredUserStatus, setHoveredUserStatus] = useState<number | null>(null)
-  const [isProfileEditOpen, setIsProfileEditOpen] = useState(false)
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [settingsActiveTab, setSettingsActiveTab] = useState<string>('profile')
-
-  // Автоматически выбирать иконку настроек при открытии панели настроек
+  const [isCompactCollapsing, setIsCompactCollapsing] = useState(false)
+  const [isPanelAnimating, setIsPanelAnimating] = useState(false)
+  
+  // Ref для доступа к актуальной ширине внутри обработчиков событий без пересоздания эффекта
+  const chatsPanelWidthRef = useRef(chatsPanelWidth)
   useEffect(() => {
-    if (isProfileEditOpen) {
+    chatsPanelWidthRef.current = chatsPanelWidth
+  }, [chatsPanelWidth])
+
+  // Автоматически выбирать иконку настроек при открытии окна настроек
+  useEffect(() => {
+    if (isSettingsOpen) {
       setActiveNavItem('settings')
     }
-  }, [isProfileEditOpen])
+  }, [isSettingsOpen])
 
-  // Обработчик закрытия панели настроек - выбирает вкладку чаты
+  // Обработчик закрытия окна настроек
   const handleCloseSettings = () => {
-    setIsProfileEditOpen(false)
+    setIsSettingsOpen(false)
     setActiveNavItem('chats')
   }
   const chatsPanelRef = useRef<HTMLDivElement>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
   const searchTabsRef = useRef<HTMLDivElement>(null)
-  const initialWidthRef = useRef<number>(380)
+  const previousPanelWidthRef = useRef<number>(chatsPanelWidth)
+  const compactAnimationTimeoutRef = useRef<number | null>(null)
+  const isAnimatingRef = useRef(false)
   const MIN_WIDTH = 80 // Минимальный размер равен ширине навигационной панели
   const MAX_WIDTH = 500
-  const COMPACT_WIDTH = 200 // Ширина для компактного режима
-  const AUTO_COLLAPSE_THRESHOLD = 280 // Порог для автоматического сворачивания (увеличен)
-  const AUTO_EXPAND_THRESHOLD = AUTO_COLLAPSE_THRESHOLD / 2 // Порог для автоматического разворачивания (в 2 раза меньше порога сворачивания)
+  const COMPACT_WIDTH = 300 // Ширина для компактного режима (развернутое положение)
+  const COLLAPSE_THRESHOLD = 150 // Порог сворачивания
+  const EXPAND_THRESHOLD = 150 // Порог разворачивания
+  const ANIMATION_DURATION = 300 // Длительность анимации в мс
+
+  // Функция для анимации ширины панели через комбинацию React state и ref
+  const animatePanelWidth = (targetWidth: number) => {
+    if (isAnimatingRef.current) return
+
+    isAnimatingRef.current = true
+    
+    // Сначала включаем анимацию
+    setIsPanelAnimating(true)
+    
+    // Затем обновляем ref для внутренней логики
+    chatsPanelWidthRef.current = targetWidth
+    
+    // Обновляем state для UI - это запустит анимацию
+    requestAnimationFrame(() => {
+      setChatsPanelWidth(targetWidth)
+    })
+
+    // После завершения анимации отключаем transition
+    setTimeout(() => {
+      setIsPanelAnimating(false)
+      isAnimatingRef.current = false
+    }, ANIMATION_DURATION)
+  }
+
   
   // Обработчики поиска
   const handleSearchIconClick = () => {
     setWasMinimizedBeforeSearch(true)
     setIsProfileVisible(false)
-    setChatsPanelWidth(280)
+    setChatsPanelWidth(COMPACT_WIDTH)
     setIsSearchActive(true)
     setTimeout(() => searchInputRef.current?.focus(), 100)
   }
@@ -321,37 +371,39 @@ const MessengerPage: React.FC = () => {
     }
   }, [activeNavItem])
 
-  // Обработка ресайза панели с автоматическим сворачиванием
+  // Обработка ресайза панели (логика как в Telegram)
   useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing) return
-      
-      const newWidth = e.clientX - 80 // 80px - ширина навигационной панели
-      
-      // Автоматическое разворачивание: если панель была минимальна и достигли порога разворачивания
-      if (initialWidthRef.current <= MIN_WIDTH && newWidth >= AUTO_EXPAND_THRESHOLD) {
-        // Если еще не достигли стандартного размера, устанавливаем его
-        if (newWidth < 280) {
-          setChatsPanelWidth(280)
-        } else {
-          // Если уже прошли стандартный размер, продолжаем следовать за курсором
-          if (newWidth <= MAX_WIDTH) {
-            setChatsPanelWidth(newWidth)
-          } else {
-            setChatsPanelWidth(MAX_WIDTH)
-          }
+    if (!isResizing) return
 
-        }
-      } else if (newWidth < AUTO_COLLAPSE_THRESHOLD) {
-        // Автоматическое сворачивание при достижении порога (как в Telegram)
-        setChatsPanelWidth(MIN_WIDTH)
-      } else if (newWidth >= AUTO_COLLAPSE_THRESHOLD && newWidth < COMPACT_WIDTH) {
-        // Устанавливаем компактный размер при разворачивании
-        setChatsPanelWidth(COMPACT_WIDTH)
-      } else if (newWidth >= COMPACT_WIDTH && newWidth <= MAX_WIDTH) {
-        setChatsPanelWidth(newWidth)
-      } else if (newWidth > MAX_WIDTH) {
-        setChatsPanelWidth(MAX_WIDTH)
+    const handleMouseMove = (e: MouseEvent) => {
+      const newWidth = e.clientX - 80 // 80px - ширина навигационной панели
+      const currentWidth = chatsPanelWidthRef.current
+      
+      // Определяем направление движения
+      const isDraggingLeft = newWidth < currentWidth
+      const isDraggingRight = newWidth > currentWidth
+
+      // Логика сворачивания: тянем влево от развернутого состояния
+      if (isDraggingLeft && currentWidth > MIN_WIDTH && newWidth <= COLLAPSE_THRESHOLD) {
+        animatePanelWidth(MIN_WIDTH)
+        return
+      }
+
+      // Логика разворачивания: тянем вправо от свернутого состояния
+      if (isDraggingRight && currentWidth <= MIN_WIDTH && newWidth >= EXPAND_THRESHOLD) {
+        animatePanelWidth(COMPACT_WIDTH)
+        return
+      }
+
+      // Обычное изменение размера (только если не в минимальном режиме и не во время анимации)
+      if (currentWidth > MIN_WIDTH && !isAnimatingRef.current) {
+        let nextWidth = newWidth
+        
+        // Ограничения
+        if (nextWidth < COMPACT_WIDTH) nextWidth = COMPACT_WIDTH
+        if (nextWidth > MAX_WIDTH) nextWidth = MAX_WIDTH
+        
+        setChatsPanelWidth(nextWidth)
       }
     }
 
@@ -361,15 +413,10 @@ const MessengerPage: React.FC = () => {
       document.body.style.userSelect = ''
     }
 
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      document.body.style.cursor = 'col-resize'
-      document.body.style.userSelect = 'none'
-    } else {
-      document.body.style.cursor = ''
-      document.body.style.userSelect = ''
-    }
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    document.body.style.cursor = 'col-resize'
+    document.body.style.userSelect = 'none'
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
@@ -377,7 +424,47 @@ const MessengerPage: React.FC = () => {
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
     }
-  }, [isResizing, chatsPanelWidth])
+  }, [COLLAPSE_THRESHOLD, COMPACT_WIDTH, EXPAND_THRESHOLD, MAX_WIDTH, MIN_WIDTH, isResizing, animatePanelWidth])
+
+  // Отслеживание переходов между состояниями панели для анимаций
+  useEffect(() => {
+    const previousWidth = previousPanelWidthRef.current
+    const wasMinimized = previousWidth <= MIN_WIDTH
+    const isNowMinimized = chatsPanelWidth <= MIN_WIDTH
+    
+    // Запускаем анимацию сворачивания при переходе к минимальному размеру
+    if (!wasMinimized && isNowMinimized) {
+      setIsCompactCollapsing(true)
+
+      if (compactAnimationTimeoutRef.current) {
+        window.clearTimeout(compactAnimationTimeoutRef.current)
+      }
+
+      compactAnimationTimeoutRef.current = window.setTimeout(() => {
+        setIsCompactCollapsing(false)
+        compactAnimationTimeoutRef.current = null
+      }, 300)
+    } else if (!isNowMinimized) {
+      // Сбрасываем состояние анимации если панель развернута
+      if (compactAnimationTimeoutRef.current) {
+        window.clearTimeout(compactAnimationTimeoutRef.current)
+        compactAnimationTimeoutRef.current = null
+      }
+      setIsCompactCollapsing(false)
+    }
+
+    previousPanelWidthRef.current = chatsPanelWidth
+  }, [MIN_WIDTH, chatsPanelWidth])
+
+
+  useEffect(() => {
+    return () => {
+      if (compactAnimationTimeoutRef.current) {
+        window.clearTimeout(compactAnimationTimeoutRef.current)
+        compactAnimationTimeoutRef.current = null
+      }
+    }
+  }, [])
 
   // Иконки SVG
   const getIcon = (iconName: string) => {
@@ -421,7 +508,7 @@ const MessengerPage: React.FC = () => {
 
   const userStatus = user?.status_text || null
   const isMinimized = chatsPanelWidth <= MIN_WIDTH
-  const isCompact = chatsPanelWidth > MIN_WIDTH && chatsPanelWidth < COMPACT_WIDTH
+  const isCompact = false // Убираем промежуточный режим, как в Telegram
   const avatarUrl = getAvatarUrl(user?.avatar_url)
 
   const isDark = theme === 'dark'
@@ -460,7 +547,7 @@ const MessengerPage: React.FC = () => {
                   onClick={() => {
                     setActiveNavItem(item.id)
                     if (item.id === 'settings') {
-                      setIsProfileEditOpen(true)
+                      setIsSettingsOpen(true)
                     } else {
                       handleCloseSettings()
                     }
@@ -486,9 +573,9 @@ const MessengerPage: React.FC = () => {
       <div
         ref={chatsPanelRef}
         className={`relative flex flex-col border-r overflow-hidden ${isDark ? 'border-gray-800/50 bg-gray-900/40' : 'border-gray-300/50 bg-white/90'}`}
-        style={{
+          style={{
           width: `${chatsPanelWidth}px`,
-          transition: isResizing ? 'none' : 'width 0.3s ease'
+          transition: isPanelAnimating ? `width ${ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)` : 'none'
         }}
       >
         {/* Блок профиля пользователя */}
@@ -497,11 +584,11 @@ const MessengerPage: React.FC = () => {
             (isSearchActive && !isMinimized) || (!isProfileVisible && !isMinimized) ? 'opacity-0 max-h-0 m-0 p-0 overflow-hidden' : 'opacity-100 max-h-[200px] overflow-visible'
           }`}
         >
-          <div className={`mx-4 mt-3 mb-1 px-3 py-2 flex-shrink-0 transition-all duration-300 ease-in-out`}>
-            <div className={`flex items-center transition-all duration-300 ease-in-out ${isMinimized ? 'justify-center gap-0' : 'gap-3'}`}>
+          <div className="mt-3 mb-1 flex-shrink-0">
+            <div className="flex items-center py-2 pl-5 pr-3">
               <div 
                 className="relative flex-shrink-0 w-10 h-10 cursor-pointer"
-                onClick={() => setIsProfileEditOpen(true)}
+                onClick={() => setIsSettingsOpen(true)}
               >
                 <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${
                   isOnlineState ? 'border-green-500/60' : 'border-gray-600/40'
@@ -552,11 +639,12 @@ const MessengerPage: React.FC = () => {
                   }}
                 ></div>
               </div>
-              {!isMinimized && (
-                <div 
-                  className="flex-1 min-w-0 cursor-pointer"
-                  onClick={() => setIsProfileEditOpen(true)}
-                >
+              <div 
+                className={`flex-1 min-w-0 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden ${
+                  isMinimized ? 'opacity-0 w-0 ml-0' : 'opacity-100 w-auto ml-3'
+                }`}
+                onClick={() => setIsSettingsOpen(true)}
+              >
                   <div className={`font-semibold text-sm truncate mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                     {user?.first_name || 'Пользователь'} {user?.last_name || ''}
                   </div>
@@ -611,13 +699,12 @@ const MessengerPage: React.FC = () => {
                       )
                     )}
                   </div>
-                </div>
-              )}
+              </div>
               {!isMinimized && (
-                <div className="relative z-50" ref={profileMenuRef}>
+                <div className="relative z-50 flex-shrink-0" ref={profileMenuRef}>
                   <button 
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className={`transition-colors flex-shrink-0 p-1 rounded-lg ${
+                    className={`transition-colors flex-shrink-0 p-1.5 rounded-lg ${
                       isDark
                         ? `text-gray-500 hover:text-primary-300 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-400 bg-primary-500/10' : ''}`
                         : `text-gray-400 hover:text-primary-500 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-500 bg-primary-500/10' : ''}`
@@ -638,7 +725,7 @@ const MessengerPage: React.FC = () => {
                       <div className="py-1">
                         <button
                           onClick={() => {
-                            setIsProfileEditOpen(true)
+                            setIsSettingsOpen(true)
                             setIsProfileMenuOpen(false)
                           }}
                           className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
@@ -800,21 +887,11 @@ const MessengerPage: React.FC = () => {
           </div>
         )}
 
-        {/* Панель навигации настроек - показывается поверх списка чатов */}
-        {isProfileEditOpen && !isMinimized ? (
-          <div className="absolute inset-0 z-50">
-            <ProfileEditPanel 
-              onClose={handleCloseSettings} 
-              isDark={isDark}
-              mode="navigation"
-              activeTab={settingsActiveTab}
-              onTabChange={setSettingsActiveTab}
-            />
-          </div>
-        ) : !isMinimized && (
+        {/* Контент панели чатов */}
+        {!isMinimized && (
           <>
             {/* Блок результатов поиска или списка чатов */}
-            <div className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out ${isDark ? 'bg-gray-900/20' : 'bg-gray-50/30'}`}>
+            <div className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out chat-panel-scrollbar ${isDark ? 'bg-gray-900/20' : 'bg-gray-50/30'}`}>
               <div className="py-2 transition-all duration-300 ease-in-out">
                 {isSearchActive ? (
                   activeSearchTab === 'users' ? (
@@ -888,30 +965,30 @@ const MessengerPage: React.FC = () => {
                                     >
                                       {foundUser.status_text ? (
                                         <>
+                                          {/* Username */}
+                                          {foundUser.username && (
+                                            <div 
+                                              className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0"
+                                              style={{
+                                                transform: hoveredUserStatus === foundUser.id ? 'translateY(-100%)' : 'translateY(0)',
+                                                opacity: hoveredUserStatus === foundUser.id ? 0 : 1
+                                              }}
+                                            >
+                                              @{foundUser.username}
+                                            </div>
+                                          )}
                                           {/* Статус */}
                                           <div 
                                             className={`text-xs truncate cursor-pointer transition-all duration-300 absolute inset-0 ${
                                               isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
                                             }`}
                                             style={{
-                                              transform: hoveredUserStatus === foundUser.id ? 'translateY(-100%)' : 'translateY(0)',
-                                              opacity: hoveredUserStatus === foundUser.id ? 0 : 1
+                                              transform: hoveredUserStatus === foundUser.id ? 'translateY(0)' : 'translateY(100%)',
+                                              opacity: hoveredUserStatus === foundUser.id ? 1 : 0
                                             }}
                                           >
                                             {foundUser.status_text}
                                           </div>
-                                          {/* Username */}
-                                          {foundUser.username && (
-                                            <div 
-                                              className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0"
-                                              style={{
-                                                transform: hoveredUserStatus === foundUser.id ? 'translateY(0)' : 'translateY(100%)',
-                                                opacity: hoveredUserStatus === foundUser.id ? 1 : 0
-                                              }}
-                                            >
-                                              @{foundUser.username}
-                                            </div>
-                                          )}
                                         </>
                                       ) : foundUser.username ? (
                                         <div className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
@@ -991,25 +1068,29 @@ const MessengerPage: React.FC = () => {
                     <button
                       key={index}
                       onClick={() => setSelectedChat(index)}
-                      className={`w-full ${isCompact ? 'px-3 py-2' : 'px-6 py-3'} transition-colors text-left ${
+                      className={`w-full ${isCompact ? 'px-3 py-2' : 'px-6 py-3'} transition-all duration-300 ease-in-out text-left ${
                         isDark 
                           ? 'hover:bg-primary-500/10' 
                           : 'hover:bg-primary-500/5'
                       }`}
                     >
-                      <div className={`flex items-center ${isCompact ? 'gap-2' : 'gap-3'}`}>
+                      <div className={`flex items-center transition-all duration-300 ease-in-out ${isCompact ? 'gap-2' : 'gap-3'}`}>
                         <div className="relative">
-                          <div className={`${isCompact ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-2 flex-shrink-0 ${
+                          <div className={`${isCompact ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-2 flex-shrink-0 transition-all duration-300 ease-in-out ${
                             isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
                           }`} />
                           <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)] transition-all duration-300 ease-in-out"></div>
                         </div>
-                        {!isCompact && (
-                          <div className="flex-1 min-w-0">
-                            <div className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Чат {index + 1}</div>
-                            <div className={`text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Последнее сообщение...</div>
-                          </div>
-                        )}
+                        <div 
+                          className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
+                            isCompact || isCompactCollapsing 
+                              ? 'opacity-0 max-w-0 overflow-hidden' 
+                              : 'opacity-100 max-w-full'
+                          }`}
+                        >
+                          <div className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Чат {index + 1}</div>
+                          <div className={`text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Последнее сообщение...</div>
+                        </div>
                       </div>
                     </button>
                   ))
@@ -1042,7 +1123,7 @@ const MessengerPage: React.FC = () => {
 
         {/* Минимальный вид - только аватарки чатов */}
         {isMinimized && (
-          <div className="flex-1 flex flex-col items-center py-2 gap-3 overflow-y-auto">
+          <div className={`flex-1 flex flex-col items-center py-2 gap-3 overflow-y-auto chat-panel-scrollbar`}>
             {chats.length > 0 ? (
               chats.slice(0, 8).map((_chat, index) => (
                 <div key={index} className="relative">
@@ -1080,8 +1161,17 @@ const MessengerPage: React.FC = () => {
           onMouseDown={(e) => {
             e.preventDefault()
             e.stopPropagation()
-            initialWidthRef.current = chatsPanelWidth
             setIsResizing(true)
+          }}
+          onDoubleClick={(e) => {
+            e.preventDefault()
+            e.stopPropagation()
+            // Переключаем между свернутым и развернутым состоянием
+            if (chatsPanelWidth <= MIN_WIDTH) {
+              animatePanelWidth(COMPACT_WIDTH)
+            } else {
+              animatePanelWidth(MIN_WIDTH)
+            }
           }}
         >
           <div className={`absolute top-1/2 -translate-y-1/2 right-0 w-1 h-20 rounded-l-full transition-all ${
@@ -1094,18 +1184,7 @@ const MessengerPage: React.FC = () => {
 
       {/* Центральная область - чат, пустое состояние */}
       <div className={`flex-1 flex items-center justify-center relative ${isDark ? 'bg-gray-950/50' : 'bg-gray-100/50'}`}>
-        {/* Панель редактирования - показывается поверх центральной области */}
-        {isProfileEditOpen ? (
-          <div className="absolute inset-0 z-50 flex">
-            <ProfileEditPanel 
-              onClose={handleCloseSettings} 
-              isDark={isDark}
-              mode="content"
-              activeTab={settingsActiveTab}
-              onTabChange={setSettingsActiveTab}
-            />
-          </div>
-        ) : hasSelectedChat ? (
+        {hasSelectedChat ? (
           // TODO: Область открытого чата
           <div className="text-center">
             <p className={isDark ? 'text-gray-500' : 'text-gray-500'}>Чат открыт</p>
@@ -1166,7 +1245,7 @@ const MessengerPage: React.FC = () => {
                 onClick={() => {
                   if (isMinimized) {
                     setWasMinimizedBeforeSearch(true)
-                    setChatsPanelWidth(380)
+                    setChatsPanelWidth(COMPACT_WIDTH)
                   } else {
                     setWasMinimizedBeforeSearch(false)
                   }
@@ -1182,6 +1261,14 @@ const MessengerPage: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Модальное окно настроек */}
+      <SettingsModal 
+        isOpen={isSettingsOpen}
+        onClose={handleCloseSettings}
+        activeTab={settingsActiveTab}
+        onTabChange={setSettingsActiveTab}
+      />
     </div>
   )
 }

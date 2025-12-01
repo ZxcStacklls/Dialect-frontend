@@ -4,7 +4,66 @@ import { useTheme } from '../contexts/ThemeContext'
 const TitleBar = () => {
   const { theme } = useTheme()
   const [isMaximized, setIsMaximized] = useState(false)
-  const isDark = theme === 'dark'
+  const [currentPath, setCurrentPath] = useState(() => {
+    // Получаем путь из hash (для HashRouter)
+    const hash = window.location.hash
+    return hash ? hash.slice(1) : '/'
+  })
+  
+  // Функция для получения текущего пути
+  const getCurrentPath = () => {
+    const hash = window.location.hash
+    return hash ? hash.slice(1) : '/'
+  }
+  
+  // Слушаем изменения hash для обновления пути
+  useEffect(() => {
+    const updatePath = () => {
+      const newPath = getCurrentPath()
+      setCurrentPath(prevPath => {
+        // Обновляем только если путь действительно изменился
+        if (prevPath !== newPath) {
+          return newPath
+        }
+        return prevPath
+      })
+    }
+    
+    // Проверяем путь при монтировании
+    updatePath()
+    
+    // Слушаем события изменения hash
+    window.addEventListener('hashchange', updatePath)
+    
+    // Также слушаем popstate для программной навигации
+    window.addEventListener('popstate', updatePath)
+    
+    // Периодическая проверка пути (на случай программной навигации через React Router)
+    // Используем ref для хранения предыдущего значения без пересоздания интервала
+    const interval = setInterval(() => {
+      const newPath = getCurrentPath()
+      setCurrentPath(prevPath => {
+        if (prevPath !== newPath) {
+          return newPath
+        }
+        return prevPath
+      })
+    }, 200)
+    
+    return () => {
+      window.removeEventListener('hashchange', updatePath)
+      window.removeEventListener('popstate', updatePath)
+      clearInterval(interval)
+    }
+  }, [])
+  
+  // На страницах авторизации/регистрации всегда используем темную панель
+  // Используем как состояние, так и прямое чтение для максимальной актуальности
+  const hash = window.location.hash
+  const path = hash ? hash.slice(1) : '/'
+  const effectivePath = path || currentPath // Используем актуальный путь
+  const isAuthPage = effectivePath === '/login' || effectivePath === '/signup'
+  const isDark = isAuthPage ? true : theme === 'dark'
 
   useEffect(() => {
     if (!window.electron) return
