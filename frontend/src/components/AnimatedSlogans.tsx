@@ -54,14 +54,14 @@ const AnimatedSlogans = () => {
     if (shuffledIndices.length === 0) return
 
     const interval = setInterval(() => {
+      // Скрываем текущий (уходит вверх)
       setIsVisible(false)
       
       setTimeout(() => {
+        // Меняем индекс
         setUsedIndices((prevUsed) => {
-          // Находим следующий неиспользованный индекс в перемешанном массиве
           const nextUnusedIndex = shuffledIndices.findIndex((idx) => !prevUsed.has(idx))
           
-          // Если все слоганы показаны, сбрасываем и перемешиваем заново
           if (nextUnusedIndex === -1) {
             const newShuffled = shuffleArray(Array.from({ length: slogans.length }, (_, i) => i))
             setShuffledIndices(newShuffled)
@@ -75,9 +75,10 @@ const AnimatedSlogans = () => {
           }
         })
         
+        // Показываем новый (приходит снизу)
         setIsVisible(true)
-      }, 500) // Время для fade out
-    }, 5000) // Меняем слоган каждые 5 секунд
+      }, 500)
+    }, 5000)
 
     return () => clearInterval(interval)
   }, [shuffledIndices])
@@ -97,12 +98,16 @@ const AnimatedSlogans = () => {
   }
 
   return (
-    <div className="relative h-32 flex items-center justify-center">
+    <div className="relative min-h-[200px] flex items-center justify-center overflow-hidden px-4">
       <p
-        className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white text-center px-8 transition-all duration-700 ease-in-out ${
-          isVisible ? 'opacity-100 translate-y-0 scale-100' : 'opacity-0 -translate-y-8 scale-95'
+        className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white text-center max-w-3xl leading-relaxed transition-all duration-700 ease-in-out ${
+          isVisible
+            ? 'opacity-100 translate-y-0 scale-100'
+            : 'opacity-0 -translate-y-8 scale-95'
         }`}
-        style={{ textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)' }}
+        style={{ 
+          textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+        }}
       >
         {formatSlogan(slogans[currentIndex] || slogans[0])}
       </p>

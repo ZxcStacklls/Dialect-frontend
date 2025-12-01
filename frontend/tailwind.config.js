@@ -8,17 +8,23 @@ export default {
     extend: {
       colors: {
         primary: {
-          50: '#ecfeff',
-          100: '#cffafe',
-          200: '#a5f3fc',
-          300: '#67e8f9',
-          400: '#22d3ee',
-          500: '#06b6d4',
-          600: '#0891b2',
-          700: '#0e7490',
-          800: '#155e75',
-          900: '#164e63',
+          50: 'var(--color-primary-50, #eff6ff)',
+          100: 'var(--color-primary-100, #dbeafe)',
+          200: 'var(--color-primary-200, #bfdbfe)',
+          300: 'var(--color-primary-300, #93c5fd)',
+          400: 'var(--color-primary-400, #60a5fa)',
+          500: 'var(--color-primary-500, #3b82f6)',
+          600: 'var(--color-primary-600, #2563eb)',
+          700: 'var(--color-primary-700, #1d4ed8)',
+          800: 'var(--color-primary-800, #1e40af)',
+          900: 'var(--color-primary-900, #1e3a8a)',
         },
+      },
+      borderRadius: {
+        'dynamic': 'var(--border-radius, 0.75rem)',
+      },
+      backdropBlur: {
+        'dynamic': 'var(--blur-intensity, 6px)',
       },
     },
   },

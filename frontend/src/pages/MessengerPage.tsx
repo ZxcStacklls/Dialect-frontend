@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
+import { useAppearance } from '../contexts/AppearanceContext'
 import DefaultAvatar from '../components/DefaultAvatar'
 import SettingsModal from '../components/SettingsModal'
 import { getApiBaseUrl } from '../utils/platform'
@@ -24,6 +25,7 @@ const formatChatTimestamp = (value?: string | number | Date | null): string | nu
 const MessengerPage: React.FC = () => {
   const { user, refreshUser, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
+  const { settings } = useAppearance()
   const [selectedChat, setSelectedChat] = useState<number | null>(null)
   const [isOnlineState, setIsOnlineState] = useState(isOnline())
   const [chatsPanelWidth, setChatsPanelWidth] = useState(300)
@@ -514,7 +516,7 @@ const MessengerPage: React.FC = () => {
   const isDark = theme === 'dark'
   
   return (
-    <div className={`flex h-screen overflow-hidden select-none ${
+    <div className={`messenger-container flex h-screen overflow-hidden select-none ${
       isDark 
         ? 'bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white'
         : 'bg-gradient-to-br from-gray-100 via-white to-gray-100 text-gray-900'
@@ -552,13 +554,17 @@ const MessengerPage: React.FC = () => {
                       handleCloseSettings()
                     }
                   }}
-                  className={`relative w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 ease-out ${
+                  className={`relative w-12 h-12 flex items-center justify-center transition-all duration-300 ease-out ${
                     isActive
                       ? 'text-primary-500 scale-105'
                       : isDark
                         ? 'text-gray-500 hover:text-primary-300 hover:bg-primary-500/10'
                         : 'text-gray-400 hover:text-primary-500 hover:bg-primary-500/10'
                   }`}
+                  style={{ 
+                    borderRadius: `var(--border-radius, 0.75rem)`,
+                    fontSize: `calc(1rem * var(--font-scale, 1))`
+                  }}
                   title={item.label}
                 >
                   {getIcon(item.icon)}
@@ -1274,4 +1280,3 @@ const MessengerPage: React.FC = () => {
 }
 
 export default MessengerPage
-
