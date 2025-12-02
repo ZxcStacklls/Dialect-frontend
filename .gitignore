@@ -1,45 +1,68 @@
-# --- Виртуальное окружение ---
-# Исключаем стандартные папки виртуальных окружений
+# --------------------
+# 1. Сборка и зависимости
+# --------------------
+
+# Python
 .venv/
 venv/
 env/
 *.env
-
-# --- Конфигурация и Секреты ---
-# КРАЙНЕ ВАЖНО: Никогда не добавляйте файл с вашими секретами в Git!
-.env
-
-# --- Python ---
-# Кэш и артефакты
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Дистрибутивы и сборка
 build/
 dist/
 *.egg-info/
 *.egg
 
-# --- IDE (VS Code) ---
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+dist-ssr/
+*.local
+
+# Логи и кэш
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+# --------------------
+# 2. Секреты и данные
+# --------------------
+
+# Секреты приложения
+.env
+username_filter.bloom
+serviceAccountKey.json
+
+# Загруженные пользователем файлы (КРАЙНЕ ВАЖНО ИГНОРИРОВАТЬ)
+uploads/
+
+# --------------------
+# 3. IDE и OS
+# --------------------
+
+# IDE (IntelliJ / VS Code)
+.idea/
+*.iws
+*.iml
+*.ipr
 .vscode/
+!.vscode/extensions.json  # Разрешить отслеживание списка расширений
+.DS_Store
 
-# --- Тестирование ---
-.pytest_cache/
-coverage.xml
-htmlcov/
-
-# --- Базы данных ---
-# Игнорируем локальные файлы БД (хотя мы используем MySQL, это хорошая практика)
-*.db
-*.sqlite
-*.sqlite3
-
-# --- Операционная система ---
-# Windows
+# Операционная система
 Thumbs.db
 ehthumbs.db
 Desktop.ini
-
-username_filter.bloom
-serviceAccountKey.json
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

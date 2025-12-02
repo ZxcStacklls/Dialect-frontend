@@ -35,6 +35,7 @@ class UserUpdate(BaseModel):
 class UserPublic(BaseModel):
     model_config = ConfigDict(from_attributes=True)
     id: int
+    phone_number: str # Добавляем номер телефона
     username: Optional[str] = None
     first_name: str
     last_name: Optional[str] = None

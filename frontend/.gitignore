@@ -1,4 +1,29 @@
-# Logs
+# --------------------
+# 1. Сборка и зависимости
+# --------------------
+
+# Python
+.venv/
+venv/
+env/
+*.env
+__pycache__/
+*.py[cod]
+*$py.class
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Node.js / Frontend
+node_modules/
+frontend/node_modules/
+dist/
+frontend/dist/
+dist-ssr/
+*.local
+
+# Логи и кэш
 logs
 *.log
 npm-debug.log*
@@ -7,19 +32,37 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# --------------------
+# 2. Секреты и данные
+# --------------------
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Секреты приложения
+.env
+username_filter.bloom
+serviceAccountKey.json
+
+# Загруженные пользователем файлы (КРАЙНЕ ВАЖНО ИГНОРИРОВАТЬ)
+uploads/
+
+# --------------------
+# 3. IDE и OS
+# --------------------
+
+# IDE (IntelliJ / VS Code)
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+!.vscode/extensions.json  # Разрешить отслеживание списка расширений
 .DS_Store
+
+# Операционная система
+Thumbs.db
+ehthumbs.db
+Desktop.ini
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-

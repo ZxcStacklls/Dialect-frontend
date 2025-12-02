@@ -29,6 +29,8 @@ export interface User {
   bio?: string
   status_text?: string
   is_online: boolean
+  phone_number?: string // Добавляем сюда
+  country?: string // Добавляем сюда
 }
 
 export const authAPI = {

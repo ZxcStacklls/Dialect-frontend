@@ -5,23 +5,19 @@ const TitleBar = () => {
   const { theme } = useTheme()
   const [isMaximized, setIsMaximized] = useState(false)
   const [currentPath, setCurrentPath] = useState(() => {
-    // Получаем путь из hash (для HashRouter)
     const hash = window.location.hash
     return hash ? hash.slice(1) : '/'
   })
   
-  // Функция для получения текущего пути
   const getCurrentPath = () => {
     const hash = window.location.hash
     return hash ? hash.slice(1) : '/'
   }
   
-  // Слушаем изменения hash для обновления пути
   useEffect(() => {
     const updatePath = () => {
       const newPath = getCurrentPath()
       setCurrentPath(prevPath => {
-        // Обновляем только если путь действительно изменился
         if (prevPath !== newPath) {
           return newPath
         }
@@ -29,17 +25,10 @@ const TitleBar = () => {
       })
     }
     
-    // Проверяем путь при монтировании
     updatePath()
-    
-    // Слушаем события изменения hash
     window.addEventListener('hashchange', updatePath)
-    
-    // Также слушаем popstate для программной навигации
     window.addEventListener('popstate', updatePath)
     
-    // Периодическая проверка пути (на случай программной навигации через React Router)
-    // Используем ref для хранения предыдущего значения без пересоздания интервала
     const interval = setInterval(() => {
       const newPath = getCurrentPath()
       setCurrentPath(prevPath => {
@@ -57,18 +46,15 @@ const TitleBar = () => {
     }
   }, [])
   
-  // На страницах авторизации/регистрации всегда используем темную панель
-  // Используем как состояние, так и прямое чтение для максимальной актуальности
   const hash = window.location.hash
   const path = hash ? hash.slice(1) : '/'
-  const effectivePath = path || currentPath // Используем актуальный путь
+  const effectivePath = path || currentPath
   const isAuthPage = effectivePath === '/login' || effectivePath === '/signup'
   const isDark = isAuthPage ? true : theme === 'dark'
 
   useEffect(() => {
     if (!window.electron) return
 
-    // Проверяем состояние окна при загрузке
     const checkMaximized = async () => {
       if (window.electron?.isMaximized) {
         const maximized = await window.electron.isMaximized()
@@ -78,7 +64,6 @@ const TitleBar = () => {
 
     checkMaximized()
 
-    // Слушаем события изменения размера окна от Electron
     if (window.electron?.onWindowMaximized) {
       window.electron.onWindowMaximized((maximized) => {
         setIsMaximized(maximized)
@@ -95,7 +80,6 @@ const TitleBar = () => {
   const handleMaximize = async () => {
     if (window.electron) {
       await window.electron.maximize?.()
-      // Состояние обновится через событие от Electron
     }
   }
 
@@ -107,7 +91,8 @@ const TitleBar = () => {
 
   return (
     <div 
-      className={`titlebar flex items-center justify-between backdrop-blur-xl border-b h-10 px-4 select-none shadow-lg ${
+      // ИЗМЕНЕНИЕ 1: px-4 заменено на pl-4 (только левый отступ)
+      className={`titlebar flex items-center justify-between backdrop-blur-xl border-b h-10 pl-4 select-none shadow-lg ${
         isDark
           ? 'bg-gray-900/90 border-gray-800/50'
           : 'bg-white/90 border-gray-200/50'
@@ -140,17 +125,19 @@ const TitleBar = () => {
       </div>
 
       {/* Правая часть - Кнопки управления */}
-      <div className="flex items-center gap-0.5 no-drag">
+      {/* ИЗМЕНЕНИЕ 2: убран gap-0.5, добавлен h-full */}
+      <div className="flex items-center h-full no-drag">
         {/* Кнопка свернуть */}
         <button
           onClick={handleMinimize}
-          className={`titlebar-button w-10 h-10 flex items-center justify-center rounded-sm ${
+          // ИЗМЕНЕНИЕ 3: w-12, h-full, убран rounded-sm
+          className={`titlebar-button w-12 h-full flex items-center justify-center ${
             isDark
               ? 'text-gray-400 hover:text-white hover:bg-gray-700/50'
               : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
           }`}
           style={{
-            transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease'
+            transition: 'background-color 0.2s ease, color 0.2s ease'
           }}
           title="Свернуть"
         >
@@ -162,13 +149,14 @@ const TitleBar = () => {
         {/* Кнопка развернуть/восстановить */}
         <button
           onClick={handleMaximize}
-          className={`titlebar-button w-10 h-10 flex items-center justify-center rounded-sm ${
+          // ИЗМЕНЕНИЕ 4: w-12, h-full, убран rounded-sm
+          className={`titlebar-button w-12 h-full flex items-center justify-center ${
             isDark
               ? 'text-gray-400 hover:text-white hover:bg-gray-700/50'
               : 'text-gray-500 hover:text-gray-900 hover:bg-gray-200/50'
           }`}
           style={{
-            transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease'
+            transition: 'background-color 0.2s ease, color 0.2s ease'
           }}
           title={isMaximized ? "Восстановить" : "Развернуть"}
         >
@@ -186,13 +174,14 @@ const TitleBar = () => {
         {/* Кнопка закрыть */}
         <button
           onClick={handleClose}
-          className={`titlebar-button w-10 h-10 flex items-center justify-center rounded-sm ${
+          // ИЗМЕНЕНИЕ 5: w-12, h-full, убран rounded-sm
+          className={`titlebar-button w-12 h-full flex items-center justify-center ${
             isDark
-              ? 'text-gray-400 hover:text-white hover:bg-red-600/80'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-red-100'
+              ? 'text-gray-400 hover:text-white hover:bg-[#E81123]' // E81123 - стандартный красный цвет Windows
+              : 'text-gray-500 hover:text-white hover:bg-[#E81123]'
           }`}
           style={{
-            transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), color 0.5s cubic-bezier(0.4, 0, 0.2, 1), transform 0.2s ease'
+            transition: 'background-color 0.2s ease, color 0.2s ease'
           }}
           title="Закрыть"
         >
@@ -206,4 +195,3 @@ const TitleBar = () => {
 }
 
 export default TitleBar
-

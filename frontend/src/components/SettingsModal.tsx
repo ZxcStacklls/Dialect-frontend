@@ -1,10 +1,12 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
-import { useAppearance, CompactMode, ThemeMode, DesignStyle } from '../contexts/AppearanceContext'
+import { useAppearance, CompactMode, ThemeMode, DesignStyle, NavPosition } from '../contexts/AppearanceContext'
 import DefaultAvatar from './DefaultAvatar'
 import { getApiBaseUrl } from '../utils/platform'
+import { parsePhoneNumberFromString } from 'libphonenumber-js'
 
+// ... (предыдущие функции formatDateForInput, getNavIcon, AppearanceTab без изменений) ...
 // Функция для форматирования даты в формат YYYY-MM-DD
 const formatDateForInput = (date: Date | null): string => {
   if (!date) return ''
@@ -84,6 +86,41 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
     { value: 'light', label: 'Светлая', desc: 'Светлая тема для работы днём' },
     { value: 'auto', label: 'Авто', desc: 'Автоматически меняется в зависимости от времени суток' },
   ]
+
+  const navPositionOptions: { value: NavPosition; label: string; desc: string }[] = [
+    { value: 'left', label: 'Слева', desc: 'Стандартное расположение' },
+    { value: 'bottom', label: 'Снизу', desc: 'Удобно для планшетов' },
+    { value: 'right', label: 'Справа', desc: 'Для левшей или RTL' },
+  ]
+
+  const getNavPositionIcon = (pos: NavPosition) => {
+    const baseClass = "w-full h-full border-2 border-current rounded opacity-40"
+    const activeClass = "absolute bg-current opacity-100"
+    
+    switch (pos) {
+      case 'left':
+        return (
+          <div className="w-8 h-6 relative flex items-center justify-center">
+            <div className={baseClass}></div>
+            <div className={`${activeClass} left-0 top-0 bottom-0 w-2 rounded-l`}></div>
+          </div>
+        )
+      case 'right':
+        return (
+          <div className="w-8 h-6 relative flex items-center justify-center">
+            <div className={baseClass}></div>
+            <div className={`${activeClass} right-0 top-0 bottom-0 w-2 rounded-r`}></div>
+          </div>
+        )
+      case 'bottom':
+        return (
+          <div className="w-8 h-6 relative flex items-center justify-center">
+            <div className={baseClass}></div>
+            <div className={`${activeClass} left-0 right-0 bottom-0 h-2 rounded-b`}></div>
+          </div>
+        )
+    }
+  }
 
   const getThemeIcon = (theme: ThemeMode) => {
     switch (theme) {
@@ -231,6 +268,52 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                 )}
                 <div className={`mb-3 transition-all duration-300 ${isActive ? 'text-primary-500 scale-110' : isDark ? 'text-gray-400' : 'text-gray-500'}`}>
                   {getDesignStyleIcon(option.value)}
+                </div>
+                <div className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {option.label}
+                </div>
+                <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {option.desc}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
+      {/* Расположение меню */}
+      <div className="mb-8">
+        <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Расположение меню
+        </h3>
+        <div className="grid grid-cols-3 gap-4">
+          {navPositionOptions.map((option) => {
+            const isActive = settings.navPosition === option.value
+            return (
+              <button
+                key={option.value}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleSettingChange({ navPosition: option.value })
+                }}
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                  isActive
+                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
+                    : isDark
+                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
+                }`}
+                style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
+              >
+                {isActive && (
+                  <div className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-primary-500 text-white rounded-full animate-scale-in">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+                <div className={`mb-3 flex justify-center transition-all duration-300 ${isActive ? 'text-primary-500 scale-110' : isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {getNavPositionIcon(option.value)}
                 </div>
                 <div className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
                   {option.label}
@@ -752,6 +835,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [indicatorTop, setIndicatorTop] = useState(0)
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
 
+  const getFormattedPhoneNumber = (phoneNumber?: string, countryCode?: string) => {
+    if (!phoneNumber) return ''
+    try {
+      const phoneNumberParsed = parsePhoneNumberFromString(phoneNumber, countryCode as any)
+      return phoneNumberParsed ? phoneNumberParsed.formatInternational() : phoneNumber
+    } catch (error) {
+      console.error('Ошибка при форматировании номера телефона:', error)
+      return phoneNumber
+    }
+  }
+
   // Функция закрытия с проверкой изменений
   const handleClose = React.useCallback(() => {
     if (hasUnsavedChanges && activeTab === 'appearance') {
@@ -941,62 +1035,77 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Модальное окно предупреждения */}
         {showCloseWarning && (
           <div 
-            className="absolute inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm"
+            className="absolute inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             <div 
-              className={`w-96 p-6 rounded-xl shadow-2xl ${
+              className={`w-96 p-8 rounded-2xl shadow-2xl transform transition-all scale-100 ${
                 isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
               }`}
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className={`text-lg font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                Несохранённые изменения
-              </h3>
-              <p className={`text-sm mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                У вас есть несохранённые изменения. Вы хотите сохранить их перед закрытием?
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowCloseWarning(false)
-                    setHasUnsavedChanges(false)
-                    onClose()
-                  }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isDark
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  Не сохранять
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowCloseWarning(false)
-                  }}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    isDark
-                      ? 'text-gray-400 hover:text-white hover:bg-gray-700'
-                      : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                  }`}
-                >
-                  Отмена
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation()
-                    setShowCloseWarning(false)
-                    setHasUnsavedChanges(false)
-                    // Здесь будет логика сохранения
-                    onClose()
-                  }}
-                  className="px-4 py-2 rounded-lg bg-primary-500 text-white text-sm font-medium hover:bg-primary-600 transition-colors"
-                >
-                  Сохранить
-                </button>
+              <div className="flex flex-col gap-4">
+                <div className="text-center">
+                  <div className={`mx-auto w-12 h-12 mb-4 rounded-full flex items-center justify-center ${
+                    isDark ? 'bg-yellow-500/20 text-yellow-500' : 'bg-yellow-100 text-yellow-600'
+                  }`}>
+                    <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                  </div>
+                  <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    Несохранённые изменения
+                  </h3>
+                  <p className={`text-sm mb-6 leading-relaxed ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    У вас есть несохранённые изменения. Вы хотите сохранить их перед закрытием?
+                  </p>
+                </div>
+
+                <div className="flex flex-col gap-3 w-full">
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setShowCloseWarning(false)
+                      setHasUnsavedChanges(false)
+                      // Здесь будет логика сохранения
+                      onClose()
+                    }}
+                    className="w-full py-3 px-4 rounded-xl bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-gray-900"
+                  >
+                    Сохранить и выйти
+                  </button>
+                  
+                  <div className="flex gap-3 w-full">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowCloseWarning(false)
+                        setHasUnsavedChanges(false)
+                        onClose()
+                      }}
+                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                        isDark
+                          ? 'bg-gray-700 text-red-400 hover:bg-gray-600 hover:text-red-300'
+                          : 'bg-gray-100 text-red-600 hover:bg-gray-200 hover:text-red-700'
+                      }`}
+                    >
+                      Не сохранять
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        setShowCloseWarning(false)
+                      }}
+                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
+                        isDark
+                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+                      }`}
+                    >
+                      Отмена
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -1208,7 +1317,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </label>
                     <input
                       type="tel"
-                      defaultValue={user?.phone_number || ''}
+                      defaultValue={getFormattedPhoneNumber(user?.phone_number, user?.country || 'US')}
                       disabled
                       className={`w-full px-4 py-3 border rounded-lg cursor-not-allowed opacity-60 ${
                         isDark

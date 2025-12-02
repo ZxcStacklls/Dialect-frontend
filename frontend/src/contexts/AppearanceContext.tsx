@@ -5,6 +5,7 @@ export type AccentColor = 'blue' | 'purple' | 'green' | 'orange' | 'pink' | 'red
 export type BorderRadius = 'small' | 'medium' | 'large'
 export type CompactMode = 'default' | 'compact' | 'cozy'
 export type DesignStyle = 'default' | 'modern' | 'classic'
+export type NavPosition = 'left' | 'right' | 'bottom' // ⭐ Новое
 
 interface AppearanceSettings {
   themeMode: ThemeMode
@@ -12,6 +13,7 @@ interface AppearanceSettings {
   borderRadius: BorderRadius
   compactMode: CompactMode
   designStyle: DesignStyle
+  navPosition: NavPosition // ⭐ Новое
   blurIntensity: number // 0-100
   messageSpacing: number // 0-20
   animationsEnabled: boolean
@@ -22,7 +24,7 @@ interface AppearanceContextType {
   settings: AppearanceSettings
   updateSettings: (newSettings: Partial<AppearanceSettings>) => void
   resetSettings: () => void
-  currentTheme: 'dark' | 'light' // Актуальная применённая тема (с учётом auto)
+  currentTheme: 'dark' | 'light'
 }
 
 const defaultSettings: AppearanceSettings = {
@@ -31,6 +33,7 @@ const defaultSettings: AppearanceSettings = {
   borderRadius: 'medium',
   compactMode: 'default',
   designStyle: 'default',
+  navPosition: 'left', // ⭐ По умолчанию слева
   blurIntensity: 60,
   messageSpacing: 12,
   animationsEnabled: true,
@@ -132,7 +135,9 @@ export const AppearanceProvider: React.FC<AppearanceProviderProps> = ({ children
     const saved = localStorage.getItem('appearanceSettings')
     if (saved) {
       try {
-        return { ...defaultSettings, ...JSON.parse(saved) }
+        const parsed = JSON.parse(saved)
+        // Merge with defaultSettings to ensure new fields (like navPosition) exist
+        return { ...defaultSettings, ...parsed }
       } catch {
         return defaultSettings
       }
@@ -215,7 +220,7 @@ export const AppearanceProvider: React.FC<AppearanceProviderProps> = ({ children
     // Применяем стиль дизайна
     root.setAttribute('data-design-style', settings.designStyle)
 
-    // Применяем или отключаем анимации (только для мессенджера, не для auth страниц)
+    // Применяем или отключаем анимации
     if (!settings.animationsEnabled) {
       root.classList.add('no-animations')
     } else {
@@ -243,4 +248,3 @@ export const AppearanceProvider: React.FC<AppearanceProviderProps> = ({ children
 
   return <AppearanceContext.Provider value={value}>{children}</AppearanceContext.Provider>
 }
-
