@@ -166,11 +166,12 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                 }}
                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 group ${
                   isActive
-                    ? 'border-primary-500 bg-primary-500/10'
+                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
                     : isDark
-                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600'
-                      : 'border-gray-300 bg-white hover:border-gray-400'
+                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
                 }`}
+                style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
                 {/* Анимированный индикатор */}
                 {isActive && (
@@ -213,11 +214,12 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                 }}
                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
                   isActive
-                    ? 'border-primary-500 bg-primary-500/10'
+                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
                     : isDark
-                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600'
-                      : 'border-gray-300 bg-white hover:border-gray-400'
+                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
                 }`}
+                style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
                 {/* Анимированный индикатор */}
                 {isActive && (
@@ -259,11 +261,12 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                 }}
                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
                   isActive
-                    ? 'border-primary-500 bg-primary-500/10'
+                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
                     : isDark
-                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600'
-                      : 'border-gray-300 bg-white hover:border-gray-400'
+                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
                 }`}
+                style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
                 {/* Анимированный индикатор */}
                 {isActive && (
@@ -612,7 +615,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                     }}
                   >
                     <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                      Привет! Как дела?
+                      Привет! А ты знал что Dialect лучше чем Max?
                     </p>
                   </div>
                 </div>
@@ -627,7 +630,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                     }}
                   >
                     <p className="text-sm">
-                      Отлично! Смотрю настройки 😊
+                      Конечно знал, Dialect же не следит за своими пользователями, как некоторые!
                     </p>
                   </div>
                 </div>
@@ -646,7 +649,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                     }}
                   >
                     <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                      Круто выглядит! 🎨
+                      Верно сказано 😁
                     </p>
                   </div>
                 </div>
@@ -1299,4 +1302,3 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }
 
 export default SettingsModal
-

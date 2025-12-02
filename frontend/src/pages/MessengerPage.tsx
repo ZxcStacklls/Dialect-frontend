@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAppearance } from '../contexts/AppearanceContext'
+import { useToast } from '../contexts/ToastContext'
 import DefaultAvatar from '../components/DefaultAvatar'
 import SettingsModal from '../components/SettingsModal'
 import { getApiBaseUrl } from '../utils/platform'
@@ -26,6 +27,7 @@ const MessengerPage: React.FC = () => {
   const { user, refreshUser, logout } = useAuth()
   const { theme, toggleTheme } = useTheme()
   const { settings } = useAppearance()
+  const { addToast } = useToast()
   const [selectedChat, setSelectedChat] = useState<number | null>(null)
   const [isOnlineState, setIsOnlineState] = useState(isOnline())
   const [chatsPanelWidth, setChatsPanelWidth] = useState(300)
@@ -514,6 +516,22 @@ const MessengerPage: React.FC = () => {
   const avatarUrl = getAvatarUrl(user?.avatar_url)
 
   const isDark = theme === 'dark'
+
+  // Функция для копирования username
+  const copyUsername = async (username: string, e?: React.MouseEvent) => {
+    if (e) {
+      e.stopPropagation()
+      e.preventDefault()
+    }
+    
+    try {
+      await navigator.clipboard.writeText(username)
+      addToast(`Username @${username} скопирован`, 'success', 3000)
+    } catch (error) {
+      console.error('Ошибка при копировании username:', error)
+      addToast('Не удалось скопировать username', 'error', 3000)
+    }
+  }
   
   return (
     <div className={`messenger-container flex h-screen overflow-hidden select-none ${
@@ -687,11 +705,13 @@ const MessengerPage: React.FC = () => {
                         {/* Username */}
                         {user?.username && (
                           <div 
-                            className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0"
+                            className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0 cursor-pointer hover:text-primary-400"
                             style={{
                               transform: hoveredStatus ? 'translateY(0)' : 'translateY(100%)',
                               opacity: hoveredStatus ? 1 : 0
                             }}
+                            onClick={(e) => copyUsername(user.username!, e)}
+                            title="Нажмите, чтобы скопировать username"
                           >
                             @{user.username}
                           </div>
@@ -699,7 +719,11 @@ const MessengerPage: React.FC = () => {
                       </>
                     ) : (
                       user?.username && (
-                        <div className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                        <div 
+                          className={`text-xs truncate cursor-pointer hover:text-primary-500 transition-colors ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
+                          onClick={(e) => copyUsername(user.username!, e)}
+                          title="Нажмите, чтобы скопировать username"
+                        >
                           @{user.username}
                         </div>
                       )
@@ -974,11 +998,13 @@ const MessengerPage: React.FC = () => {
                                           {/* Username */}
                                           {foundUser.username && (
                                             <div 
-                                              className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0"
+                                              className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0 cursor-pointer hover:text-primary-400"
                                               style={{
                                                 transform: hoveredUserStatus === foundUser.id ? 'translateY(-100%)' : 'translateY(0)',
                                                 opacity: hoveredUserStatus === foundUser.id ? 0 : 1
                                               }}
+                                              onClick={(e) => copyUsername(foundUser.username, e)}
+                                              title="Нажмите, чтобы скопировать username"
                                             >
                                               @{foundUser.username}
                                             </div>
@@ -997,7 +1023,11 @@ const MessengerPage: React.FC = () => {
                                           </div>
                                         </>
                                       ) : foundUser.username ? (
-                                        <div className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                                        <div 
+                                          className={`text-xs truncate cursor-pointer hover:text-primary-500 transition-colors ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
+                                          onClick={(e) => copyUsername(foundUser.username, e)}
+                                          title="Нажмите, чтобы скопировать username"
+                                        >
                                           @{foundUser.username}
                                         </div>
                                       ) : (
