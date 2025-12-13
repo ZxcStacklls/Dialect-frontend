@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
-import { useAppearance, CompactMode, ThemeMode, DesignStyle, NavPosition } from '../contexts/AppearanceContext'
+import { useAppearance, CompactMode, ThemeMode, DesignStyle, NavPosition, ChatsPosition } from '../contexts/AppearanceContext'
 import DefaultAvatar from './DefaultAvatar'
 import { getApiBaseUrl } from '../utils/platform'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
@@ -56,13 +56,59 @@ const getNavIcon = (iconName: string, className: string = 'w-5 h-5') => {
 }
 
 // Компонент для вкладки "Внешний вид"
-const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettingsChange: () => void }> = ({ isDark, onClose, onSettingsChange }) => {
+const AppearanceTab: React.FC<{ 
+  isDark: boolean
+  onClose: () => void
+  onSettingsChange: () => void
+  saveRef?: React.MutableRefObject<(() => void) | null>
+}> = ({ isDark, onClose, onSettingsChange, saveRef }) => {
   const { settings, updateSettings, resetSettings } = useAppearance()
   const { user } = useAuth()
+  
+  // Локальное состояние для отложенных изменений
+  const [pendingSettings, setPendingSettings] = useState(settings)
+  const [hasChanges, setHasChanges] = useState(false)
+  
+  // Используем pendingSettings для отображения превью
+  const isModern = pendingSettings.designStyle === 'modern'
 
   const handleSettingChange = (newSettings: any) => {
-    updateSettings(newSettings)
+    setPendingSettings(prev => ({ ...prev, ...newSettings }))
+    setHasChanges(true)
     onSettingsChange()
+  }
+  
+  const handleSave = () => {
+    updateSettings(pendingSettings)
+    setHasChanges(false)
+    onClose()
+  }
+
+  // Экспортируем функцию сохранения через ref
+  React.useEffect(() => {
+    if (saveRef) {
+      saveRef.current = () => {
+        updateSettings(pendingSettings)
+        setHasChanges(false)
+      }
+    }
+    return () => {
+      if (saveRef) {
+        saveRef.current = null
+      }
+    }
+  }, [pendingSettings, saveRef, updateSettings])
+  
+  const handleReset = () => {
+    resetSettings()
+    setPendingSettings(settings)
+    setHasChanges(false)
+  }
+  
+  const handleCancel = () => {
+    setPendingSettings(settings)
+    setHasChanges(false)
+    onClose()
   }
 
   const getAvatarUrl = (avatarUrl?: string | null): string | null => {
@@ -93,6 +139,11 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
     { value: 'right', label: 'Справа', desc: 'Для левшей или RTL' },
   ]
 
+  const chatsPositionOptions: { value: ChatsPosition; label: string; desc: string }[] = [
+    { value: 'left', label: 'Слева', desc: 'Панель чатов слева от контента' },
+    { value: 'right', label: 'Справа', desc: 'Панель чатов справа от контента' },
+  ]
+
   const getNavPositionIcon = (pos: NavPosition) => {
     const baseClass = "w-full h-full border-2 border-current rounded opacity-40"
     const activeClass = "absolute bg-current opacity-100"
@@ -119,6 +170,32 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
             <div className={`${activeClass} left-0 right-0 bottom-0 h-2 rounded-b`}></div>
           </div>
         )
+    }
+  }
+
+  const getChatsPositionIcon = (pos: ChatsPosition) => {
+    const baseClass = "w-full h-full border-2 border-current rounded opacity-40"
+    const activeClass = "absolute bg-current opacity-100"
+    
+    switch (pos) {
+      case 'left':
+        return (
+          <div className="w-8 h-6 relative flex items-center justify-center">
+            <div className={baseClass}></div>
+            <div className={`${activeClass} left-0 top-0 bottom-0 w-1/3 rounded-l`}></div>
+            <div className={`${activeClass} right-0 top-0 bottom-0 w-2/3 rounded-r`}></div>
+          </div>
+        )
+      case 'right':
+        return (
+          <div className="w-8 h-6 relative flex items-center justify-center">
+            <div className={baseClass}></div>
+            <div className={`${activeClass} left-0 top-0 bottom-0 w-2/3 rounded-l`}></div>
+            <div className={`${activeClass} right-0 top-0 bottom-0 w-1/3 rounded-r`}></div>
+          </div>
+        )
+      default:
+        return null
     }
   }
 
@@ -153,8 +230,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
 
   const designStyleOptions: { value: DesignStyle; label: string; desc: string }[] = [
     { value: 'default', label: 'Стандартный', desc: 'Классический стиль Dialect' },
-    { value: 'modern', label: 'Современный', desc: 'Более яркие цвета и акценты' },
-    { value: 'classic', label: 'Классический', desc: 'Традиционный стиль мессенджера' },
+    { value: 'modern', label: 'Современный', desc: 'Liquid Glass, Glassmorphism и прозрачность' },
   ]
 
   const getDesignStyleIcon = (style: DesignStyle) => {
@@ -171,10 +247,10 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
           </svg>
         )
-      case 'classic':
+      default:
         return (
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
           </svg>
         )
     }
@@ -193,7 +269,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
         </h3>
         <div className="grid grid-cols-3 gap-4">
           {themeOptions.map((option) => {
-            const isActive = settings.themeMode === option.value
+            const isActive = pendingSettings.themeMode === option.value
             return (
               <button
                 key={option.value}
@@ -239,9 +315,9 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
         <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
           Стиль дизайна
         </h3>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-2 gap-4">
           {designStyleOptions.map((option) => {
-            const isActive = settings.designStyle === option.value
+            const isActive = pendingSettings.designStyle === option.value
             return (
               <button
                 key={option.value}
@@ -288,7 +364,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
         </h3>
         <div className="grid grid-cols-3 gap-4">
           {navPositionOptions.map((option) => {
-            const isActive = settings.navPosition === option.value
+            const isActive = pendingSettings.navPosition === option.value
             return (
               <button
                 key={option.value}
@@ -327,6 +403,52 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
         </div>
       </div>
 
+      {/* Расположение панели чатов */}
+      <div className="mb-8">
+        <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+          Расположение поля с чатами
+        </h3>
+        <div className="grid grid-cols-2 gap-4">
+          {chatsPositionOptions.map((option) => {
+            const isActive = pendingSettings.chatsPosition === option.value
+            return (
+              <button
+                key={option.value}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  handleSettingChange({ chatsPosition: option.value })
+                }}
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
+                  isActive
+                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
+                    : isDark
+                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
+                }`}
+                style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
+              >
+                {isActive && (
+                  <div className="absolute top-2 right-2 w-5 h-5 flex items-center justify-center bg-primary-500 text-white rounded-full animate-scale-in">
+                    <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+                <div className={`mb-3 flex justify-center transition-all duration-300 ${isActive ? 'text-primary-500 scale-110' : isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {getChatsPositionIcon(option.value)}
+                </div>
+                <div className={`font-semibold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {option.label}
+                </div>
+                <div className={`text-xs ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  {option.desc}
+                </div>
+              </button>
+            )
+          })}
+        </div>
+      </div>
+
       {/* Режим компактности */}
       <div className="mb-8">
         <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -334,7 +456,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
         </h3>
         <div className="grid grid-cols-3 gap-4">
           {compactModeOptions.map((option) => {
-            const isActive = settings.compactMode === option.value
+            const isActive = pendingSettings.compactMode === option.value
             return (
               <button
                 key={option.value}
@@ -382,14 +504,14 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               type="range"
               min="0"
               max="100"
-              value={settings.blurIntensity}
+              value={pendingSettings.blurIntensity}
               onChange={(e) => {
                 e.stopPropagation()
                 handleSettingChange({ blurIntensity: Number(e.target.value) })
               }}
               onClick={(e) => e.stopPropagation()}
               className="slider-modern w-full"
-              style={{ '--slider-progress': `${settings.blurIntensity}%` } as React.CSSProperties}
+              style={{ '--slider-progress': `${pendingSettings.blurIntensity}%` } as React.CSSProperties}
             />
             <div className="flex justify-between mt-1 px-1">
               <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>0%</span>
@@ -401,7 +523,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
             }`}
           >
-            {settings.blurIntensity}%
+            {pendingSettings.blurIntensity}%
           </div>
         </div>
         <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -420,14 +542,14 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               type="range"
               min="0"
               max="20"
-              value={settings.messageSpacing}
+              value={pendingSettings.messageSpacing}
               onChange={(e) => {
                 e.stopPropagation()
                 handleSettingChange({ messageSpacing: Number(e.target.value) })
               }}
               onClick={(e) => e.stopPropagation()}
               className="slider-modern w-full"
-              style={{ '--slider-progress': `${(settings.messageSpacing / 20) * 100}%` } as React.CSSProperties}
+              style={{ '--slider-progress': `${(pendingSettings.messageSpacing / 20) * 100}%` } as React.CSSProperties}
             />
             <div className="flex justify-between mt-1 px-1">
               <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>0px</span>
@@ -439,7 +561,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
             }`}
           >
-            {settings.messageSpacing}px
+            {pendingSettings.messageSpacing}px
           </div>
         </div>
         <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -459,14 +581,14 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               min="0.8"
               max="1.2"
               step="0.05"
-              value={settings.fontScale}
+              value={pendingSettings.fontScale}
               onChange={(e) => {
                 e.stopPropagation()
                 handleSettingChange({ fontScale: Number(e.target.value) })
               }}
               onClick={(e) => e.stopPropagation()}
               className="slider-modern w-full"
-              style={{ '--slider-progress': `${((settings.fontScale - 0.8) / (1.2 - 0.8)) * 100}%` } as React.CSSProperties}
+              style={{ '--slider-progress': `${((pendingSettings.fontScale - 0.8) / (1.2 - 0.8)) * 100}%` } as React.CSSProperties}
             />
             <div className="flex justify-between mt-1 px-1">
               <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>80%</span>
@@ -478,7 +600,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
             }`}
           >
-            {(settings.fontScale * 100).toFixed(0)}%
+            {(pendingSettings.fontScale * 100).toFixed(0)}%
           </div>
         </div>
         <p className={`text-xs mt-2 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -500,15 +622,15 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
           <button
             onClick={(e) => {
               e.stopPropagation()
-              handleSettingChange({ animationsEnabled: !settings.animationsEnabled })
+              handleSettingChange({ animationsEnabled: !pendingSettings.animationsEnabled })
             }}
             className={`relative w-14 h-7 rounded-full transition-all duration-300 ease-out ${
-              settings.animationsEnabled ? 'bg-primary-500' : isDark ? 'bg-gray-700' : 'bg-gray-300'
+              pendingSettings.animationsEnabled ? 'bg-primary-500' : isDark ? 'bg-gray-700' : 'bg-gray-300'
             }`}
           >
             <div
               className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-lg transition-all duration-300 ease-out ${
-                settings.animationsEnabled ? 'translate-x-7' : 'translate-x-0'
+                pendingSettings.animationsEnabled ? 'translate-x-7' : 'translate-x-0'
               }`}
             />
           </button>
@@ -521,38 +643,78 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
           Предварительный просмотр мессенджера
         </h3>
         <div 
-          className={`overflow-hidden border-2 shadow-2xl ${
-            isDark ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-300'
+          className={`overflow-hidden shadow-2xl ${
+            isModern 
+              ? 'border border-white/10' 
+              : `border-2 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-300'}`
           }`}
           style={{ 
-            borderRadius: `var(--border-radius, 0.75rem)`,
-            transform: `scale(${settings.compactMode === 'compact' ? '0.95' : settings.compactMode === 'cozy' ? '1.05' : '1'})`,
+            borderRadius: isModern ? '20px' : `var(--border-radius, 0.75rem)`,
+            transform: `scale(${pendingSettings.compactMode === 'compact' ? '0.95' : pendingSettings.compactMode === 'cozy' ? '1.05' : '1'})`,
+            background: isModern 
+              ? 'linear-gradient(135deg, rgba(15, 20, 45, 0.95) 0%, rgba(20, 30, 60, 0.98) 100%)'
+              : undefined,
           }}
         >
           {/* Мини-версия MessengerPage */}
-          <div className="flex h-96">
-            {/* Навигация */}
-            <div className={`w-16 flex-shrink-0 border-r flex flex-col items-center justify-center ${
-              isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'
+          <div className={`flex ${
+            pendingSettings.navPosition === 'bottom' ? 'flex-col h-96' : 'flex-row h-96'
+          } ${
+            pendingSettings.navPosition === 'right' ? 'flex-row-reverse' : ''
+          }`}>
+            {/* Wrapper для чатов и контента с возможностью изменения порядка */}
+            <div className={`flex-1 flex overflow-hidden flex-row ${
+              pendingSettings.chatsPosition === 'right' ? 'flex-row-reverse' : ''
             }`}>
-              <div className="flex flex-col gap-4">
-                {['home', 'groups', 'phone', 'chat', 'settings'].map((iconName, i) => (
-                  <div
-                    key={i}
-                    className={`w-12 h-12 flex items-center justify-center rounded-xl transition-all duration-300 ${
-                      i === 3 ? 'text-primary-500 scale-105' : isDark ? 'text-gray-500' : 'text-gray-400'
-                    }`}
-                  >
-                    {getNavIcon(iconName, 'w-6 h-6')}
-                  </div>
-                ))}
+            {/* Навигация - показываем только для left/right */}
+            {pendingSettings.navPosition !== 'bottom' && (
+              <div className={`w-14 flex-shrink-0 flex flex-col items-center justify-center ${
+                isModern 
+                  ? '' 
+                  : `${pendingSettings.navPosition === 'right' ? 'border-l' : 'border-r'} ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
+              }`}>
+                <div 
+                  className={`flex flex-col gap-1 ${isModern ? 'p-2' : ''}`}
+                  style={isModern ? {
+                    background: 'linear-gradient(180deg, rgba(70, 90, 160, 0.4) 0%, rgba(55, 75, 145, 0.5) 50%, rgba(70, 90, 160, 0.4) 100%)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.18)',
+                    borderRadius: '24px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.2)',
+                  } : undefined}
+                >
+                  {['home', 'groups', 'phone', 'chat', 'settings'].map((iconName, i) => (
+                    <div
+                      key={i}
+                      className={`w-8 h-8 flex items-center justify-center transition-all duration-300 ${
+                        isModern
+                          ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
+                          : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
+                      }`}
+                      style={isModern && i === 3 ? { boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)' } : undefined}
+                    >
+                      {getNavIcon(iconName, 'w-4 h-4')}
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Панель чатов */}
-            <div className={`w-64 flex-shrink-0 border-r flex flex-col ${
-              isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-white/90 border-gray-300/50'
-            }`}>
+            <div 
+              className={`flex-shrink-0 flex flex-col ${
+                pendingSettings.navPosition === 'bottom' ? 'flex-1' : 'w-48'
+              } ${
+                pendingSettings.chatsPosition === 'right' ? 'border-l' : 'border-r'
+              } ${
+                isModern 
+                  ? 'border-white/5'
+                  : `${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-white/90 border-gray-300/50'}`
+              }`}
+              style={isModern ? {
+                background: 'linear-gradient(135deg, rgba(30, 40, 80, 0.6) 0%, rgba(20, 30, 70, 0.7) 100%)',
+              } : undefined}
+            >
               {/* Профиль пользователя */}
               <div className="mt-2 mb-1 px-3">
                 <div className="flex items-center py-2">
@@ -583,13 +745,13 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                   <div className="flex-1 min-w-0 ml-2">
                     <div 
                       className={`font-semibold text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
-                      style={{ fontSize: `calc(0.75rem * ${settings.fontScale})` }}
+                      style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
                     >
                       {user?.first_name || 'Пользователь'} {user?.last_name || ''}
                     </div>
                     <div 
                       className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
-                      style={{ fontSize: `calc(0.65rem * ${settings.fontScale})` }}
+                      style={{ fontSize: `calc(0.65rem * ${pendingSettings.fontScale})` }}
                     >
                       {user?.status_text || '@username'}
                     </div>
@@ -608,11 +770,14 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               {/* Поиск */}
               <div className="px-3 py-2">
                 <div 
-                  className={`px-2 py-1.5 border flex items-center gap-2 ${
-                    isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'
+                  className={`px-2 py-1.5 flex items-center gap-2 ${
+                    isModern
+                      ? 'border border-white/10'
+                      : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
                   }`}
                   style={{ 
-                    borderRadius: `var(--border-radius, 0.75rem)`,
+                    borderRadius: isModern ? '12px' : `var(--border-radius, 0.75rem)`,
+                    background: isModern ? 'rgba(255, 255, 255, 0.06)' : undefined,
                   }}
                 >
                   <svg className={`w-3 h-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -620,7 +785,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                   </svg>
                   <span 
                     className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                    style={{ fontSize: `calc(0.75rem * ${settings.fontScale})` }}
+                    style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
                   >
                     Поиск
                   </span>
@@ -633,11 +798,16 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                   <div
                     key={i}
                     className={`px-3 py-2 transition-colors ${
-                      i === 1 
-                        ? isDark ? 'bg-primary-500/10' : 'bg-primary-500/5'
-                        : isDark ? 'hover:bg-primary-500/5' : 'hover:bg-gray-100'
+                      isModern
+                        ? `mx-2 rounded-xl ${i === 1 
+                            ? 'bg-[rgba(99,130,255,0.2)] border border-[rgba(99,130,255,0.3)]' 
+                            : 'bg-white/[0.03]'
+                          }`
+                        : (i === 1 
+                            ? (isDark ? 'bg-primary-500/10' : 'bg-primary-500/5')
+                            : (isDark ? 'hover:bg-primary-500/5' : 'hover:bg-gray-100'))
                     }`}
-                    style={{ marginBottom: `calc(${settings.messageSpacing}px / 3)` }}
+                    style={{ marginBottom: `calc(${pendingSettings.messageSpacing}px / 3)` }}
                   >
                     <div className="flex items-center gap-2">
                       <div 
@@ -647,13 +817,13 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                       <div className="flex-1 min-w-0">
                         <div 
                           className={`font-medium text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
-                          style={{ fontSize: `calc(0.75rem * ${settings.fontScale})` }}
+                          style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
                         >
                           Чат {i}
                         </div>
                         <div 
                           className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
-                          style={{ fontSize: `calc(0.65rem * ${settings.fontScale})` }}
+                          style={{ fontSize: `calc(0.65rem * ${pendingSettings.fontScale})` }}
                         >
                           Последнее сообщение...
                         </div>
@@ -665,10 +835,17 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
             </div>
 
             {/* Область чата */}
-            <div className={`flex-1 flex flex-col ${isDark ? 'bg-gray-950/50' : 'bg-gray-100/50'}`}>
+            <div 
+              className={`flex-1 flex flex-col ${
+                isModern ? '' : (isDark ? 'bg-gray-950/50' : 'bg-gray-100/50')
+              }`}
+              style={isModern ? {
+                background: 'linear-gradient(135deg, rgba(8, 12, 30, 0.95) 0%, rgba(12, 18, 40, 0.98) 100%)',
+              } : undefined}
+            >
               {/* Заголовок чата */}
-              <div className={`px-4 py-3 border-b flex items-center gap-2 ${
-                isDark ? 'border-gray-800/50' : 'border-gray-300/50'
+              <div className={`px-4 py-3 flex items-center gap-2 ${
+                isModern ? 'border-b border-white/5' : `border-b ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`
               }`}>
                 <div 
                   className={`w-8 h-8 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
@@ -676,7 +853,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                 />
                 <div 
                   className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  style={{ fontSize: `calc(0.875rem * ${settings.fontScale})` }}
+                  style={{ fontSize: `calc(0.875rem * ${pendingSettings.fontScale})` }}
                 >
                   Чат 1
                 </div>
@@ -685,16 +862,22 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               {/* Сообщения */}
               <div className="flex-1 p-4 space-y-3 overflow-hidden">
                 {/* Входящее сообщение */}
-                <div className="flex items-end gap-2" style={{ marginBottom: `${settings.messageSpacing}px` }}>
+                <div className="flex items-end gap-2" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
                   <div 
                     className={`w-6 h-6 flex-shrink-0 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
                     style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
                   />
                   <div 
-                    className={`px-3 py-2 max-w-xs ${isDark ? 'bg-gray-800/50' : 'bg-white'}`}
+                    className={`px-3 py-2 max-w-xs ${
+                      isModern 
+                        ? 'border border-white/10' 
+                        : (isDark ? 'bg-gray-800/50' : 'bg-white')
+                    }`}
                     style={{ 
-                      borderRadius: `var(--border-radius, 0.75rem)`,
-                      fontSize: `calc(0.875rem * ${settings.fontScale})`
+                      borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
+                      fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
+                      background: isModern ? 'rgba(255, 255, 255, 0.08)' : undefined,
+                      backdropFilter: isModern ? 'blur(10px)' : undefined,
                     }}
                   >
                     <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
@@ -704,12 +887,18 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                 </div>
 
                 {/* Исходящее сообщение */}
-                <div className="flex items-end gap-2 justify-end" style={{ marginBottom: `${settings.messageSpacing}px` }}>
+                <div className="flex items-end gap-2 justify-end" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
                   <div 
-                    className="px-3 py-2 max-w-xs bg-primary-500 text-white"
+                    className={`px-3 py-2 max-w-xs text-white ${
+                      isModern ? 'border border-white/15' : 'bg-primary-500'
+                    }`}
                     style={{ 
-                      borderRadius: `var(--border-radius, 0.75rem)`,
-                      fontSize: `calc(0.875rem * ${settings.fontScale})`
+                      borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
+                      fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
+                      background: isModern 
+                        ? 'linear-gradient(135deg, rgba(99, 110, 200, 0.9) 0%, rgba(79, 90, 180, 1) 100%)' 
+                        : undefined,
+                      boxShadow: isModern ? '0 4px 20px rgba(99, 110, 200, 0.4)' : undefined,
                     }}
                   >
                     <p className="text-sm">
@@ -719,16 +908,22 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                 </div>
 
                 {/* Входящее сообщение */}
-                <div className="flex items-end gap-2" style={{ marginBottom: `${settings.messageSpacing}px` }}>
+                <div className="flex items-end gap-2" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
                   <div 
                     className={`w-6 h-6 flex-shrink-0 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
                     style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
                   />
                   <div 
-                    className={`px-3 py-2 max-w-xs ${isDark ? 'bg-gray-800/50' : 'bg-white'}`}
+                    className={`px-3 py-2 max-w-xs ${
+                      isModern 
+                        ? 'border border-white/10' 
+                        : (isDark ? 'bg-gray-800/50' : 'bg-white')
+                    }`}
                     style={{ 
-                      borderRadius: `var(--border-radius, 0.75rem)`,
-                      fontSize: `calc(0.875rem * ${settings.fontScale})`
+                      borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
+                      fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
+                      background: isModern ? 'rgba(255, 255, 255, 0.08)' : undefined,
+                      backdropFilter: isModern ? 'blur(10px)' : undefined,
                     }}
                   >
                     <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
@@ -739,16 +934,23 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
               </div>
 
               {/* Поле ввода */}
-              <div className={`px-4 py-3 border-t ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`}>
+              <div className={`px-4 py-3 ${
+                isModern ? 'border-t border-white/5' : `border-t ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`
+              }`}>
                 <div 
-                  className={`px-3 py-2 border flex items-center gap-2 ${
-                    isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'
+                  className={`px-3 py-2 flex items-center gap-2 ${
+                    isModern 
+                      ? 'border border-white/10' 
+                      : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
                   }`}
-                  style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
+                  style={{ 
+                    borderRadius: isModern ? '14px' : `var(--border-radius, 0.75rem)`,
+                    background: isModern ? 'rgba(255, 255, 255, 0.06)' : undefined,
+                  }}
                 >
                   <span 
                     className={`text-xs flex-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                    style={{ fontSize: `calc(0.75rem * ${settings.fontScale})` }}
+                    style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
                   >
                     Сообщение...
                   </span>
@@ -761,6 +963,41 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
                 </div>
               </div>
             </div>
+            </div>
+
+            {/* Навигация снизу - показываем только для bottom */}
+            {pendingSettings.navPosition === 'bottom' && (
+              <div className={`h-14 flex-shrink-0 flex items-center justify-center ${
+                isModern 
+                  ? '' 
+                  : `border-t ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
+              }`}>
+                <div 
+                  className={`flex flex-row gap-1 ${isModern ? 'px-3 py-2' : ''}`}
+                  style={isModern ? {
+                    background: 'linear-gradient(90deg, rgba(70, 90, 160, 0.4) 0%, rgba(55, 75, 145, 0.5) 50%, rgba(70, 90, 160, 0.4) 100%)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1.5px solid rgba(255, 255, 255, 0.18)',
+                    borderRadius: '24px',
+                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.2)',
+                  } : undefined}
+                >
+                  {['home', 'groups', 'phone', 'chat', 'settings'].map((iconName, i) => (
+                    <div
+                      key={i}
+                      className={`w-8 h-8 flex items-center justify-center transition-all duration-300 ${
+                        isModern
+                          ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
+                          : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
+                      }`}
+                      style={isModern && i === 3 ? { boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)' } : undefined}
+                    >
+                      {getNavIcon(iconName, 'w-4 h-4')}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <p className={`text-xs mt-3 text-center ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -775,7 +1012,7 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
         <button
           onClick={(e) => {
             e.stopPropagation()
-            resetSettings()
+            handleReset()
           }}
           className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
             isDark
@@ -785,15 +1022,37 @@ const AppearanceTab: React.FC<{ isDark: boolean; onClose: () => void; onSettings
         >
           Сбросить настройки
         </button>
-        <button
-          onClick={(e) => {
-            e.stopPropagation()
-            onClose()
-          }}
-          className="px-6 py-2.5 rounded-lg text-sm font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors"
-        >
-          Готово
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleCancel()
+            }}
+            className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isDark
+                ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+            }`}
+          >
+            Отмена
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation()
+              handleSave()
+            }}
+            disabled={!hasChanges}
+            className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              hasChanges
+                ? 'bg-primary-500 text-white hover:bg-primary-600'
+                : isDark
+                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            Сохранить
+          </button>
+        </div>
       </div>
     </div>
   )
@@ -816,6 +1075,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const { theme } = useTheme()
   const { settings: appearanceSettings } = useAppearance()
   const isDark = theme === 'dark'
+  const isModern = appearanceSettings.designStyle === 'modern'
   
   const [internalActiveTab, setInternalActiveTab] = useState<string>('profile')
   const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab
@@ -834,6 +1094,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [showCloseWarning, setShowCloseWarning] = useState(false)
   const [indicatorTop, setIndicatorTop] = useState(0)
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
+  const appearanceSaveRef = useRef<(() => void) | null>(null)
 
   const getFormattedPhoneNumber = (phoneNumber?: string, countryCode?: string) => {
     if (!phoneNumber) return ''
@@ -893,20 +1154,66 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen])
 
-  // Расчёт позиции индикатора на основе реальной позиции кнопки
-  useEffect(() => {
+  // Функция для расчета позиции индикатора
+  const calculateIndicatorPosition = React.useCallback(() => {
     const activeButton = tabRefs.current[activeTab]
     if (activeButton) {
       const parent = activeButton.parentElement
       if (parent) {
+        // Используем getBoundingClientRect для точного расчета с учетом всех отступов
         const buttonRect = activeButton.getBoundingClientRect()
         const parentRect = parent.getBoundingClientRect()
-        const relativeTop = buttonRect.top - parentRect.top
-        const centerOffset = (buttonRect.height - 44) / 2 // 44 - высота индикатора
+        
+        // Вычисляем относительную позицию кнопки внутри родителя
+        // Учитываем scrollTop для правильного позиционирования при прокрутке
+        const relativeTop = buttonRect.top - parentRect.top + parent.scrollTop
+        
+        // Высота индикатора (h-11 = 44px)
+        const INDICATOR_HEIGHT = 44
+        // Высота кнопки
+        const BUTTON_HEIGHT = buttonRect.height
+        
+        // Центрируем индикатор относительно кнопки
+        const centerOffset = (BUTTON_HEIGHT - INDICATOR_HEIGHT) / 2
+        
         setIndicatorTop(relativeTop + centerOffset)
       }
     }
-  }, [activeTab, isOpen])
+  }, [activeTab])
+
+  // Расчёт позиции индикатора на основе реальной позиции кнопки
+  useEffect(() => {
+    // Добавляем небольшую задержку для полного рендера DOM
+    const timeoutId = setTimeout(() => {
+      calculateIndicatorPosition()
+    }, 10) // Небольшая задержка для завершения рендера
+    
+    return () => clearTimeout(timeoutId)
+  }, [activeTab, isOpen, calculateIndicatorPosition])
+
+  // Пересчет позиции при прокрутке и изменении размера окна
+  useEffect(() => {
+    if (!isOpen) return
+
+    const parent = tabRefs.current[activeTab]?.parentElement
+    if (!parent) return
+
+    const handleScroll = () => {
+      calculateIndicatorPosition()
+    }
+
+    const handleResize = () => {
+      calculateIndicatorPosition()
+    }
+
+    parent.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      parent.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [isOpen, activeTab, calculateIndicatorPosition])
 
   // Получить полный URL аватарки
   const getAvatarUrl = (avatarUrl?: string | null): string | null => {
@@ -1008,9 +1315,11 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       {/* Модальное окно */}
       <div 
         className={`relative w-[90vw] h-[90vh] max-w-[1200px] rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
-          isDark 
-            ? 'bg-gray-900 border border-gray-800/50' 
-            : 'bg-white border border-gray-200'
+          isModern 
+            ? 'modern-modal' 
+            : (isDark 
+                ? 'bg-gray-900 border border-gray-800/50' 
+                : 'bg-white border border-gray-200')
         } ${
           isOpen 
             ? 'scale-100 translate-y-0' 
@@ -1065,9 +1374,12 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   <button
                     onClick={(e) => {
                       e.stopPropagation()
+                      // Вызываем функцию сохранения, если она доступна
+                      if (appearanceSaveRef.current) {
+                        appearanceSaveRef.current()
+                      }
                       setShowCloseWarning(false)
                       setHasUnsavedChanges(false)
-                      // Здесь будет логика сохранения
                       onClose()
                     }}
                     className="w-full py-3 px-4 rounded-xl bg-primary-500 text-white text-sm font-semibold hover:bg-primary-600 transition-all shadow-lg shadow-primary-500/20 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 focus:ring-offset-gray-900"
@@ -1115,7 +1427,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="flex h-full w-full">
           {/* Левая панель навигации */}
           <div className={`w-72 flex-shrink-0 border-r flex flex-col ${
-            isDark ? 'border-gray-800/50 bg-gray-900/50' : 'border-gray-200 bg-gray-50/50'
+            isModern 
+              ? 'modern-settings-sidebar' 
+              : (isDark ? 'border-gray-800/50 bg-gray-900/50' : 'border-gray-200 bg-gray-50/50')
           }`}>
             {/* Заголовок */}
             <div className={`px-6 py-6 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
@@ -1128,7 +1442,9 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex-1 overflow-y-auto py-2 scrollbar-thin relative">
               {/* Анимированный индикатор */}
               <div
-                className="absolute right-0 w-1 h-11 bg-primary-500 rounded-l-full transition-all duration-300 ease-out"
+                className={`absolute right-0 w-1 h-11 rounded-l-full transition-all duration-300 ease-out ${
+                  isModern ? 'modern-tab-indicator' : 'bg-primary-500'
+                }`}
                 style={{
                   top: `${indicatorTop}px`,
                   opacity: indicatorTop > 0 ? 1 : 0,
@@ -1146,13 +1462,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       setActiveTab(tab.id)
                     }}
                     className={`w-full px-6 py-3 flex items-center gap-3 text-left transition-all duration-300 ${
-                      isActive
+                      isModern 
+                        ? `modern-settings-item ${isActive ? 'active' : ''}`
+                        : ''
+                    } ${
+                      !isModern && (isActive
                         ? isDark
                           ? 'text-primary-400'
                           : 'text-primary-600'
                         : isDark
                           ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/30'
-                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50'
+                          : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50')
                     }`}
                   >
                     {getTabIcon(tab.icon)}
@@ -1394,6 +1714,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   isDark={isDark} 
                   onClose={onClose} 
                   onSettingsChange={() => setHasUnsavedChanges(true)}
+                  saveRef={appearanceSaveRef}
                 />
               ) : (
                 <div className="flex items-center justify-center h-full">

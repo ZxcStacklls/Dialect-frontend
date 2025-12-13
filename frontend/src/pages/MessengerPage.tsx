@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react'
+import React, { useState, useRef, useEffect, useCallback } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAppearance } from '../contexts/AppearanceContext'
@@ -50,9 +50,14 @@ const MessengerPage: React.FC = () => {
   const [isCompactCollapsing, setIsCompactCollapsing] = useState(false)
   const [isPanelAnimating, setIsPanelAnimating] = useState(false)
   
-  // Определяем текущее расположение навигации
+  // Ref для кнопок навигации
+  const navButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
+  
+  // Определяем стиль дизайна и расположение навигации
+  const isModern = settings.designStyle === 'modern'
   const isNavBottom = settings.navPosition === 'bottom'
   const isNavRight = settings.navPosition === 'right'
+  const isChatsRight = settings.chatsPosition === 'right'
 
   // Ref для доступа к актуальной ширине внутри обработчиков событий без пересоздания эффекта
   const chatsPanelWidthRef = useRef(chatsPanelWidth)
@@ -333,20 +338,75 @@ const MessengerPage: React.FC = () => {
     { id: 'settings', icon: 'settings', label: 'Настройки' },
   ]
   
+  // Функция для расчета позиции индикатора на основе реальных позиций кнопок
+  const calculateIndicatorPosition = React.useCallback(() => {
+    const activeButton = navButtonRefs.current[activeNavItem]
+    if (activeButton && !isModern) {
+      const container = activeButton.parentElement
+      if (container) {
+        const buttonRect = activeButton.getBoundingClientRect()
+        const containerRect = container.getBoundingClientRect()
+        
+        if (isNavBottom) {
+          // Горизонтальная навигация (снизу)
+          const relativeLeft = buttonRect.left - containerRect.left + container.scrollLeft
+          const INDICATOR_WIDTH = 32 // w-8 = 32px
+          const BUTTON_WIDTH = buttonRect.width
+          const centerOffset = (BUTTON_WIDTH - INDICATOR_WIDTH) / 2
+          setIndicatorPosition(relativeLeft + centerOffset)
+        } else {
+          // Вертикальная навигация (слева/справа)
+          const relativeTop = buttonRect.top - containerRect.top + container.scrollTop
+          const INDICATOR_HEIGHT = 32 // h-8 = 32px
+          const BUTTON_HEIGHT = buttonRect.height
+          const centerOffset = (BUTTON_HEIGHT - INDICATOR_HEIGHT) / 2
+          setIndicatorPosition(relativeTop + centerOffset)
+        }
+      }
+    }
+  }, [activeNavItem, isModern, isNavBottom])
+
   // Вычисление позиции индикатора для анимации
   useEffect(() => {
-    const activeIndex = navItems.findIndex(item => item.id === activeNavItem)
-    if (activeIndex !== -1) {
-      const BUTTON_SIZE = 48 // w-12 h-12
-      const GAP = 16 // gap-4
-      const INDICATOR_SIZE = 32 // размер индикатора (длина или высота в зависимости от ориентации)
-      
-      // Формула одинакова для X и Y, зависит только от ориентации контейнера
-      const position = activeIndex * (BUTTON_SIZE + GAP) + BUTTON_SIZE / 2 - INDICATOR_SIZE / 2
-      
-      setIndicatorPosition(position)
+    if (isModern) {
+      setIndicatorPosition(null)
+      return
     }
-  }, [activeNavItem])
+    
+    // Добавляем небольшую задержку для полного рендера DOM
+    const timeoutId = setTimeout(() => {
+      calculateIndicatorPosition()
+    }, 10)
+    
+    return () => clearTimeout(timeoutId)
+  }, [activeNavItem, isModern, calculateIndicatorPosition])
+
+  // Пересчет позиции при прокрутке и изменении размера окна
+  useEffect(() => {
+    if (isModern) return
+
+    const activeButton = navButtonRefs.current[activeNavItem]
+    if (!activeButton) return
+
+    const container = activeButton.parentElement
+    if (!container) return
+
+    const handleScroll = () => {
+      calculateIndicatorPosition()
+    }
+
+    const handleResize = () => {
+      calculateIndicatorPosition()
+    }
+
+    container.addEventListener('scroll', handleScroll, { passive: true })
+    window.addEventListener('resize', handleResize)
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [activeNavItem, isModern, calculateIndicatorPosition])
 
   // Обработка ресайза панели
   useEffect(() => {
@@ -356,16 +416,31 @@ const MessengerPage: React.FC = () => {
       const currentWidth = chatsPanelWidthRef.current
       let newWidth = 0
       
-      // Обновленная логика: Чаты всегда слева (кроме случая, если навигация слева, тогда они правее навигации)
-      if (settings.navPosition === 'left') {
-        newWidth = e.clientX - NAV_SIZE
+      if (isChatsRight) {
+        // Панель чатов справа: resize handle слева от панели (на границе с контентом)
+        // Ширина = расстояние от правого края окна до курсора
+        const windowWidth = window.innerWidth
+        if (settings.navPosition === 'right') {
+          // Если навигация справа, панель чатов между навигацией и контентом
+          newWidth = windowWidth - e.clientX - NAV_SIZE
+        } else if (settings.navPosition === 'left') {
+          // Если навигация слева, панель чатов справа от контента
+          newWidth = windowWidth - e.clientX
+        } else {
+          // Навигация снизу
+          newWidth = windowWidth - e.clientX
+        }
       } else {
-        // Если навигация Справа или Снизу, панель чатов начинается от левого края окна (0)
-        // Поэтому ширина просто равна позиции мыши
-        newWidth = e.clientX
+        // Панель чатов слева: resize handle справа от панели (на границе с контентом)
+        if (settings.navPosition === 'left') {
+          newWidth = e.clientX - NAV_SIZE
+        } else {
+          // Если навигация Справа или Снизу, панель чатов начинается от левого края окна (0)
+          newWidth = e.clientX
+        }
       }
       
-      // Направление движения для анимаций (теперь всегда одинаковое, так как чаты слева)
+      // Направление движения для анимаций
       let isDraggingExpanding = newWidth > currentWidth
       let isDraggingCollapsing = newWidth < currentWidth
 
@@ -409,7 +484,7 @@ const MessengerPage: React.FC = () => {
       document.body.style.cursor = ''
       document.body.style.userSelect = ''
     }
-  }, [COLLAPSE_THRESHOLD, COMPACT_WIDTH, EXPAND_THRESHOLD, MAX_WIDTH, MIN_WIDTH, isResizing, animatePanelWidth, settings.navPosition, NAV_SIZE])
+  }, [COLLAPSE_THRESHOLD, COMPACT_WIDTH, EXPAND_THRESHOLD, MAX_WIDTH, MIN_WIDTH, isResizing, animatePanelWidth, settings.navPosition, NAV_SIZE, isChatsRight])
 
   useEffect(() => {
     const previousWidth = previousPanelWidthRef.current
@@ -523,27 +598,29 @@ const MessengerPage: React.FC = () => {
     }`}>
       {/* Навигационная панель (теперь всегда первая в DOM для flex-reverse логики) */}
       <div className={`flex-shrink-0 flex transition-all duration-300 ease-in-out ${
-        isNavBottom ? 'flex-row border-t h-20 w-full items-center justify-center' : 'flex-col w-20 h-full' 
+        isNavBottom ? 'flex-row h-16 w-full items-center justify-center' : 'flex-col w-[72px] h-full' 
       } ${
-        isNavRight ? 'border-l' : (!isNavBottom ? 'border-r' : '')
+        !isModern && (isNavRight ? 'border-l' : (!isNavBottom ? 'border-r' : 'border-t'))
       } ${
-        isDark 
+        isModern ? 'liquid-nav' : (isDark 
           ? 'border-gray-800/50 bg-gray-900/40'
-          : 'border-gray-300/50 bg-gray-100/90'
+          : 'border-gray-300/50 bg-gray-100/90')
       }`}>
         <div className={`flex items-center justify-center w-full h-full ${
            isNavBottom ? 'flex-row' : 'flex-col'
         }`}>
-          <div className={`relative flex gap-4 ${
+          {/* Liquid Glass Container для Modern стиля */}
+          <div className={`relative flex gap-2 ${
             isNavBottom ? 'flex-row' : 'flex-col'
+          } ${
+            isModern ? `liquid-nav-container ${isNavBottom ? 'horizontal' : ''}` : ''
           }`}>
-            {/* Анимированный индикатор */}
-            {indicatorPosition !== null && (
+            {/* Анимированный индикатор (только для не-modern стиля) */}
+            {!isModern && indicatorPosition !== null && (
               <div
-                className={`absolute bg-primary-500 transition-all duration-300 ease-out ${
-                  isNavBottom 
-                    ? 'bottom-[-14px] h-1 w-8 rounded-t-full left-0' // Снизу (горизонтально)
-                    : `w-1 h-8 top-0 ${isNavRight ? 'right-[-14px] rounded-l-full' : 'left-[-14px] rounded-r-full'}` // Сбоку (вертикально)
+                className={`absolute transition-all duration-300 ease-out bg-primary-500 ${isNavBottom 
+                  ? 'bottom-[-14px] h-1 w-8 rounded-t-full left-0' 
+                  : `w-1 h-8 top-0 ${isNavRight ? 'right-[-14px] rounded-l-full' : 'left-[-14px] rounded-r-full'}`
                 }`}
                 style={{
                   transform: isNavBottom 
@@ -558,6 +635,7 @@ const MessengerPage: React.FC = () => {
               return (
                 <button
                   key={item.id}
+                  ref={(el) => { navButtonRefs.current[item.id] = el }}
                   onClick={() => {
                     setActiveNavItem(item.id)
                     if (item.id === 'settings') {
@@ -566,16 +644,25 @@ const MessengerPage: React.FC = () => {
                       handleCloseSettings()
                     }
                   }}
-                  className={`relative w-12 h-12 flex items-center justify-center transition-all duration-300 ease-out ${
-                    isActive
-                      ? 'text-primary-500 scale-105'
-                      : isDark
-                        ? 'text-gray-500 hover:text-primary-300 hover:bg-primary-500/10'
-                        : 'text-gray-400 hover:text-primary-500 hover:bg-primary-500/10'
+                  className={`relative flex items-center justify-center transition-all duration-300 ease-out ${
+                    isModern 
+                      ? `modern-nav-btn ${isActive ? 'active' : ''}`
+                      : `w-12 h-12 ${isActive
+                          ? 'text-primary-500 scale-105'
+                          : isDark
+                            ? 'text-gray-500 hover:text-primary-300 hover:bg-primary-500/10'
+                            : 'text-gray-400 hover:text-primary-500 hover:bg-primary-500/10'
+                        }`
+                  } ${
+                    isModern && !isActive 
+                      ? (isDark ? 'text-white/80 hover:text-white' : 'text-gray-500 hover:text-gray-800')
+                      : ''
                   }`}
                   style={{ 
-                    borderRadius: `var(--border-radius, 0.75rem)`,
-                    fontSize: `calc(1rem * var(--font-scale, 1))`
+                    borderRadius: isModern ? '50%' : `var(--border-radius, 0.75rem)`,
+                    fontSize: `calc(1rem * var(--font-scale, 1))`,
+                    width: isModern ? '52px' : '48px',
+                    height: isModern ? '52px' : '48px',
                   }}
                   title={item.label}
                 >
@@ -588,16 +675,19 @@ const MessengerPage: React.FC = () => {
       </div>
 
       {/* WRAPPER для Чатов и Контента. 
-        Он всегда flex-row, чтобы чаты и контент оставались в ряд (Чаты слева, Контент справа), 
+        Он всегда flex-row, чтобы чаты и контент оставались в ряд, 
         даже если навигация переместилась вниз или вправо.
+        Порядок зависит от настройки chatsPosition.
       */}
-      <div className="flex-1 flex overflow-hidden relative h-full flex-row">
+      <div className={`flex-1 flex overflow-hidden relative h-full flex-row ${
+        isChatsRight ? 'flex-row-reverse' : ''
+      }`}>
         
         {/* Панель с чатами (масштабируемая) */}
         <div
           ref={chatsPanelRef}
-          className={`relative flex flex-col overflow-hidden border-r ${
-            isDark ? 'border-gray-800/50 bg-gray-900/40' : 'border-gray-300/50 bg-white/90'
+          className={`relative flex flex-col overflow-hidden ${
+            isModern ? 'modern-chat-panel' : (isDark ? 'bg-gray-900/40' : 'bg-white/90')
           }`}
             style={{
             width: `${chatsPanelWidth}px`,
@@ -614,11 +704,11 @@ const MessengerPage: React.FC = () => {
             <div className="mt-3 mb-1 flex-shrink-0">
               <div className="flex items-center py-2 pl-5 pr-3">
                 <div 
-                  className="relative flex-shrink-0 w-10 h-10 cursor-pointer"
+                  className={`relative flex-shrink-0 w-10 h-10 cursor-pointer ${isModern && isOnlineState ? 'modern-avatar-ring' : ''}`}
                   onClick={() => setIsSettingsOpen(true)}
                 >
-                  <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${
-                    isOnlineState ? 'border-green-500/60' : 'border-gray-600/40'
+                  <div className={`relative w-full h-full rounded-full overflow-hidden ${
+                    !isModern ? `border-2 ${isOnlineState ? 'border-green-500/60' : 'border-gray-600/40'}` : ''
                   }`}>
                     {user?.avatar_url && avatarUrl && !avatarError ? (
                       <img
@@ -653,22 +743,36 @@ const MessengerPage: React.FC = () => {
                     )}
                   </div>
                   {/* Индикатор онлайн */}
-                  <div 
-                    className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${
-                      isOnlineState 
-                        ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]' 
-                        : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
-                    }`}
-                    style={{ 
-                      zIndex: 20,
-                      opacity: isMinimized ? 0 : 1,
-                      transform: isMinimized ? 'scale(0)' : 'scale(1)'
-                    }}
-                  ></div>
+                  {!isModern && (
+                    <div 
+                      className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${
+                        isOnlineState 
+                          ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]' 
+                          : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
+                      }`}
+                      style={{ 
+                        zIndex: 20,
+                        opacity: isMinimized ? 0 : 1,
+                        transform: isMinimized ? 'scale(0)' : 'scale(1)'
+                      }}
+                    ></div>
+                  )}
+                  {isModern && isOnlineState && (
+                    <div 
+                      className="modern-online-indicator absolute -bottom-0.5 -right-0.5"
+                      style={{ 
+                        zIndex: 20,
+                        opacity: isMinimized ? 0 : 1,
+                        transform: isMinimized ? 'scale(0)' : 'scale(1)'
+                      }}
+                    ></div>
+                  )}
                 </div>
                 <div 
                   className={`flex-1 min-w-0 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden ${
-                    isMinimized ? 'opacity-0 w-0 ml-0' : 'opacity-100 w-auto ml-3'
+                    isMinimized 
+                      ? 'opacity-0 w-0 ml-0 mr-0' 
+                      : 'opacity-100 w-auto ml-3'
                   }`}
                   onClick={() => setIsSettingsOpen(true)}
                 >
@@ -750,10 +854,18 @@ const MessengerPage: React.FC = () => {
                     
                     {/* Выпадающее меню */}
                     {isProfileMenuOpen && (
-                      <div className={`absolute right-0 top-full mt-2 w-48 backdrop-blur-xl rounded-xl shadow-xl z-[100] overflow-hidden animate-fade-in ${
-                        isDark
-                          ? 'bg-gray-900/95 border border-gray-800/50'
-                          : 'bg-white/95 border border-gray-200/50'
+                      <div className={`absolute top-full mt-2 w-48 rounded-xl shadow-xl z-[100] overflow-hidden animate-fade-in ${
+                        // Меню всегда открывается в сторону, где есть место
+                        // Когда панель чатов справа, меню открывается справа (чтобы не выходить за экран)
+                        // Когда панель чатов слева, меню открывается справа (относительно кнопки)
+                        'right-0'
+                      } ${
+                        isModern 
+                          ? 'modern-dropdown' 
+                          : `backdrop-blur-xl ${isDark
+                              ? 'bg-gray-900/95 border border-gray-800/50'
+                              : 'bg-white/95 border border-gray-200/50'
+                            }`
                       }`}>
                         <div className="py-1">
                           <button
@@ -826,7 +938,7 @@ const MessengerPage: React.FC = () => {
             </div>
 
             {/* Разделительная линия между профилем и поиском */}
-            <div className={`mx-4 border-t my-1 ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'}`}></div>
+            <div className={`mx-4 my-1 ${isModern ? 'modern-divider' : `border-t ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'}`}`}></div>
           </div>
 
           {/* Блок поиска */}
@@ -855,10 +967,14 @@ const MessengerPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={handleSearchFocus}
-                  className={`flex-1 px-4 py-2 border-2 rounded-xl text-sm placeholder-gray-500/60 focus:outline-none focus:border-primary-500/60 focus:bg-primary-500/10 transition-all shadow-lg select-text ${
-                    isDark
-                      ? 'bg-gray-800/30 border-gray-700/40 text-white'
-                      : 'bg-white border-gray-300/60 text-gray-900'
+                  className={`flex-1 px-4 py-2 text-sm placeholder-gray-500/60 focus:outline-none transition-all shadow-lg select-text ${
+                    isModern 
+                      ? `modern-input ${isDark ? 'text-white' : 'text-gray-900'}`
+                      : `border-2 rounded-xl focus:border-primary-500/60 focus:bg-primary-500/10 ${
+                          isDark
+                            ? 'bg-gray-800/30 border-gray-700/40 text-white'
+                            : 'bg-white border-gray-300/60 text-gray-900'
+                        }`
                   }`}
                 />
                 {isSearchActive && (
@@ -880,7 +996,7 @@ const MessengerPage: React.FC = () => {
           )}
 
           {/* Разделительная линия после поиска */}
-          <div className={`mx-4 border-t mb-2 transition-opacity duration-300 ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`}></div>
+          <div className={`mx-4 mb-2 transition-opacity duration-300 ${isModern ? 'modern-divider' : `border-t ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`}`}></div>
 
           {/* Вкладки для поиска */}
           {!isMinimized && isSearchActive && (
@@ -942,10 +1058,13 @@ const MessengerPage: React.FC = () => {
                               return (
                                 <button
                                   key={foundUser.id}
-                                  className={`w-full px-6 py-3 transition-colors text-left ${
-                                    isDark 
-                                      ? 'hover:bg-primary-500/10' 
-                                      : 'hover:bg-primary-500/5'
+                                  className={`w-full transition-colors text-left ${
+                                    isModern 
+                                      ? 'modern-search-result'
+                                      : `px-6 py-3 ${isDark 
+                                          ? 'hover:bg-primary-500/10' 
+                                          : 'hover:bg-primary-500/5'
+                                        }`
                                   }`}
                                 >
                                   <div className="flex items-center gap-3">
@@ -1107,10 +1226,13 @@ const MessengerPage: React.FC = () => {
                       <button
                         key={index}
                         onClick={() => setSelectedChat(index)}
-                        className={`w-full ${isCompact ? 'px-3 py-2' : 'px-6 py-3'} transition-all duration-300 ease-in-out text-left ${
-                          isDark 
-                            ? 'hover:bg-primary-500/10' 
-                            : 'hover:bg-primary-500/5'
+                        className={`w-full transition-all duration-300 ease-in-out text-left ${
+                          isModern 
+                            ? `modern-chat-item ${selectedChat === index ? 'selected' : ''}`
+                            : `${isCompact ? 'px-3 py-2' : 'px-6 py-3'} ${isDark 
+                                ? 'hover:bg-primary-500/10' 
+                                : 'hover:bg-primary-500/5'
+                              }`
                         }`}
                       >
                         <div className={`flex items-center transition-all duration-300 ease-in-out ${isCompact ? 'gap-2' : 'gap-3'}`}>
@@ -1196,10 +1318,10 @@ const MessengerPage: React.FC = () => {
 
           {/* Разделитель для ресайза */}
           <div
-            className={`absolute top-0 w-1 h-full cursor-col-resize z-20 group ${
-              // Ручка ресайза всегда справа от панели чатов
-              'right-0'
-            }`}
+            className="absolute top-0 w-1 h-full cursor-col-resize z-20 group"
+            style={{
+              [isChatsRight ? 'left' : 'right']: 0
+            }}
             onMouseDown={(e) => {
               e.preventDefault()
               e.stopPropagation()
@@ -1216,16 +1338,29 @@ const MessengerPage: React.FC = () => {
               }
             }}
           >
-            <div className={`absolute top-1/2 -translate-y-1/2 right-0 w-1 h-20 transition-all rounded-l-full ${
-              isDark 
-                ? 'bg-gray-700/30 group-hover:bg-primary-500/70'
-                : 'bg-gray-300/50 group-hover:bg-primary-500/70'
-            }`} />
+            <div 
+              className={`absolute top-1/2 -translate-y-1/2 w-1 h-20 transition-all ${
+                isChatsRight 
+                  ? 'rounded-r-full' 
+                  : 'rounded-l-full'
+              } ${
+                isModern 
+                  ? 'modern-resize-handle'
+                  : (isDark 
+                      ? 'bg-gray-700/30 group-hover:bg-primary-500/70'
+                      : 'bg-gray-300/50 group-hover:bg-primary-500/70')
+              }`}
+              style={{
+                [isChatsRight ? 'left' : 'right']: 0
+              }}
+            />
           </div>
         </div>
 
         {/* Центральная область - чат, пустое состояние */}
-        <div className={`flex-1 flex items-center justify-center relative ${isDark ? 'bg-gray-950/50' : 'bg-gray-100/50'}`}>
+        <div className={`flex-1 flex items-center justify-center relative ${
+          isModern ? 'modern-message-area' : (isDark ? 'bg-gray-950/50' : 'bg-gray-100/50')
+        }`}>
           {hasSelectedChat ? (
             // TODO: Область открытого чата
             <div className="text-center">
@@ -1295,7 +1430,11 @@ const MessengerPage: React.FC = () => {
                     setIsSearchActive(true)
                     setTimeout(() => searchInputRef.current?.focus(), 300)
                   }}
-                  className="px-8 py-3 bg-primary-500 hover:bg-primary-400 rounded-lg transition-colors text-white font-semibold text-base shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50"
+                  className={`px-8 py-3 rounded-lg transition-colors text-white font-semibold text-base ${
+                    isModern 
+                      ? 'modern-btn' 
+                      : 'bg-primary-500 hover:bg-primary-400 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50'
+                  }`}
                 >
                   Найти друзей
                 </button>
@@ -1312,6 +1451,7 @@ const MessengerPage: React.FC = () => {
         activeTab={settingsActiveTab}
         onTabChange={setSettingsActiveTab}
       />
+
     </div>
   )
 }

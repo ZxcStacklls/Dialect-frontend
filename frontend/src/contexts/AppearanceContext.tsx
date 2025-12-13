@@ -5,7 +5,8 @@ export type AccentColor = 'blue' | 'purple' | 'green' | 'orange' | 'pink' | 'red
 export type BorderRadius = 'small' | 'medium' | 'large'
 export type CompactMode = 'default' | 'compact' | 'cozy'
 export type DesignStyle = 'default' | 'modern' | 'classic'
-export type NavPosition = 'left' | 'right' | 'bottom' // ⭐ Новое
+export type NavPosition = 'left' | 'right' | 'bottom'
+export type ChatsPosition = 'left' | 'right'
 
 interface AppearanceSettings {
   themeMode: ThemeMode
@@ -13,7 +14,8 @@ interface AppearanceSettings {
   borderRadius: BorderRadius
   compactMode: CompactMode
   designStyle: DesignStyle
-  navPosition: NavPosition // ⭐ Новое
+  navPosition: NavPosition
+  chatsPosition: ChatsPosition
   blurIntensity: number // 0-100
   messageSpacing: number // 0-20
   animationsEnabled: boolean
@@ -33,7 +35,8 @@ const defaultSettings: AppearanceSettings = {
   borderRadius: 'medium',
   compactMode: 'default',
   designStyle: 'default',
-  navPosition: 'left', // ⭐ По умолчанию слева
+  navPosition: 'left',
+  chatsPosition: 'left',
   blurIntensity: 60,
   messageSpacing: 12,
   animationsEnabled: true,
