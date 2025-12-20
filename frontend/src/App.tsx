@@ -3,7 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { LogoAnimationProvider } from './contexts/LogoAnimationContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { AppearanceProvider } from './contexts/AppearanceContext'
-import TitleBar from './components/TitleBar'
+import TitleBar, { TitleBarProvider } from './components/TitleBar'
 import WelcomePage from './pages/WelcomePage'
 import LoginPage from './pages/LoginPage'
 import SignUpPage from './pages/SignUpPage'
@@ -56,12 +56,14 @@ function App() {
       <ToastProvider>
         <AuthProvider>
           <LogoAnimationProvider>
-            <div className="app-container">
-              <TitleBar />
-              <HashRouter>
-                <AppContent />
-              </HashRouter>
-            </div>
+            <TitleBarProvider>
+              <div className="app-container">
+                <TitleBar />
+                <HashRouter>
+                  <AppContent />
+                </HashRouter>
+              </div>
+            </TitleBarProvider>
           </LogoAnimationProvider>
         </AuthProvider>
       </ToastProvider>

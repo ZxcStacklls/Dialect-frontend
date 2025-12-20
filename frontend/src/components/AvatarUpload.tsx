@@ -6,6 +6,7 @@ interface AvatarUploadProps {
   onValidationError?: (error: string | null) => void
   currentImage?: string | null
   validationError?: string | null
+  size?: number // размер в единицах Tailwind (w-{size} h-{size})
 }
 
 const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5 MB
@@ -17,7 +18,8 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
   onImageChange, 
   onValidationError,
   currentImage,
-  validationError 
+  validationError,
+  size = 32
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [preview, setPreview] = useState<string | null>(currentImage || null)
@@ -162,7 +164,8 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
       <div className="flex flex-col items-center gap-4">
         <div
           onClick={handleClick}
-          className="relative w-32 h-32 rounded-full overflow-hidden cursor-pointer group border-2 border-gray-700 hover:border-primary-500 transition-all"
+          className="relative rounded-full overflow-hidden cursor-pointer group border-2 border-gray-700 hover:border-primary-500 transition-all"
+          style={{ width: `${size * 0.25}rem`, height: `${size * 0.25}rem` }}
         >
           {preview ? (
             <>

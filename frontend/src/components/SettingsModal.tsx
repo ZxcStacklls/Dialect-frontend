@@ -1090,6 +1090,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [avatarError, setAvatarError] = useState(false)
   const [birthday, setBirthday] = useState<string>('')
   const [isAnimating, setIsAnimating] = useState(false)
+  const [shouldAnimateEnter, setShouldAnimateEnter] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [showCloseWarning, setShowCloseWarning] = useState(false)
   const [indicatorTop, setIndicatorTop] = useState(0)
@@ -1144,12 +1145,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     }
   }, [isOpen])
 
-  // Анимация появления
+  // Анимация появления и закрытия
   useEffect(() => {
     if (isOpen) {
       setIsAnimating(true)
+      // Небольшая задержка для запуска анимации входа после монтирования
+      const timer = setTimeout(() => {
+        setShouldAnimateEnter(true)
+      }, 10)
+      return () => clearTimeout(timer)
     } else {
-      const timer = setTimeout(() => setIsAnimating(false), 300)
+      setShouldAnimateEnter(false)
+      const timer = setTimeout(() => setIsAnimating(false), 400)
       return () => clearTimeout(timer)
     }
   }, [isOpen])
@@ -1297,15 +1304,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div 
-      className={`fixed inset-0 z-[9999] flex items-center justify-center transition-all duration-300 ${
-        isOpen ? 'opacity-100' : 'opacity-0'
-      }`}
+      className="fixed inset-0 z-[9999] flex items-center justify-center"
     >
       {/* Backdrop */}
       <div 
-        className={`absolute inset-0 transition-all duration-300 ${
+        className={`absolute inset-0 ${
           isDark ? 'bg-black/80' : 'bg-black/60'
-        } ${isOpen ? 'backdrop-blur-sm' : 'backdrop-blur-none'}`}
+        } ${shouldAnimateEnter && isOpen ? 'animate-backdrop-enter' : !isOpen && isAnimating ? 'animate-backdrop-exit' : 'opacity-0'}`}
         onClick={(e) => {
           e.stopPropagation()
           handleClose()
@@ -1314,17 +1319,13 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       
       {/* Модальное окно */}
       <div 
-        className={`relative w-[90vw] h-[90vh] max-w-[1200px] rounded-2xl shadow-2xl overflow-hidden transition-all duration-300 ${
+        className={`relative w-[90vw] h-[90vh] max-w-[1200px] rounded-2xl shadow-2xl overflow-hidden ${
           isModern 
             ? 'modern-modal' 
             : (isDark 
                 ? 'bg-gray-900 border border-gray-800/50' 
                 : 'bg-white border border-gray-200')
-        } ${
-          isOpen 
-            ? 'scale-100 translate-y-0' 
-            : 'scale-95 translate-y-4'
-        }`}
+        } ${shouldAnimateEnter && isOpen ? 'animate-modal-enter' : !isOpen && isAnimating ? 'animate-modal-exit' : 'opacity-0 scale-95 translate-y-4'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Кнопка закрытия */}
@@ -1424,7 +1425,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         )}
 
         {/* Контент настроек */}
-        <div className="flex h-full w-full">
+        <div className={`flex h-full w-full ${shouldAnimateEnter && isOpen ? 'animate-modal-content-enter' : 'opacity-0'}`}>
           {/* Левая панель навигации */}
           <div className={`w-72 flex-shrink-0 border-r flex flex-col ${
             isModern 

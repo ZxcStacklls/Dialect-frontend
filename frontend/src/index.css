@@ -416,6 +416,101 @@
     animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
   }
 
+  /* Анимация появления модального окна настроек */
+  @keyframes modalEnter {
+    0% {
+      opacity: 0;
+      transform: scale(0.92) translateY(30px);
+      filter: blur(8px);
+    }
+    60% {
+      opacity: 0.95;
+      transform: scale(1.01) translateY(-3px);
+      filter: blur(2px);
+    }
+    100% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  @keyframes modalExit {
+    0% {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
+    50% {
+      opacity: 0.8;
+      transform: scale(0.96) translateY(15px);
+      filter: blur(4px);
+    }
+    100% {
+      opacity: 0;
+      transform: scale(0.92) translateY(40px);
+      filter: blur(10px);
+    }
+  }
+
+  @keyframes backdropEnter {
+    from {
+      opacity: 0;
+      backdrop-filter: blur(0);
+      -webkit-backdrop-filter: blur(0);
+    }
+    to {
+      opacity: 1;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+  }
+
+  @keyframes backdropExit {
+    from {
+      opacity: 1;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+    to {
+      opacity: 0;
+      backdrop-filter: blur(0);
+      -webkit-backdrop-filter: blur(0);
+    }
+  }
+
+  @keyframes modalContentEnter {
+    0% {
+      opacity: 0;
+      transform: translateY(15px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-modal-enter {
+    animation: modalEnter 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  }
+
+  .animate-modal-exit {
+    animation: modalExit 0.35s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  }
+
+  .animate-backdrop-enter {
+    animation: backdropEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  }
+
+  .animate-backdrop-exit {
+    animation: backdropExit 0.3s cubic-bezier(0.4, 0, 0.6, 1) forwards;
+  }
+
+  .animate-modal-content-enter {
+    animation: modalContentEnter 0.4s cubic-bezier(0.4, 0, 0.2, 1) 0.15s forwards;
+    opacity: 0;
+  }
+
   /* Анимация появления слогана снизу с масштабированием и blur */
   @keyframes slideUpFromBottom {
     0% {
@@ -1511,6 +1606,154 @@
   .messenger-container {
     transform: scale(var(--ui-scale, 1));
     transform-origin: top left;
+  }
+
+  /* ============================================
+     ENHANCED UI STYLES
+     Smooth animations and interactions
+     ============================================ */
+
+  /* Smooth panel transitions */
+  .messenger-container > * {
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+  }
+
+  /* Navigation button hover animations */
+  .nav-btn-hover {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-btn-hover:hover {
+    transform: translateY(-2px);
+  }
+
+  .nav-btn-hover:active {
+    transform: translateY(0) scale(0.95);
+  }
+
+  /* Subtle glow effect on active nav */
+  .nav-btn-active {
+    box-shadow: 0 0 20px rgba(59, 130, 246, 0.3);
+  }
+
+  /* Smooth avatar animations */
+  .avatar-interactive {
+    transition: all 0.2s ease;
+  }
+
+  .avatar-interactive:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  /* Panel rounded corners with shadow */
+  .panel-rounded {
+    border-radius: 16px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Button press effect */
+  .btn-press {
+    transition: all 0.15s ease;
+  }
+
+  .btn-press:active {
+    transform: scale(0.95);
+  }
+
+  /* Subtle background pattern for depth */
+  .bg-pattern {
+    background-image: 
+      radial-gradient(circle at 20% 80%, rgba(59, 130, 246, 0.03) 0%, transparent 50%),
+      radial-gradient(circle at 80% 20%, rgba(139, 92, 246, 0.03) 0%, transparent 50%);
+  }
+
+  /* Window control buttons animation */
+  .window-control-btn {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .window-control-btn:hover svg {
+    transform: scale(1.1);
+  }
+
+  .window-control-btn:active {
+    transform: scale(0.9);
+  }
+
+  /* Smooth text transitions */
+  .text-transition {
+    transition: color 0.2s ease, opacity 0.2s ease;
+  }
+
+  /* Search input focus animation */
+  .search-input-animated {
+    transition: all 0.2s ease;
+  }
+
+  .search-input-animated:focus {
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  }
+
+  /* Dropdown menu animation */
+  @keyframes dropdownSlide {
+    from {
+      opacity: 0;
+      transform: translateY(-8px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .dropdown-animated {
+    animation: dropdownSlide 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Pill indicator animation */
+  .pill-indicator {
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Resize handle glow */
+  .resize-handle-glow:hover {
+    box-shadow: 0 0 8px rgba(59, 130, 246, 0.5);
+  }
+
+  /* Needle resize handle animation */
+  .needle-handle {
+    position: relative;
+  }
+
+  .needle-handle::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 3px;
+    height: 100px;
+    background: linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(59, 130, 246, 0.1) 15%,
+      rgba(59, 130, 246, 0.8) 50%,
+      rgba(59, 130, 246, 0.1) 85%,
+      transparent 100%
+    );
+    border-radius: 2px;
+    opacity: 0;
+    transition: opacity 0.2s ease, height 0.2s ease;
+  }
+
+  .needle-handle:hover::before {
+    opacity: 1;
+  }
+
+  /* Top right corner rounding for content area */
+  .content-area-rounded {
+    border-top-right-radius: 16px;
   }
 }
 

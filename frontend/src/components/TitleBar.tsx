@@ -1,6 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useTheme } from '../contexts/ThemeContext'
 
+// Заглушка для обратной совместимости
+export const TitleBarProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  return <>{children}</>
+}
+
 const TitleBar = () => {
   const { theme } = useTheme()
   const [isMaximized, setIsMaximized] = useState(false)
@@ -91,46 +96,23 @@ const TitleBar = () => {
 
   return (
     <div 
-      // ИЗМЕНЕНИЕ 1: px-4 заменено на pl-4 (только левый отступ)
-      className={`titlebar flex items-center justify-between backdrop-blur-xl border-b h-10 pl-4 select-none shadow-lg ${
+      className={`titlebar flex items-center justify-between backdrop-blur-xl h-10 select-none ${
         isDark
-          ? 'bg-gray-900/90 border-gray-800/50'
-          : 'bg-white/90 border-gray-200/50'
+          ? 'bg-gray-900/90'
+          : 'bg-white/90'
       }`}
       style={{
-        transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
+        transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
     >
-      {/* Левая часть - Drag область с логотипом */}
-      <div className="flex items-center gap-3 flex-1 drag-region cursor-move">
-        <div className="w-6 h-6 rounded overflow-hidden flex-shrink-0">
-          <img
-            src="/appicon_gradient.png"
-            alt="Dialect"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              const target = e.target as HTMLImageElement
-              target.src = '/appicon_default.png'
-            }}
-          />
-        </div>
-        <span 
-          className={`text-sm font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}
-          style={{
-            transition: 'color 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-          }}
-        >
-          Dialect
-        </span>
-      </div>
+      {/* Левая часть - Drag область */}
+      <div className="flex-1 drag-region cursor-move" />
 
       {/* Правая часть - Кнопки управления */}
-      {/* ИЗМЕНЕНИЕ 2: убран gap-0.5, добавлен h-full */}
       <div className="flex items-center h-full no-drag">
         {/* Кнопка свернуть */}
         <button
           onClick={handleMinimize}
-          // ИЗМЕНЕНИЕ 3: w-12, h-full, убран rounded-sm
           className={`titlebar-button w-12 h-full flex items-center justify-center ${
             isDark
               ? 'text-gray-400 hover:text-white hover:bg-gray-700/50'
@@ -149,7 +131,6 @@ const TitleBar = () => {
         {/* Кнопка развернуть/восстановить */}
         <button
           onClick={handleMaximize}
-          // ИЗМЕНЕНИЕ 4: w-12, h-full, убран rounded-sm
           className={`titlebar-button w-12 h-full flex items-center justify-center ${
             isDark
               ? 'text-gray-400 hover:text-white hover:bg-gray-700/50'
@@ -174,7 +155,6 @@ const TitleBar = () => {
         {/* Кнопка закрыть */}
         <button
           onClick={handleClose}
-          // ИЗМЕНЕНИЕ 5: w-12, h-full, убран rounded-sm
           className={`titlebar-button w-12 h-full flex items-center justify-center ${
             isDark
               ? 'text-gray-400 hover:text-white hover:bg-[#E81123]' // E81123 - стандартный красный цвет Windows

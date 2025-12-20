@@ -98,15 +98,17 @@ const AnimatedSlogans = () => {
   }
 
   return (
-    <div className="relative min-h-[200px] flex items-center justify-center overflow-hidden px-4">
+    <div className="relative min-h-[200px] flex items-center justify-center overflow-hidden px-4 sm:px-6 md:px-8">
       <p
-        className={`text-2xl md:text-3xl lg:text-4xl font-bold text-white text-center max-w-3xl leading-relaxed transition-all duration-700 ease-in-out ${
+        className={`text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white text-center max-w-3xl leading-relaxed transition-all duration-700 ease-in-out break-words hyphens-auto ${
           isVisible
             ? 'opacity-100 translate-y-0 scale-100'
             : 'opacity-0 -translate-y-8 scale-95'
         }`}
         style={{ 
           textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
+          wordBreak: 'break-word',
+          overflowWrap: 'break-word',
         }}
       >
         {formatSlogan(slogans[currentIndex] || slogans[0])}

@@ -1167,13 +1167,6 @@ const SignUpPage = () => {
               <div className="flex gap-4 pt-4">
                 <button
                   type="button"
-                  onClick={() => navigate('/')}
-                  className="px-8 py-4 text-gray-400 hover:text-white transition-colors"
-                >
-                  Назад
-                </button>
-                <button
-                  type="button"
                   onClick={handleNext}
                   disabled={checkingPhone}
                   className="flex-1 bg-primary-500 text-white py-4 px-8 rounded-lg font-semibold hover:bg-primary-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
@@ -1189,6 +1182,13 @@ const SignUpPage = () => {
                   ) : (
                     'Далее'
                   )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate('/')}
+                  className="px-8 py-4 text-gray-400 hover:text-white transition-colors border border-gray-600/40 rounded-lg hover:border-gray-600/60"
+                >
+                  Назад
                 </button>
               </div>
             </div>
@@ -1299,17 +1299,17 @@ const SignUpPage = () => {
 
               <div className="flex gap-4 pt-4">
                 <button
-                  type="button"
-                  onClick={handleBack}
-                  className="px-8 py-4 text-gray-400 hover:text-white transition-colors"
-                >
-                  Назад
-                </button>
-                <button
                   type="submit"
                   className="flex-1 bg-primary-500 text-white py-4 px-8 rounded-lg font-semibold hover:bg-primary-600 transition-all"
                 >
                   Далее
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="px-8 py-4 text-gray-400 hover:text-white transition-colors border border-gray-600/40 rounded-lg hover:border-gray-600/60"
+                >
+                  Назад
                 </button>
               </div>
             </form>
@@ -1318,27 +1318,31 @@ const SignUpPage = () => {
           {/* Шаг 3: Имя, фамилия, аватарка */}
           {currentStep === 3 && (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <AvatarUpload
-                onImageChange={(file) => {
-                  setFormData({ ...formData, avatar: file })
-                  // Если файл удален, сбрасываем ошибку
-                  if (!file) {
-                    setAvatarError(null)
-                  }
-                }}
-                onValidationError={(error) => {
-                  setAvatarError(error)
-                  // Если есть ошибка валидации, убираем файл из formData
-                  if (error) {
-                    setFormData(prev => ({ ...prev, avatar: null }))
-                  }
-                }}
-                validationError={avatarError}
-              />
-
-              <div className="grid grid-cols-2 gap-6 min-w-0">
-                <div className="space-y-3 min-w-0">
-                  <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Имя</label>
+              <div className="flex gap-6">
+                <div className="flex-shrink-0 flex items-start" style={{ paddingTop: '4.5rem' }}>
+                  <AvatarUpload
+                    size={48}
+                    onImageChange={(file) => {
+                      setFormData({ ...formData, avatar: file })
+                      // Если файл удален, сбрасываем ошибку
+                      if (!file) {
+                        setAvatarError(null)
+                      }
+                    }}
+                    onValidationError={(error) => {
+                      setAvatarError(error)
+                      // Если есть ошибка валидации, убираем файл из formData
+                      if (error) {
+                        setFormData(prev => ({ ...prev, avatar: null }))
+                      }
+                    }}
+                    validationError={avatarError}
+                  />
+                </div>
+                <div className="flex-1 space-y-6 min-w-0">
+                  <div className="space-y-6 min-w-0">
+                    <div className="space-y-3 min-w-0">
+                      <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Имя</label>
                   <div className={`relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg ${
                       firstNameError
                         ? 'border-red-500/60 bg-red-500/10 shadow-red-500/10'
@@ -1359,13 +1363,13 @@ const SignUpPage = () => {
                       <svg className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                         <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                       </svg>
-                      <p className="text-xs text-red-300 leading-relaxed">{firstNameError}</p>
+                      <p className="text-xs text-red-300 leading-relaxed">{firstNameError}                      </p>
                     </div>
                   )}
-                </div>
+                    </div>
 
-                <div className="space-y-3 min-w-0">
-                  <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Фамилия</label>
+                    <div className="space-y-3 min-w-0">
+                      <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Фамилия</label>
                   <div className="relative flex items-center border-2 min-w-0 rounded-xl transition-all shadow-lg border-gray-600/40 bg-white/5 hover:border-gray-600/60 hover:bg-white/10 focus-within:border-primary-500/60 focus-within:bg-primary-500/10 focus-within:shadow-primary-500/20">
                     <input
                       type="text"
@@ -1375,13 +1379,13 @@ const SignUpPage = () => {
                       onChange={handleChange}
                       className="flex-1 min-w-0 px-5 py-5 bg-transparent text-white text-lg placeholder-gray-500/60 focus:outline-none border-0 font-medium"
                     />
+                    </div>
                   </div>
-                </div>
-              </div>
+                  </div>
 
-              <div className="space-y-3 min-w-0">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Имя пользователя</label>
+                  <div className="space-y-3 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <label className="text-sm text-gray-400 uppercase tracking-wider font-medium">Имя пользователя</label>
                   {formData.username.length > 0 && (
                     <span className="text-xs text-gray-500">
                       {formData.username.length}/20
@@ -1466,16 +1470,11 @@ const SignUpPage = () => {
                     </div>
                   </div>
                 )}
+                  </div>
+                </div>
               </div>
 
               <div className="flex gap-4 pt-4">
-                <button
-                  type="button"
-                  onClick={handleBack}
-                  className="px-8 py-4 text-gray-400 hover:text-white transition-colors"
-                >
-                  Назад
-                </button>
                 <button
                   type="submit"
                   disabled={loading}
@@ -1493,6 +1492,13 @@ const SignUpPage = () => {
                     'Создать аккаунт'
                   )}
                 </button>
+                <button
+                  type="button"
+                  onClick={handleBack}
+                  className="px-8 py-4 text-gray-400 hover:text-white transition-colors border border-gray-600/40 rounded-lg hover:border-gray-600/60"
+                >
+                  Назад
+                </button>
               </div>
             </form>
           )}
@@ -1500,7 +1506,7 @@ const SignUpPage = () => {
 
         {/* Анимированные слоганы (только на первом шаге) */}
         {currentStep === 1 && (
-          <div className="hidden lg:flex flex-1 items-center justify-center max-w-xl min-w-0 flex-shrink">
+          <div className="hidden xl:flex flex-1 items-center justify-center max-w-xl min-w-0 flex-shrink">
             <AnimatedSlogans />
           </div>
         )}

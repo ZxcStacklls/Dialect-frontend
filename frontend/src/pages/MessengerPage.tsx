@@ -587,8 +587,8 @@ const MessengerPage: React.FC = () => {
   return (
     <div className={`messenger-container flex h-full overflow-hidden select-none ${
       isDark 
-        ? 'bg-gradient-to-br from-gray-950 via-gray-900 to-gray-950 text-white'
-        : 'bg-gradient-to-br from-gray-100 via-white to-gray-100 text-gray-900'
+        ? 'bg-gray-900/95 text-white'
+        : 'bg-white/95 text-gray-900'
     } ${
       // Flex direction: 
       // left -> row (Nav | Workspace)
@@ -596,15 +596,13 @@ const MessengerPage: React.FC = () => {
       // bottom -> col-reverse (Workspace / Nav) -> Workspace keeps (Chats | Content)
       isNavBottom ? 'flex-col-reverse' : isNavRight ? 'flex-row-reverse' : 'flex-row'
     }`}>
-      {/* Навигационная панель (теперь всегда первая в DOM для flex-reverse логики) */}
+      {/* Навигационная панель - в цвет titlebar */}
       <div className={`flex-shrink-0 flex transition-all duration-300 ease-in-out ${
         isNavBottom ? 'flex-row h-16 w-full items-center justify-center' : 'flex-col w-[72px] h-full' 
       } ${
-        !isModern && (isNavRight ? 'border-l' : (!isNavBottom ? 'border-r' : 'border-t'))
-      } ${
         isModern ? 'liquid-nav' : (isDark 
-          ? 'border-gray-800/50 bg-gray-900/40'
-          : 'border-gray-300/50 bg-gray-100/90')
+          ? 'bg-gray-900/95'
+          : 'bg-white/95')
       }`}>
         <div className={`flex items-center justify-center w-full h-full ${
            isNavBottom ? 'flex-row' : 'flex-col'
@@ -679,15 +677,18 @@ const MessengerPage: React.FC = () => {
         даже если навигация переместилась вниз или вправо.
         Порядок зависит от настройки chatsPosition.
       */}
-      <div className={`flex-1 flex overflow-hidden relative h-full flex-row ${
+      {/* WRAPPER для Чатов и Контента с закруглённым углом */}
+      <div className={`flex-1 flex overflow-hidden relative h-full flex-row rounded-tl-2xl ${
+        isDark ? 'bg-gray-950' : 'bg-gray-100'
+      } ${
         isChatsRight ? 'flex-row-reverse' : ''
       }`}>
         
         {/* Панель с чатами (масштабируемая) */}
         <div
           ref={chatsPanelRef}
-          className={`relative flex flex-col overflow-hidden ${
-            isModern ? 'modern-chat-panel' : (isDark ? 'bg-gray-900/40' : 'bg-white/90')
+          className={`relative flex flex-col overflow-hidden border-r ${
+            isModern ? 'modern-chat-panel' : (isDark ? 'bg-gray-900/50 border-gray-700/40' : 'bg-white/80 border-gray-200')
           }`}
             style={{
             width: `${chatsPanelWidth}px`,

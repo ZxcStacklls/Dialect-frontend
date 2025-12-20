@@ -103,15 +103,19 @@ const WelcomePage = () => {
 
       {/* Контент */}
       <div className="relative z-10 w-full flex items-center justify-center p-4">
-        <div className={`w-full max-w-4xl text-center transition-all duration-1000 ${
-          isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-        }`}>
+        <div 
+          className={`w-full max-w-4xl text-center transition-all ease-out ${
+            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+          }`}
+          style={{ transitionDuration: '2000ms' }}
+        >
           {/* Логотип с анимацией */}
           <div
             ref={logoRef}
-            className={`mb-8 ${
+            className={`mb-8 transition-all ease-out ${
               isAnimating ? 'animate-logo-move' : isVisible ? 'opacity-100 scale-100' : 'opacity-0 scale-90'
             }`}
+            style={{ transitionDuration: '1500ms', transitionDelay: '300ms' }}
           >
             <div className="w-24 h-24 mx-auto rounded-2xl overflow-hidden shadow-2xl">
               <img
@@ -127,23 +131,32 @@ const WelcomePage = () => {
           </div>
 
           {/* Заголовок */}
-          <h1 className={`text-5xl md:text-6xl font-bold text-white mb-4 transition-all duration-1000 delay-500 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`}>
+          <h1 
+            className={`text-5xl md:text-6xl font-bold text-white mb-4 transition-all ease-out ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+            }`}
+            style={{ transitionDuration: '1500ms', transitionDelay: '300ms' }}
+          >
             Добро пожаловать в Dialect
           </h1>
 
           {/* Подзаголовок */}
-          <p className={`text-xl md:text-2xl text-gray-300 mb-12 transition-all duration-1000 delay-700 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`}>
+          <p 
+            className={`text-xl md:text-2xl text-gray-300 mb-12 transition-all ease-out ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+            }`}
+            style={{ transitionDuration: '1500ms', transitionDelay: '300ms' }}
+          >
             Самый безопасный и быстрый мессенджер
           </p>
 
           {/* Кнопка */}
-          <div className={`transition-all duration-1000 delay-900 ${
-            isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-          }`}>
+          <div 
+            className={`transition-all ease-out ${
+              isVisible ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
+            }`}
+            style={{ transitionDuration: '1500ms', transitionDelay: '300ms' }}
+          >
             <button
               onClick={() => handleNavigation('/signup')}
               className="inline-block px-12 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white text-lg font-semibold rounded-xl hover:from-primary-600 hover:to-primary-700 transition-all shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50 hover:scale-105 transform duration-300"
@@ -153,9 +166,12 @@ const WelcomePage = () => {
           </div>
 
           {/* Дополнительная информация */}
-          <div className={`mt-16 text-gray-400 transition-all duration-1000 delay-1100 ${
-            isVisible ? 'opacity-100' : 'opacity-0'
-          }`}>
+          <div 
+            className={`mt-16 text-gray-400 transition-all ease-out ${
+              isVisible ? 'opacity-100' : 'opacity-0'
+            }`}
+            style={{ transitionDuration: '1500ms', transitionDelay: '300ms' }}
+          >
             <p className="mb-4">Уже есть аккаунт?</p>
             <button
               onClick={() => handleNavigation('/login')}
