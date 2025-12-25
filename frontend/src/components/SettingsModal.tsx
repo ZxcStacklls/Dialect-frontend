@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAppearance, CompactMode, ThemeMode, DesignStyle, NavPosition, ChatsPosition } from '../contexts/AppearanceContext'
 import DefaultAvatar from './DefaultAvatar'
+import SessionsTab from './SessionsTab'
 import { getApiBaseUrl } from '../utils/platform'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
 
@@ -56,7 +57,7 @@ const getNavIcon = (iconName: string, className: string = 'w-5 h-5') => {
 }
 
 // Компонент для вкладки "Внешний вид"
-const AppearanceTab: React.FC<{ 
+const AppearanceTab: React.FC<{
   isDark: boolean
   onClose: () => void
   onSettingsChange: () => void
@@ -64,11 +65,11 @@ const AppearanceTab: React.FC<{
 }> = ({ isDark, onClose, onSettingsChange, saveRef }) => {
   const { settings, updateSettings, resetSettings } = useAppearance()
   const { user } = useAuth()
-  
+
   // Локальное состояние для отложенных изменений
   const [pendingSettings, setPendingSettings] = useState(settings)
   const [hasChanges, setHasChanges] = useState(false)
-  
+
   // Используем pendingSettings для отображения превью
   const isModern = pendingSettings.designStyle === 'modern'
 
@@ -77,7 +78,7 @@ const AppearanceTab: React.FC<{
     setHasChanges(true)
     onSettingsChange()
   }
-  
+
   const handleSave = () => {
     updateSettings(pendingSettings)
     setHasChanges(false)
@@ -98,13 +99,13 @@ const AppearanceTab: React.FC<{
       }
     }
   }, [pendingSettings, saveRef, updateSettings])
-  
+
   const handleReset = () => {
     resetSettings()
     setPendingSettings(settings)
     setHasChanges(false)
   }
-  
+
   const handleCancel = () => {
     setPendingSettings(settings)
     setHasChanges(false)
@@ -147,7 +148,7 @@ const AppearanceTab: React.FC<{
   const getNavPositionIcon = (pos: NavPosition) => {
     const baseClass = "w-full h-full border-2 border-current rounded opacity-40"
     const activeClass = "absolute bg-current opacity-100"
-    
+
     switch (pos) {
       case 'left':
         return (
@@ -176,7 +177,7 @@ const AppearanceTab: React.FC<{
   const getChatsPositionIcon = (pos: ChatsPosition) => {
     const baseClass = "w-full h-full border-2 border-current rounded opacity-40"
     const activeClass = "absolute bg-current opacity-100"
-    
+
     switch (pos) {
       case 'left':
         return (
@@ -277,13 +278,12 @@ const AppearanceTab: React.FC<{
                   e.stopPropagation()
                   handleSettingChange({ themeMode: option.value })
                 }}
-                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 group ${
-                  isActive
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 group ${isActive
                     ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
                     : isDark
                       ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
                       : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
-                }`}
+                  }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
                 {/* Анимированный индикатор */}
@@ -325,13 +325,12 @@ const AppearanceTab: React.FC<{
                   e.stopPropagation()
                   handleSettingChange({ designStyle: option.value })
                 }}
-                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
-                  isActive
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${isActive
                     ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
                     : isDark
                       ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
                       : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
-                }`}
+                  }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
                 {/* Анимированный индикатор */}
@@ -372,13 +371,12 @@ const AppearanceTab: React.FC<{
                   e.stopPropagation()
                   handleSettingChange({ navPosition: option.value })
                 }}
-                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
-                  isActive
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${isActive
                     ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
                     : isDark
                       ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
                       : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
-                }`}
+                  }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
                 {isActive && (
@@ -418,13 +416,12 @@ const AppearanceTab: React.FC<{
                   e.stopPropagation()
                   handleSettingChange({ chatsPosition: option.value })
                 }}
-                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
-                  isActive
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${isActive
                     ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
                     : isDark
                       ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
                       : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
-                }`}
+                  }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
                 {isActive && (
@@ -464,13 +461,12 @@ const AppearanceTab: React.FC<{
                   e.stopPropagation()
                   handleSettingChange({ compactMode: option.value })
                 }}
-                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${
-                  isActive
+                className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${isActive
                     ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
                     : isDark
                       ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
                       : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
-                }`}
+                  }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
                 {/* Анимированный индикатор */}
@@ -518,10 +514,9 @@ const AppearanceTab: React.FC<{
               <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>100%</span>
             </div>
           </div>
-          <div 
-            className={`px-3 py-1.5 min-w-[60px] text-center text-sm font-bold rounded-lg ${
-              isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
-            }`}
+          <div
+            className={`px-3 py-1.5 min-w-[60px] text-center text-sm font-bold rounded-lg ${isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
+              }`}
           >
             {pendingSettings.blurIntensity}%
           </div>
@@ -556,10 +551,9 @@ const AppearanceTab: React.FC<{
               <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>20px</span>
             </div>
           </div>
-          <div 
-            className={`px-3 py-1.5 min-w-[60px] text-center text-sm font-bold rounded-lg ${
-              isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
-            }`}
+          <div
+            className={`px-3 py-1.5 min-w-[60px] text-center text-sm font-bold rounded-lg ${isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
+              }`}
           >
             {pendingSettings.messageSpacing}px
           </div>
@@ -595,10 +589,9 @@ const AppearanceTab: React.FC<{
               <span className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>120%</span>
             </div>
           </div>
-          <div 
-            className={`px-3 py-1.5 min-w-[60px] text-center text-sm font-bold rounded-lg ${
-              isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
-            }`}
+          <div
+            className={`px-3 py-1.5 min-w-[60px] text-center text-sm font-bold rounded-lg ${isDark ? 'bg-gray-800 text-primary-400' : 'bg-gray-100 text-primary-600'
+              }`}
           >
             {(pendingSettings.fontScale * 100).toFixed(0)}%
           </div>
@@ -624,14 +617,12 @@ const AppearanceTab: React.FC<{
               e.stopPropagation()
               handleSettingChange({ animationsEnabled: !pendingSettings.animationsEnabled })
             }}
-            className={`relative w-14 h-7 rounded-full transition-all duration-300 ease-out ${
-              pendingSettings.animationsEnabled ? 'bg-primary-500' : isDark ? 'bg-gray-700' : 'bg-gray-300'
-            }`}
+            className={`relative w-14 h-7 rounded-full transition-all duration-300 ease-out ${pendingSettings.animationsEnabled ? 'bg-primary-500' : isDark ? 'bg-gray-700' : 'bg-gray-300'
+              }`}
           >
             <div
-              className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-lg transition-all duration-300 ease-out ${
-                pendingSettings.animationsEnabled ? 'translate-x-7' : 'translate-x-0'
-              }`}
+              className={`absolute top-1 left-1 w-5 h-5 bg-white rounded-full shadow-lg transition-all duration-300 ease-out ${pendingSettings.animationsEnabled ? 'translate-x-7' : 'translate-x-0'
+                }`}
             />
           </button>
         </div>
@@ -642,337 +633,318 @@ const AppearanceTab: React.FC<{
         <h3 className={`text-lg font-semibold mb-4 ${isDark ? 'text-white' : 'text-gray-900'}`}>
           Предварительный просмотр мессенджера
         </h3>
-        <div 
-          className={`overflow-hidden shadow-2xl ${
-            isModern 
-              ? 'border border-white/10' 
+        <div
+          className={`overflow-hidden shadow-2xl ${isModern
+              ? 'border border-white/10'
               : `border-2 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-300'}`
-          }`}
-          style={{ 
+            }`}
+          style={{
             borderRadius: isModern ? '20px' : `var(--border-radius, 0.75rem)`,
             transform: `scale(${pendingSettings.compactMode === 'compact' ? '0.95' : pendingSettings.compactMode === 'cozy' ? '1.05' : '1'})`,
-            background: isModern 
+            background: isModern
               ? 'linear-gradient(135deg, rgba(15, 20, 45, 0.95) 0%, rgba(20, 30, 60, 0.98) 100%)'
               : undefined,
           }}
         >
           {/* Мини-версия MessengerPage */}
-          <div className={`flex ${
-            pendingSettings.navPosition === 'bottom' ? 'flex-col h-96' : 'flex-row h-96'
-          } ${
-            pendingSettings.navPosition === 'right' ? 'flex-row-reverse' : ''
-          }`}>
-            {/* Wrapper для чатов и контента с возможностью изменения порядка */}
-            <div className={`flex-1 flex overflow-hidden flex-row ${
-              pendingSettings.chatsPosition === 'right' ? 'flex-row-reverse' : ''
+          <div className={`flex ${pendingSettings.navPosition === 'bottom' ? 'flex-col h-96' : 'flex-row h-96'
+            } ${pendingSettings.navPosition === 'right' ? 'flex-row-reverse' : ''
             }`}>
-            {/* Навигация - показываем только для left/right */}
-            {pendingSettings.navPosition !== 'bottom' && (
-              <div className={`w-14 flex-shrink-0 flex flex-col items-center justify-center ${
-                isModern 
-                  ? '' 
-                  : `${pendingSettings.navPosition === 'right' ? 'border-l' : 'border-r'} ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
+            {/* Wrapper для чатов и контента с возможностью изменения порядка */}
+            <div className={`flex-1 flex overflow-hidden flex-row ${pendingSettings.chatsPosition === 'right' ? 'flex-row-reverse' : ''
               }`}>
-                <div 
-                  className={`flex flex-col gap-1 ${isModern ? 'p-2' : ''}`}
-                  style={isModern ? {
-                    background: 'linear-gradient(180deg, rgba(70, 90, 160, 0.4) 0%, rgba(55, 75, 145, 0.5) 50%, rgba(70, 90, 160, 0.4) 100%)',
-                    backdropFilter: 'blur(20px)',
-                    border: '1.5px solid rgba(255, 255, 255, 0.18)',
-                    borderRadius: '24px',
-                    boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.2)',
-                  } : undefined}
-                >
-                  {['home', 'groups', 'phone', 'chat', 'settings'].map((iconName, i) => (
+              {/* Навигация - показываем только для left/right */}
+              {pendingSettings.navPosition !== 'bottom' && (
+                <div className={`w-14 flex-shrink-0 flex flex-col items-center justify-center ${isModern
+                    ? ''
+                    : `${pendingSettings.navPosition === 'right' ? 'border-l' : 'border-r'} ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
+                  }`}>
+                  <div
+                    className={`flex flex-col gap-1 ${isModern ? 'p-2' : ''}`}
+                    style={isModern ? {
+                      background: 'linear-gradient(180deg, rgba(70, 90, 160, 0.4) 0%, rgba(55, 75, 145, 0.5) 50%, rgba(70, 90, 160, 0.4) 100%)',
+                      backdropFilter: 'blur(20px)',
+                      border: '1.5px solid rgba(255, 255, 255, 0.18)',
+                      borderRadius: '24px',
+                      boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3), inset 0 2px 0 rgba(255, 255, 255, 0.2)',
+                    } : undefined}
+                  >
+                    {['home', 'groups', 'phone', 'chat', 'settings'].map((iconName, i) => (
+                      <div
+                        key={i}
+                        className={`w-8 h-8 flex items-center justify-center transition-all duration-300 ${isModern
+                            ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
+                            : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
+                          }`}
+                        style={isModern && i === 3 ? { boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)' } : undefined}
+                      >
+                        {getNavIcon(iconName, 'w-4 h-4')}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Панель чатов */}
+              <div
+                className={`flex-shrink-0 flex flex-col ${pendingSettings.navPosition === 'bottom' ? 'flex-1' : 'w-48'
+                  } ${pendingSettings.chatsPosition === 'right' ? 'border-l' : 'border-r'
+                  } ${isModern
+                    ? 'border-white/5'
+                    : `${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-white/90 border-gray-300/50'}`
+                  }`}
+                style={isModern ? {
+                  background: 'linear-gradient(135deg, rgba(30, 40, 80, 0.6) 0%, rgba(20, 30, 70, 0.7) 100%)',
+                } : undefined}
+              >
+                {/* Профиль пользователя */}
+                <div className="mt-2 mb-1 px-3">
+                  <div className="flex items-center py-2">
+                    <div className="relative flex-shrink-0 w-8 h-8">
+                      <div
+                        className="relative w-full h-full overflow-hidden border-2 border-green-500/60"
+                        style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
+                      >
+                        {user?.avatar_url && avatarUrl && !avatarError ? (
+                          <img
+                            src={avatarUrl}
+                            alt="Avatar"
+                            className="w-full h-full object-cover"
+                            onError={() => setAvatarError(true)}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
+                            {user?.first_name?.[0] || 'U'}
+                          </div>
+                        )}
+                      </div>
+                      {/* Индикатор онлайн */}
+                      <div
+                        className="absolute top-0 right-0 w-2 h-2 bg-green-500 border border-white"
+                        style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
+                      />
+                    </div>
+                    <div className="flex-1 min-w-0 ml-2">
+                      <div
+                        className={`font-semibold text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
+                        style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
+                      >
+                        {user?.first_name || 'Пользователь'} {user?.last_name || ''}
+                      </div>
+                      <div
+                        className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
+                        style={{ fontSize: `calc(0.65rem * ${pendingSettings.fontScale})` }}
+                      >
+                        {user?.status_text || '@username'}
+                      </div>
+                    </div>
+                    <button className={`p-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+
+                {/* Разделитель */}
+                <div className={`mx-3 border-t mb-1`} style={{ borderColor: isDark ? 'rgba(31, 41, 55, 0.5)' : 'rgba(209, 213, 219, 0.5)' }} />
+
+                {/* Поиск */}
+                <div className="px-3 py-2">
+                  <div
+                    className={`px-2 py-1.5 flex items-center gap-2 ${isModern
+                        ? 'border border-white/10'
+                        : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
+                      }`}
+                    style={{
+                      borderRadius: isModern ? '12px' : `var(--border-radius, 0.75rem)`,
+                      background: isModern ? 'rgba(255, 255, 255, 0.06)' : undefined,
+                    }}
+                  >
+                    <svg className={`w-3 h-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                    </svg>
+                    <span
+                      className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
+                      style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
+                    >
+                      Поиск
+                    </span>
+                  </div>
+                </div>
+
+                {/* Список чатов */}
+                <div className="flex-1 overflow-hidden">
+                  {[1, 2, 3, 4].map((i) => (
                     <div
                       key={i}
-                      className={`w-8 h-8 flex items-center justify-center transition-all duration-300 ${
-                        isModern
-                          ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
-                          : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
-                      }`}
-                      style={isModern && i === 3 ? { boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)' } : undefined}
+                      className={`px-3 py-2 transition-colors ${isModern
+                          ? `mx-2 rounded-xl ${i === 1
+                            ? 'bg-[rgba(99,130,255,0.2)] border border-[rgba(99,130,255,0.3)]'
+                            : 'bg-white/[0.03]'
+                          }`
+                          : (i === 1
+                            ? (isDark ? 'bg-primary-500/10' : 'bg-primary-500/5')
+                            : (isDark ? 'hover:bg-primary-500/5' : 'hover:bg-gray-100'))
+                        }`}
+                      style={{ marginBottom: `calc(${pendingSettings.messageSpacing}px / 3)` }}
                     >
-                      {getNavIcon(iconName, 'w-4 h-4')}
+                      <div className="flex items-center gap-2">
+                        <div
+                          className={`w-9 h-9 flex-shrink-0 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
+                          style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div
+                            className={`font-medium text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
+                            style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
+                          >
+                            Чат {i}
+                          </div>
+                          <div
+                            className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
+                            style={{ fontSize: `calc(0.65rem * ${pendingSettings.fontScale})` }}
+                          >
+                            Последнее сообщение...
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
-            )}
 
-            {/* Панель чатов */}
-            <div 
-              className={`flex-shrink-0 flex flex-col ${
-                pendingSettings.navPosition === 'bottom' ? 'flex-1' : 'w-48'
-              } ${
-                pendingSettings.chatsPosition === 'right' ? 'border-l' : 'border-r'
-              } ${
-                isModern 
-                  ? 'border-white/5'
-                  : `${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-white/90 border-gray-300/50'}`
-              }`}
-              style={isModern ? {
-                background: 'linear-gradient(135deg, rgba(30, 40, 80, 0.6) 0%, rgba(20, 30, 70, 0.7) 100%)',
-              } : undefined}
-            >
-              {/* Профиль пользователя */}
-              <div className="mt-2 mb-1 px-3">
-                <div className="flex items-center py-2">
-                  <div className="relative flex-shrink-0 w-8 h-8">
-                    <div 
-                      className="relative w-full h-full overflow-hidden border-2 border-green-500/60"
-                      style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
-                    >
-                      {user?.avatar_url && avatarUrl && !avatarError ? (
-                        <img
-                          src={avatarUrl}
-                          alt="Avatar"
-                          className="w-full h-full object-cover"
-                          onError={() => setAvatarError(true)}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-primary-500 flex items-center justify-center text-white text-xs font-bold">
-                          {user?.first_name?.[0] || 'U'}
-                        </div>
-                      )}
-                    </div>
-                    {/* Индикатор онлайн */}
-                    <div 
-                      className="absolute top-0 right-0 w-2 h-2 bg-green-500 border border-white"
+              {/* Область чата */}
+              <div
+                className={`flex-1 flex flex-col ${isModern ? '' : (isDark ? 'bg-gray-950/50' : 'bg-gray-100/50')
+                  }`}
+                style={isModern ? {
+                  background: 'linear-gradient(135deg, rgba(8, 12, 30, 0.95) 0%, rgba(12, 18, 40, 0.98) 100%)',
+                } : undefined}
+              >
+                {/* Заголовок чата */}
+                <div className={`px-4 py-3 flex items-center gap-2 ${isModern ? 'border-b border-white/5' : `border-b ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`
+                  }`}>
+                  <div
+                    className={`w-8 h-8 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
+                    style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
+                  />
+                  <div
+                    className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}
+                    style={{ fontSize: `calc(0.875rem * ${pendingSettings.fontScale})` }}
+                  >
+                    Чат 1
+                  </div>
+                </div>
+
+                {/* Сообщения */}
+                <div className="flex-1 p-4 space-y-3 overflow-hidden">
+                  {/* Входящее сообщение */}
+                  <div className="flex items-end gap-2" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
+                    <div
+                      className={`w-6 h-6 flex-shrink-0 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
                       style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
                     />
+                    <div
+                      className={`px-3 py-2 max-w-xs ${isModern
+                          ? 'border border-white/10'
+                          : (isDark ? 'bg-gray-800/50' : 'bg-white')
+                        }`}
+                      style={{
+                        borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
+                        fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
+                        background: isModern ? 'rgba(255, 255, 255, 0.08)' : undefined,
+                        backdropFilter: isModern ? 'blur(10px)' : undefined,
+                      }}
+                    >
+                      <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        Привет! А ты знал что Dialect лучше чем Max?
+                      </p>
+                    </div>
                   </div>
-                  <div className="flex-1 min-w-0 ml-2">
-                    <div 
-                      className={`font-semibold text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
+
+                  {/* Исходящее сообщение */}
+                  <div className="flex items-end gap-2 justify-end" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
+                    <div
+                      className={`px-3 py-2 max-w-xs text-white ${isModern ? 'border border-white/15' : 'bg-primary-500'
+                        }`}
+                      style={{
+                        borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
+                        fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
+                        background: isModern
+                          ? 'linear-gradient(135deg, rgba(99, 110, 200, 0.9) 0%, rgba(79, 90, 180, 1) 100%)'
+                          : undefined,
+                        boxShadow: isModern ? '0 4px 20px rgba(99, 110, 200, 0.4)' : undefined,
+                      }}
+                    >
+                      <p className="text-sm">
+                        Конечно знал, Dialect же не следит за своими пользователями, как некоторые!
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Входящее сообщение */}
+                  <div className="flex items-end gap-2" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
+                    <div
+                      className={`w-6 h-6 flex-shrink-0 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
+                      style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
+                    />
+                    <div
+                      className={`px-3 py-2 max-w-xs ${isModern
+                          ? 'border border-white/10'
+                          : (isDark ? 'bg-gray-800/50' : 'bg-white')
+                        }`}
+                      style={{
+                        borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
+                        fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
+                        background: isModern ? 'rgba(255, 255, 255, 0.08)' : undefined,
+                        backdropFilter: isModern ? 'blur(10px)' : undefined,
+                      }}
+                    >
+                      <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
+                        Верно сказано 😁
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Поле ввода */}
+                <div className={`px-4 py-3 ${isModern ? 'border-t border-white/5' : `border-t ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`
+                  }`}>
+                  <div
+                    className={`px-3 py-2 flex items-center gap-2 ${isModern
+                        ? 'border border-white/10'
+                        : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
+                      }`}
+                    style={{
+                      borderRadius: isModern ? '14px' : `var(--border-radius, 0.75rem)`,
+                      background: isModern ? 'rgba(255, 255, 255, 0.06)' : undefined,
+                    }}
+                  >
+                    <span
+                      className={`text-xs flex-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
                       style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
                     >
-                      {user?.first_name || 'Пользователь'} {user?.last_name || ''}
-                    </div>
-                    <div 
-                      className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
-                      style={{ fontSize: `calc(0.65rem * ${pendingSettings.fontScale})` }}
-                    >
-                      {user?.status_text || '@username'}
-                    </div>
-                  </div>
-                  <button className={`p-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
-                    <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
+                      Сообщение...
+                    </span>
+                    <svg className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
                     </svg>
-                  </button>
-                </div>
-              </div>
-
-              {/* Разделитель */}
-              <div className={`mx-3 border-t mb-1`} style={{ borderColor: isDark ? 'rgba(31, 41, 55, 0.5)' : 'rgba(209, 213, 219, 0.5)' }} />
-
-              {/* Поиск */}
-              <div className="px-3 py-2">
-                <div 
-                  className={`px-2 py-1.5 flex items-center gap-2 ${
-                    isModern
-                      ? 'border border-white/10'
-                      : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
-                  }`}
-                  style={{ 
-                    borderRadius: isModern ? '12px' : `var(--border-radius, 0.75rem)`,
-                    background: isModern ? 'rgba(255, 255, 255, 0.06)' : undefined,
-                  }}
-                >
-                  <svg className={`w-3 h-3 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                  </svg>
-                  <span 
-                    className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                    style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
-                  >
-                    Поиск
-                  </span>
-                </div>
-              </div>
-
-              {/* Список чатов */}
-              <div className="flex-1 overflow-hidden">
-                {[1, 2, 3, 4].map((i) => (
-                  <div
-                    key={i}
-                    className={`px-3 py-2 transition-colors ${
-                      isModern
-                        ? `mx-2 rounded-xl ${i === 1 
-                            ? 'bg-[rgba(99,130,255,0.2)] border border-[rgba(99,130,255,0.3)]' 
-                            : 'bg-white/[0.03]'
-                          }`
-                        : (i === 1 
-                            ? (isDark ? 'bg-primary-500/10' : 'bg-primary-500/5')
-                            : (isDark ? 'hover:bg-primary-500/5' : 'hover:bg-gray-100'))
-                    }`}
-                    style={{ marginBottom: `calc(${pendingSettings.messageSpacing}px / 3)` }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <div 
-                        className={`w-9 h-9 flex-shrink-0 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
-                        style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
-                      />
-                      <div className="flex-1 min-w-0">
-                        <div 
-                          className={`font-medium text-xs truncate ${isDark ? 'text-white' : 'text-gray-900'}`}
-                          style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
-                        >
-                          Чат {i}
-                        </div>
-                        <div 
-                          className={`text-xs truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
-                          style={{ fontSize: `calc(0.65rem * ${pendingSettings.fontScale})` }}
-                        >
-                          Последнее сообщение...
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* Область чата */}
-            <div 
-              className={`flex-1 flex flex-col ${
-                isModern ? '' : (isDark ? 'bg-gray-950/50' : 'bg-gray-100/50')
-              }`}
-              style={isModern ? {
-                background: 'linear-gradient(135deg, rgba(8, 12, 30, 0.95) 0%, rgba(12, 18, 40, 0.98) 100%)',
-              } : undefined}
-            >
-              {/* Заголовок чата */}
-              <div className={`px-4 py-3 flex items-center gap-2 ${
-                isModern ? 'border-b border-white/5' : `border-b ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`
-              }`}>
-                <div 
-                  className={`w-8 h-8 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
-                  style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
-                />
-                <div 
-                  className={`font-semibold text-sm ${isDark ? 'text-white' : 'text-gray-900'}`}
-                  style={{ fontSize: `calc(0.875rem * ${pendingSettings.fontScale})` }}
-                >
-                  Чат 1
-                </div>
-              </div>
-
-              {/* Сообщения */}
-              <div className="flex-1 p-4 space-y-3 overflow-hidden">
-                {/* Входящее сообщение */}
-                <div className="flex items-end gap-2" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
-                  <div 
-                    className={`w-6 h-6 flex-shrink-0 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
-                    style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
-                  />
-                  <div 
-                    className={`px-3 py-2 max-w-xs ${
-                      isModern 
-                        ? 'border border-white/10' 
-                        : (isDark ? 'bg-gray-800/50' : 'bg-white')
-                    }`}
-                    style={{ 
-                      borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
-                      fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
-                      background: isModern ? 'rgba(255, 255, 255, 0.08)' : undefined,
-                      backdropFilter: isModern ? 'blur(10px)' : undefined,
-                    }}
-                  >
-                    <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                      Привет! А ты знал что Dialect лучше чем Max?
-                    </p>
-                  </div>
-                </div>
-
-                {/* Исходящее сообщение */}
-                <div className="flex items-end gap-2 justify-end" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
-                  <div 
-                    className={`px-3 py-2 max-w-xs text-white ${
-                      isModern ? 'border border-white/15' : 'bg-primary-500'
-                    }`}
-                    style={{ 
-                      borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
-                      fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
-                      background: isModern 
-                        ? 'linear-gradient(135deg, rgba(99, 110, 200, 0.9) 0%, rgba(79, 90, 180, 1) 100%)' 
-                        : undefined,
-                      boxShadow: isModern ? '0 4px 20px rgba(99, 110, 200, 0.4)' : undefined,
-                    }}
-                  >
-                    <p className="text-sm">
-                      Конечно знал, Dialect же не следит за своими пользователями, как некоторые!
-                    </p>
-                  </div>
-                </div>
-
-                {/* Входящее сообщение */}
-                <div className="flex items-end gap-2" style={{ marginBottom: `${pendingSettings.messageSpacing}px` }}>
-                  <div 
-                    className={`w-6 h-6 flex-shrink-0 ${isDark ? 'bg-gray-800/50' : 'bg-gray-200/80'}`}
-                    style={{ borderRadius: `var(--border-radius, 0.75rem)` }}
-                  />
-                  <div 
-                    className={`px-3 py-2 max-w-xs ${
-                      isModern 
-                        ? 'border border-white/10' 
-                        : (isDark ? 'bg-gray-800/50' : 'bg-white')
-                    }`}
-                    style={{ 
-                      borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
-                      fontSize: `calc(0.875rem * ${pendingSettings.fontScale})`,
-                      background: isModern ? 'rgba(255, 255, 255, 0.08)' : undefined,
-                      backdropFilter: isModern ? 'blur(10px)' : undefined,
-                    }}
-                  >
-                    <p className={`text-sm ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>
-                      Верно сказано 😁
-                    </p>
+                    <svg className="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
+                    </svg>
                   </div>
                 </div>
               </div>
-
-              {/* Поле ввода */}
-              <div className={`px-4 py-3 ${
-                isModern ? 'border-t border-white/5' : `border-t ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`
-              }`}>
-                <div 
-                  className={`px-3 py-2 flex items-center gap-2 ${
-                    isModern 
-                      ? 'border border-white/10' 
-                      : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
-                  }`}
-                  style={{ 
-                    borderRadius: isModern ? '14px' : `var(--border-radius, 0.75rem)`,
-                    background: isModern ? 'rgba(255, 255, 255, 0.06)' : undefined,
-                  }}
-                >
-                  <span 
-                    className={`text-xs flex-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
-                    style={{ fontSize: `calc(0.75rem * ${pendingSettings.fontScale})` }}
-                  >
-                    Сообщение...
-                  </span>
-                  <svg className={`w-4 h-4 ${isDark ? 'text-gray-500' : 'text-gray-400'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
-                  </svg>
-                  <svg className="w-4 h-4 text-primary-500" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 15.571V11a1 1 0 112 0v4.571a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z" />
-                  </svg>
-                </div>
-              </div>
-            </div>
             </div>
 
             {/* Навигация снизу - показываем только для bottom */}
             {pendingSettings.navPosition === 'bottom' && (
-              <div className={`h-14 flex-shrink-0 flex items-center justify-center ${
-                isModern 
-                  ? '' 
+              <div className={`h-14 flex-shrink-0 flex items-center justify-center ${isModern
+                  ? ''
                   : `border-t ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
-              }`}>
-                <div 
+                }`}>
+                <div
                   className={`flex flex-row gap-1 ${isModern ? 'px-3 py-2' : ''}`}
                   style={isModern ? {
                     background: 'linear-gradient(90deg, rgba(70, 90, 160, 0.4) 0%, rgba(55, 75, 145, 0.5) 50%, rgba(70, 90, 160, 0.4) 100%)',
@@ -985,11 +957,10 @@ const AppearanceTab: React.FC<{
                   {['home', 'groups', 'phone', 'chat', 'settings'].map((iconName, i) => (
                     <div
                       key={i}
-                      className={`w-8 h-8 flex items-center justify-center transition-all duration-300 ${
-                        isModern
+                      className={`w-8 h-8 flex items-center justify-center transition-all duration-300 ${isModern
                           ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
                           : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
-                      }`}
+                        }`}
                       style={isModern && i === 3 ? { boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)' } : undefined}
                     >
                       {getNavIcon(iconName, 'w-4 h-4')}
@@ -1006,19 +977,17 @@ const AppearanceTab: React.FC<{
       </div>
 
       {/* Кнопки действий */}
-      <div className={`flex items-center justify-between pt-6 border-t ${
-        isDark ? 'border-gray-800/50' : 'border-gray-200'
-      }`}>
+      <div className={`flex items-center justify-between pt-6 border-t ${isDark ? 'border-gray-800/50' : 'border-gray-200'
+        }`}>
         <button
           onClick={(e) => {
             e.stopPropagation()
             handleReset()
           }}
-          className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-            isDark
+          className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
               ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
               : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-          }`}
+            }`}
         >
           Сбросить настройки
         </button>
@@ -1028,11 +997,10 @@ const AppearanceTab: React.FC<{
               e.stopPropagation()
               handleCancel()
             }}
-            className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              isDark
+            className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
                 ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                 : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-            }`}
+              }`}
           >
             Отмена
           </button>
@@ -1042,13 +1010,12 @@ const AppearanceTab: React.FC<{
               handleSave()
             }}
             disabled={!hasChanges}
-            className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-              hasChanges
+            className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${hasChanges
                 ? 'bg-primary-500 text-white hover:bg-primary-600'
                 : isDark
                   ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
-            }`}
+              }`}
           >
             Сохранить
           </button>
@@ -1065,9 +1032,9 @@ interface SettingsModalProps {
   onTabChange?: (tab: string) => void
 }
 
-const SettingsModal: React.FC<SettingsModalProps> = ({ 
-  isOpen, 
-  onClose, 
+const SettingsModal: React.FC<SettingsModalProps> = ({
+  isOpen,
+  onClose,
   activeTab: externalActiveTab,
   onTabChange
 }) => {
@@ -1076,7 +1043,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const { settings: appearanceSettings } = useAppearance()
   const isDark = theme === 'dark'
   const isModern = appearanceSettings.designStyle === 'modern'
-  
+
   const [internalActiveTab, setInternalActiveTab] = useState<string>('profile')
   const activeTab = externalActiveTab !== undefined ? externalActiveTab : internalActiveTab
   const setActiveTab = (tab: string) => {
@@ -1086,7 +1053,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
       setInternalActiveTab(tab)
     }
   }
-  
+
   const [avatarError, setAvatarError] = useState(false)
   const [birthday, setBirthday] = useState<string>('')
   const [isAnimating, setIsAnimating] = useState(false)
@@ -1128,7 +1095,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         handleClose()
       }
     }
-    
+
     window.addEventListener('keydown', handleEsc, { capture: true })
     return () => window.removeEventListener('keydown', handleEsc, { capture: true })
   }, [isOpen, showCloseWarning, handleClose])
@@ -1170,19 +1137,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         // Используем getBoundingClientRect для точного расчета с учетом всех отступов
         const buttonRect = activeButton.getBoundingClientRect()
         const parentRect = parent.getBoundingClientRect()
-        
+
         // Вычисляем относительную позицию кнопки внутри родителя
         // Учитываем scrollTop для правильного позиционирования при прокрутке
         const relativeTop = buttonRect.top - parentRect.top + parent.scrollTop
-        
+
         // Высота индикатора (h-11 = 44px)
         const INDICATOR_HEIGHT = 44
         // Высота кнопки
         const BUTTON_HEIGHT = buttonRect.height
-        
+
         // Центрируем индикатор относительно кнопки
         const centerOffset = (BUTTON_HEIGHT - INDICATOR_HEIGHT) / 2
-        
+
         setIndicatorTop(relativeTop + centerOffset)
       }
     }
@@ -1194,7 +1161,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     const timeoutId = setTimeout(() => {
       calculateIndicatorPosition()
     }, 10) // Небольшая задержка для завершения рендера
-    
+
     return () => clearTimeout(timeoutId)
   }, [activeTab, isOpen, calculateIndicatorPosition])
 
@@ -1303,39 +1270,36 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   if (!isOpen && !isAnimating) return null
 
   return (
-    <div 
+    <div
       className="fixed inset-0 z-[9999] flex items-center justify-center"
     >
       {/* Backdrop */}
-      <div 
-        className={`absolute inset-0 ${
-          isDark ? 'bg-black/80' : 'bg-black/60'
-        } ${shouldAnimateEnter && isOpen ? 'animate-backdrop-enter' : !isOpen && isAnimating ? 'animate-backdrop-exit' : 'opacity-0'}`}
+      <div
+        className={`absolute inset-0 ${isDark ? 'bg-black/80' : 'bg-black/60'
+          } ${shouldAnimateEnter && isOpen ? 'animate-backdrop-enter' : !isOpen && isAnimating ? 'animate-backdrop-exit' : 'opacity-0'}`}
         onClick={(e) => {
           e.stopPropagation()
           handleClose()
         }}
       />
-      
+
       {/* Модальное окно */}
-      <div 
-        className={`relative w-[90vw] h-[90vh] max-w-[1200px] rounded-2xl shadow-2xl overflow-hidden ${
-          isModern 
-            ? 'modern-modal' 
-            : (isDark 
-                ? 'bg-gray-900 border border-gray-800/50' 
-                : 'bg-white border border-gray-200')
-        } ${shouldAnimateEnter && isOpen ? 'animate-modal-enter' : !isOpen && isAnimating ? 'animate-modal-exit' : 'opacity-0 scale-95 translate-y-4'}`}
+      <div
+        className={`relative w-[90vw] h-[90vh] max-w-[1200px] rounded-2xl shadow-2xl overflow-hidden ${isModern
+            ? 'modern-modal'
+            : (isDark
+              ? 'bg-gray-900 border border-gray-800/50'
+              : 'bg-white border border-gray-200')
+          } ${shouldAnimateEnter && isOpen ? 'animate-modal-enter' : !isOpen && isAnimating ? 'animate-modal-exit' : 'opacity-0 scale-95 translate-y-4'}`}
         onClick={(e) => e.stopPropagation()}
       >
         {/* Кнопка закрытия */}
         <button
           onClick={handleClose}
-          className={`absolute top-4 right-4 z-10 p-2 rounded-lg transition-all hover:rotate-90 ${
-            isDark
+          className={`absolute top-4 right-4 z-10 p-2 rounded-lg transition-all hover:rotate-90 ${isDark
               ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
               : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-          }`}
+            }`}
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1344,21 +1308,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
         {/* Модальное окно предупреждения */}
         {showCloseWarning && (
-          <div 
+          <div
             className="absolute inset-0 flex items-center justify-center z-50 bg-black/50 backdrop-blur-sm animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
-            <div 
-              className={`w-96 p-8 rounded-2xl shadow-2xl transform transition-all scale-100 ${
-                isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
-              }`}
+            <div
+              className={`w-96 p-8 rounded-2xl shadow-2xl transform transition-all scale-100 ${isDark ? 'bg-gray-800 border border-gray-700' : 'bg-white border border-gray-200'
+                }`}
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex flex-col gap-4">
                 <div className="text-center">
-                  <div className={`mx-auto w-12 h-12 mb-4 rounded-full flex items-center justify-center ${
-                    isDark ? 'bg-yellow-500/20 text-yellow-500' : 'bg-yellow-100 text-yellow-600'
-                  }`}>
+                  <div className={`mx-auto w-12 h-12 mb-4 rounded-full flex items-center justify-center ${isDark ? 'bg-yellow-500/20 text-yellow-500' : 'bg-yellow-100 text-yellow-600'
+                    }`}>
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                     </svg>
@@ -1387,7 +1349,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                   >
                     Сохранить и выйти
                   </button>
-                  
+
                   <div className="flex gap-3 w-full">
                     <button
                       onClick={(e) => {
@@ -1396,11 +1358,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         setHasUnsavedChanges(false)
                         onClose()
                       }}
-                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
-                        isDark
+                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${isDark
                           ? 'bg-gray-700 text-red-400 hover:bg-gray-600 hover:text-red-300'
                           : 'bg-gray-100 text-red-600 hover:bg-gray-200 hover:text-red-700'
-                      }`}
+                        }`}
                     >
                       Не сохранять
                     </button>
@@ -1409,11 +1370,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         e.stopPropagation()
                         setShowCloseWarning(false)
                       }}
-                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${
-                        isDark
+                      className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${isDark
                           ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
-                      }`}
+                        }`}
                     >
                       Отмена
                     </button>
@@ -1427,11 +1387,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         {/* Контент настроек */}
         <div className={`flex h-full w-full ${shouldAnimateEnter && isOpen ? 'animate-modal-content-enter' : 'opacity-0'}`}>
           {/* Левая панель навигации */}
-          <div className={`w-72 flex-shrink-0 border-r flex flex-col ${
-            isModern 
-              ? 'modern-settings-sidebar' 
+          <div className={`w-72 flex-shrink-0 border-r flex flex-col ${isModern
+              ? 'modern-settings-sidebar'
               : (isDark ? 'border-gray-800/50 bg-gray-900/50' : 'border-gray-200 bg-gray-50/50')
-          }`}>
+            }`}>
             {/* Заголовок */}
             <div className={`px-6 py-6 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
               <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
@@ -1443,15 +1402,14 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className="flex-1 overflow-y-auto py-2 scrollbar-thin relative">
               {/* Анимированный индикатор */}
               <div
-                className={`absolute right-0 w-1 h-11 rounded-l-full transition-all duration-300 ease-out ${
-                  isModern ? 'modern-tab-indicator' : 'bg-primary-500'
-                }`}
+                className={`absolute right-0 w-1 h-11 rounded-l-full transition-all duration-300 ease-out ${isModern ? 'modern-tab-indicator' : 'bg-primary-500'
+                  }`}
                 style={{
                   top: `${indicatorTop}px`,
                   opacity: indicatorTop > 0 ? 1 : 0,
                 }}
               />
-              
+
               {navTabs.map((tab) => {
                 const isActive = activeTab === tab.id
                 return (
@@ -1462,19 +1420,17 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       e.stopPropagation()
                       setActiveTab(tab.id)
                     }}
-                    className={`w-full px-6 py-3 flex items-center gap-3 text-left transition-all duration-300 ${
-                      isModern 
+                    className={`w-full px-6 py-3 flex items-center gap-3 text-left transition-all duration-300 ${isModern
                         ? `modern-settings-item ${isActive ? 'active' : ''}`
                         : ''
-                    } ${
-                      !isModern && (isActive
+                      } ${!isModern && (isActive
                         ? isDark
                           ? 'text-primary-400'
                           : 'text-primary-600'
                         : isDark
                           ? 'text-gray-400 hover:text-gray-200 hover:bg-gray-800/30'
                           : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100/50')
-                    }`}
+                      }`}
                   >
                     {getTabIcon(tab.icon)}
                     <span className="text-sm font-medium">{tab.label}</span>
@@ -1487,9 +1443,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className={`px-6 py-4 border-t ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="relative flex-shrink-0 w-10 h-10">
-                  <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${
-                    isDark ? 'border-gray-700' : 'border-gray-300'
-                  }`}>
+                  <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${isDark ? 'border-gray-700' : 'border-gray-300'
+                    }`}>
                     {user?.avatar_url && avatarUrl && !avatarError ? (
                       <img
                         src={avatarUrl}
@@ -1554,20 +1509,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       </div>
                       <div className="flex flex-col gap-2">
                         <button
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            isDark
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark
                               ? 'bg-primary-500 text-white hover:bg-primary-600'
                               : 'bg-primary-500 text-white hover:bg-primary-600'
-                          }`}
+                            }`}
                         >
                           Загрузить фото
                         </button>
                         <button
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                            isDark
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark
                               ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                               : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                          }`}
+                            }`}
                         >
                           Удалить фото
                         </button>
@@ -1583,11 +1536,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <input
                       type="text"
                       defaultValue={user?.first_name || ''}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${
-                        isDark
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                           ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                      }`}
+                        }`}
                       placeholder="Введите имя"
                     />
                   </div>
@@ -1600,11 +1552,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <input
                       type="text"
                       defaultValue={user?.last_name || ''}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${
-                        isDark
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                           ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                      }`}
+                        }`}
                       placeholder="Введите фамилию"
                     />
                   </div>
@@ -1621,11 +1572,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       <input
                         type="text"
                         defaultValue={user?.username || ''}
-                        className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${
-                          isDark
+                        className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                             ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
                             : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                        }`}
+                          }`}
                         placeholder="username"
                       />
                     </div>
@@ -1640,11 +1590,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       type="tel"
                       defaultValue={getFormattedPhoneNumber(user?.phone_number, user?.country || 'US')}
                       disabled
-                      className={`w-full px-4 py-3 border rounded-lg cursor-not-allowed opacity-60 ${
-                        isDark
+                      className={`w-full px-4 py-3 border rounded-lg cursor-not-allowed opacity-60 ${isDark
                           ? 'bg-gray-800/30 border-gray-700 text-gray-400'
                           : 'bg-gray-100 border-gray-300 text-gray-500'
-                      }`}
+                        }`}
                     />
                     <p className={`mt-1 text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
                       Телефон нельзя изменить
@@ -1659,11 +1608,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <input
                       type="text"
                       defaultValue={user?.status_text || ''}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${
-                        isDark
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                           ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                      }`}
+                        }`}
                       placeholder="Ваш статус"
                     />
                   </div>
@@ -1677,46 +1625,44 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       type="date"
                       value={birthday}
                       onChange={(e) => setBirthday(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${
-                        isDark
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                           ? 'bg-gray-800/50 border-gray-700 text-white'
                           : 'bg-white border-gray-300 text-gray-900'
-                      }`}
+                        }`}
                     />
                   </div>
 
                   {/* Кнопки сохранения и отмены */}
-                  <div className={`flex items-center justify-end gap-3 pt-6 border-t mt-8 ${
-                    isDark ? 'border-gray-800/50' : 'border-gray-200'
-                  }`}>
+                  <div className={`flex items-center justify-end gap-3 pt-6 border-t mt-8 ${isDark ? 'border-gray-800/50' : 'border-gray-200'
+                    }`}>
                     <button
                       onClick={onClose}
-                      className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                        isDark
+                      className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
                           ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                           : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                      }`}
+                        }`}
                     >
                       Отмена
                     </button>
                     <button
-                      className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
-                        isDark
+                      className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
                           ? 'bg-primary-500 text-white hover:bg-primary-600'
                           : 'bg-primary-500 text-white hover:bg-primary-600'
-                      }`}
+                        }`}
                     >
                       Сохранить изменения
                     </button>
                   </div>
                 </div>
               ) : activeTab === 'appearance' ? (
-                <AppearanceTab 
-                  isDark={isDark} 
-                  onClose={onClose} 
+                <AppearanceTab
+                  isDark={isDark}
+                  onClose={onClose}
                   onSettingsChange={() => setHasUnsavedChanges(true)}
                   saveRef={appearanceSaveRef}
                 />
+              ) : activeTab === 'sessions' ? (
+                <SessionsTab onClose={onClose} />
               ) : (
                 <div className="flex items-center justify-center h-full">
                   <p className={`text-sm ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>

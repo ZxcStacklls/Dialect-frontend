@@ -53,9 +53,37 @@ class User(Base):
     owned_chats = relationship("Chat", back_populates="owner")
     read_receipts = relationship("MessageRead", back_populates="user")
     
-    # Связь с устройствами и ЧС
+    # Связь с устройствами, ЧС и сессиями
     devices = relationship("UserDevice", back_populates="user")
     blocked_users = relationship("UserBlock", foreign_keys="UserBlock.blocker_id", back_populates="blocker")
+    sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+
+
+class UserSession(Base):
+    """Таблица активных сессий (refresh токенов) пользователя"""
+    __tablename__ = "user_sessions"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    
+    # Хеш refresh токена (не храним сам токен!)
+    refresh_token_hash = Column(String(255), unique=True, nullable=False, index=True)
+    
+    # Информация об устройстве
+    device_name = Column(String(100), nullable=True)  # "Chrome on Windows"
+    device_type = Column(String(50), nullable=True)   # "desktop", "mobile", "tablet"
+    ip_address = Column(String(45), nullable=True)    # IPv4/IPv6
+    location = Column(String(100), nullable=True)     # "Moscow, Russia"
+    
+    # Время жизни
+    created_at = Column(TIMESTAMP, server_default=func.now())
+    last_used_at = Column(TIMESTAMP, server_default=func.now(), onupdate=func.now())
+    expires_at = Column(TIMESTAMP, nullable=False)
+    
+    # Флаг активности (для soft-delete)
+    is_active = Column(Boolean, default=True, nullable=False)
+    
+    user = relationship("User", back_populates="sessions")
 
 
 class UserDevice(Base):

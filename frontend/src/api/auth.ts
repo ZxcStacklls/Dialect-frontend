@@ -17,6 +17,7 @@ export interface LoginData {
 
 export interface TokenResponse {
   access_token: string
+  refresh_token?: string
   token_type: string
 }
 
@@ -70,7 +71,7 @@ export const authAPI = {
   uploadAvatar: async (file: File): Promise<User> => {
     const formData = new FormData()
     formData.append('file', file)
-    
+
     const response = await apiClient.post('/v1/users/me/avatar', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',

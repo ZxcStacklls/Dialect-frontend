@@ -71,6 +71,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = useCallback(() => {
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
     localStorage.removeItem(USER_STORAGE_KEY)
     setToken(null)
     setUser(null)
@@ -133,7 +134,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Обновляем профиль при возврате приложения в фокус
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && canSendRequests()) {
-        loadUser(token).catch(err => 
+        loadUser(token).catch(err =>
           console.error('Ошибка при обновлении профиля после возврата в фокус:', err)
         )
       }
@@ -142,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     // Обновляем профиль при восстановлении интернета
     const handleOnline = () => {
       if (canSendRequests()) {
-        loadUser(token).catch(err => 
+        loadUser(token).catch(err =>
           console.error('Ошибка при обновлении профиля после восстановления интернета:', err)
         )
       }
@@ -163,7 +164,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await authAPI.login({ phone_number, password })
       const accessToken = response.access_token
+      const refreshToken = response.refresh_token
       localStorage.setItem('access_token', accessToken)
+      if (refreshToken) {
+        localStorage.setItem('refresh_token', refreshToken)
+      }
       setToken(accessToken)
       await loadUser(accessToken)
     } catch (error) {

@@ -174,13 +174,26 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-                color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-                transform 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .titlebar-button::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .titlebar-button:hover::before {
+    opacity: 0.08;
   }
 
   .titlebar-button:active {
-    transform: scale(0.95);
+    transform: scale(0.96);
   }
 
   .titlebar-button:focus,

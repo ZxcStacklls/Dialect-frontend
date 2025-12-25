@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 from typing import Optional
+import secrets
+import hashlib
 
 from jose import jwt, JWTError, ExpiredSignatureError
 from passlib.context import CryptContext
@@ -35,9 +37,10 @@ def get_password_hash(password: str) -> str:
 
 # --- 3. Функции для работы с JWT (JSON Web Tokens) ---
 
-def create_access_token(user_id: int) -> str:
+def create_access_token(user_id: int, session_id: int = None) -> str:
     """
-    Создает новый JWT токен для пользователя.
+    Создает новый JWT access токен для пользователя.
+    Включает session_id для возможности отзыва токена.
     """
     # Устанавливаем время жизни токена из настроек
     expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
@@ -45,9 +48,10 @@ def create_access_token(user_id: int) -> str:
     
     # "sub" (subject) - это стандартное поле JWT для хранения
     # уникального идентификатора (ID пользователя).
-    # Мы ОБЯЗАТЕЛЬНО конвертируем user_id в строку.
+    # "sid" - ID сессии для проверки отзыва
     to_encode = {
         "sub": str(user_id),
+        "sid": session_id,
         "exp": expire
     }
     
@@ -58,6 +62,22 @@ def create_access_token(user_id: int) -> str:
         algorithm=settings.ALGORITHM
     )
     return encoded_jwt
+
+
+def create_refresh_token() -> str:
+    """
+    Создает безопасный случайный refresh токен.
+    Возвращает строку из 43 символов (256 бит энтропии).
+    """
+    return secrets.token_urlsafe(32)
+
+
+def hash_refresh_token(token: str) -> str:
+    """
+    Хеширует refresh токен для безопасного хранения в БД.
+    Используем SHA-256 (быстрый, т.к. refresh токен уже случайный).
+    """
+    return hashlib.sha256(token.encode()).hexdigest()
 
 
 def verify_and_decode_token(token: str) -> schemas.TokenData:
@@ -79,10 +99,11 @@ def verify_and_decode_token(token: str) -> schemas.TokenData:
     
     # Извлекаем ID пользователя из поля "sub"
     user_id_str: str = payload.get("sub")
+    session_id: int = payload.get("sid")
     
     if user_id_str is None:
         # Этого не должно случиться, если мы правильно создаем токен
         raise JWTError("Token payload is missing 'sub' (user_id) claim")
         
     # Возвращаем Pydantic-схему с данными
-    return schemas.TokenData(user_id=int(user_id_str))
+    return schemas.TokenData(user_id=int(user_id_str), session_id=session_id)

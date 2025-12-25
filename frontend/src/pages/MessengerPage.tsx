@@ -49,10 +49,10 @@ const MessengerPage: React.FC = () => {
   const [settingsActiveTab, setSettingsActiveTab] = useState<string>('profile')
   const [isCompactCollapsing, setIsCompactCollapsing] = useState(false)
   const [isPanelAnimating, setIsPanelAnimating] = useState(false)
-  
+
   // Ref для кнопок навигации
   const navButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
-  
+
   // Определяем стиль дизайна и расположение навигации
   const isModern = settings.designStyle === 'modern'
   const isNavBottom = settings.navPosition === 'bottom'
@@ -84,7 +84,7 @@ const MessengerPage: React.FC = () => {
   const previousPanelWidthRef = useRef<number>(chatsPanelWidth)
   const compactAnimationTimeoutRef = useRef<number | null>(null)
   const isAnimatingRef = useRef(false)
-  const MIN_WIDTH = 80 
+  const MIN_WIDTH = 80
   const MAX_WIDTH = 500
   const COMPACT_WIDTH = 300
   const COLLAPSE_THRESHOLD = 150
@@ -97,13 +97,13 @@ const MessengerPage: React.FC = () => {
     if (isAnimatingRef.current) return
 
     isAnimatingRef.current = true
-    
+
     // Сначала включаем анимацию
     setIsPanelAnimating(true)
-    
+
     // Затем обновляем ref для внутренней логики
     chatsPanelWidthRef.current = targetWidth
-    
+
     // Обновляем state для UI - это запустит анимацию
     requestAnimationFrame(() => {
       setChatsPanelWidth(targetWidth)
@@ -116,7 +116,7 @@ const MessengerPage: React.FC = () => {
     }, ANIMATION_DURATION)
   }
 
-  
+
   // Обработчики поиска
   const handleSearchIconClick = () => {
     setWasMinimizedBeforeSearch(true)
@@ -144,7 +144,7 @@ const MessengerPage: React.FC = () => {
       setTimeout(() => {
         setIsProfileVisible(true)
         setWasMinimizedBeforeSearch(false)
-      }, 350) 
+      }, 350)
     } else {
       setIsProfileVisible(true)
     }
@@ -163,15 +163,15 @@ const MessengerPage: React.FC = () => {
         params: { q: query.trim() }
       })
       const allResults = response.data || []
-      
+
       const queryLower = query.trim().toLowerCase()
       const filteredResults = allResults.filter((user: any) => {
         const username = (user.username || '').toLowerCase()
         const firstName = (user.first_name || '').toLowerCase()
         const lastName = (user.last_name || '').toLowerCase()
-        const phoneNumber = (user.phone_number || '').replace(/\D/g, '') 
+        const phoneNumber = (user.phone_number || '').replace(/\D/g, '')
         const queryDigits = queryLower.replace(/\D/g, '')
-        
+
         return (
           username.includes(queryLower) ||
           firstName.includes(queryLower) ||
@@ -179,7 +179,7 @@ const MessengerPage: React.FC = () => {
           (queryDigits.length >= 3 && phoneNumber.includes(queryDigits))
         )
       })
-      
+
       setSearchResults(filteredResults)
     } catch (error) {
       console.error('Ошибка при поиске пользователей:', error)
@@ -199,7 +199,7 @@ const MessengerPage: React.FC = () => {
       } else {
         setSearchResults([])
       }
-    }, 300) 
+    }, 300)
 
     return () => clearTimeout(timeoutId)
   }, [searchQuery, isSearchActive, activeSearchTab])
@@ -213,10 +213,10 @@ const MessengerPage: React.FC = () => {
       return avatarUrl
     }
     const apiBaseUrl = getApiBaseUrl()
-    let baseUrl = apiBaseUrl.replace('/api', '').replace(/\/$/, '') 
+    let baseUrl = apiBaseUrl.replace('/api', '').replace(/\/$/, '')
     return `${baseUrl}${avatarUrl.startsWith('/') ? '' : '/'}${avatarUrl}`
   }
-  
+
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target as Node)) {
@@ -244,15 +244,15 @@ const MessengerPage: React.FC = () => {
     checkConnection()
 
     const interval = setInterval(checkConnection, 15000)
-    
+
     const handleOnline = () => {
       setTimeout(checkConnection, 500)
     }
     const handleOffline = () => setIsOnlineState(false)
-    
+
     window.addEventListener('online', handleOnline)
     window.addEventListener('offline', handleOffline)
-    
+
     return () => {
       clearInterval(interval)
       window.removeEventListener('online', handleOnline)
@@ -284,7 +284,7 @@ const MessengerPage: React.FC = () => {
       tabsContainer.removeEventListener('wheel', handleWheel)
     }
   }, [isSearchActive])
-  
+
   useEffect(() => {
     const interval = setInterval(async () => {
       if (!canSendRequests()) {
@@ -297,11 +297,11 @@ const MessengerPage: React.FC = () => {
       } catch (error) {
         console.error('Ошибка при автообновлении профиля:', error)
       }
-    }, 10000) 
+    }, 10000)
 
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible' && canSendRequests()) {
-        refreshUser().catch(err => 
+        refreshUser().catch(err =>
           console.error('Ошибка при обновлении профиля после возврата в фокус:', err)
         )
       }
@@ -309,7 +309,7 @@ const MessengerPage: React.FC = () => {
 
     const handleOnline = () => {
       if (canSendRequests()) {
-        refreshUser().catch(err => 
+        refreshUser().catch(err =>
           console.error('Ошибка при обновлении профиля после восстановления интернета:', err)
         )
       }
@@ -325,11 +325,11 @@ const MessengerPage: React.FC = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
-  
+
   const chats: any[] = []
   const hasChats = chats.length > 0
   const hasSelectedChat = selectedChat !== null
-  
+
   const navItems = [
     { id: 'home', icon: 'home', label: 'Главная' },
     { id: 'groups', icon: 'groups', label: 'Группы' },
@@ -337,7 +337,7 @@ const MessengerPage: React.FC = () => {
     { id: 'chats', icon: 'chat', label: 'Чаты' },
     { id: 'settings', icon: 'settings', label: 'Настройки' },
   ]
-  
+
   // Функция для расчета позиции индикатора на основе реальных позиций кнопок
   const calculateIndicatorPosition = React.useCallback(() => {
     const activeButton = navButtonRefs.current[activeNavItem]
@@ -346,7 +346,7 @@ const MessengerPage: React.FC = () => {
       if (container) {
         const buttonRect = activeButton.getBoundingClientRect()
         const containerRect = container.getBoundingClientRect()
-        
+
         if (isNavBottom) {
           // Горизонтальная навигация (снизу)
           const relativeLeft = buttonRect.left - containerRect.left + container.scrollLeft
@@ -372,12 +372,12 @@ const MessengerPage: React.FC = () => {
       setIndicatorPosition(null)
       return
     }
-    
+
     // Добавляем небольшую задержку для полного рендера DOM
     const timeoutId = setTimeout(() => {
       calculateIndicatorPosition()
     }, 10)
-    
+
     return () => clearTimeout(timeoutId)
   }, [activeNavItem, isModern, calculateIndicatorPosition])
 
@@ -415,7 +415,7 @@ const MessengerPage: React.FC = () => {
     const handleMouseMove = (e: MouseEvent) => {
       const currentWidth = chatsPanelWidthRef.current
       let newWidth = 0
-      
+
       if (isChatsRight) {
         // Панель чатов справа: resize handle слева от панели (на границе с контентом)
         // Ширина = расстояние от правого края окна до курсора
@@ -439,7 +439,7 @@ const MessengerPage: React.FC = () => {
           newWidth = e.clientX
         }
       }
-      
+
       // Направление движения для анимаций
       let isDraggingExpanding = newWidth > currentWidth
       let isDraggingCollapsing = newWidth < currentWidth
@@ -459,10 +459,10 @@ const MessengerPage: React.FC = () => {
       // Обычное изменение размера
       if (currentWidth > MIN_WIDTH && !isAnimatingRef.current) {
         let nextWidth = newWidth
-        
+
         if (nextWidth < COMPACT_WIDTH) nextWidth = COMPACT_WIDTH
         if (nextWidth > MAX_WIDTH) nextWidth = MAX_WIDTH
-        
+
         setChatsPanelWidth(nextWidth)
       }
     }
@@ -475,7 +475,7 @@ const MessengerPage: React.FC = () => {
 
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
-    document.body.style.cursor = 'col-resize'
+    document.body.style.cursor = 'ew-resize'
     document.body.style.userSelect = 'none'
 
     return () => {
@@ -490,7 +490,7 @@ const MessengerPage: React.FC = () => {
     const previousWidth = previousPanelWidthRef.current
     const wasMinimized = previousWidth <= MIN_WIDTH
     const isNowMinimized = chatsPanelWidth <= MIN_WIDTH
-    
+
     if (!wasMinimized && isNowMinimized) {
       setIsCompactCollapsing(true)
 
@@ -564,7 +564,7 @@ const MessengerPage: React.FC = () => {
 
   const userStatus = user?.status_text || null
   const isMinimized = chatsPanelWidth <= MIN_WIDTH
-  const isCompact = false 
+  const isCompact = false
   const avatarUrl = getAvatarUrl(user?.avatar_url)
 
   const isDark = theme === 'dark'
@@ -574,7 +574,7 @@ const MessengerPage: React.FC = () => {
       e.stopPropagation()
       e.preventDefault()
     }
-    
+
     try {
       await navigator.clipboard.writeText(username)
       addToast(`Username @${username} скопирован`, 'success', 3000)
@@ -583,51 +583,45 @@ const MessengerPage: React.FC = () => {
       addToast('Не удалось скопировать username', 'error', 3000)
     }
   }
-  
+
   return (
-    <div className={`messenger-container flex h-full overflow-hidden select-none ${
-      isDark 
+    <div className={`messenger-container flex h-full overflow-hidden select-none ${isDark
         ? 'bg-gray-900/95 text-white'
         : 'bg-white/95 text-gray-900'
-    } ${
+      } ${
       // Flex direction: 
       // left -> row (Nav | Workspace)
       // right -> row-reverse (Workspace | Nav) -> Workspace keeps (Chats | Content)
       // bottom -> col-reverse (Workspace / Nav) -> Workspace keeps (Chats | Content)
       isNavBottom ? 'flex-col-reverse' : isNavRight ? 'flex-row-reverse' : 'flex-row'
-    }`}>
+      }`}>
       {/* Навигационная панель - в цвет titlebar */}
-      <div className={`flex-shrink-0 flex transition-all duration-300 ease-in-out ${
-        isNavBottom ? 'flex-row h-16 w-full items-center justify-center' : 'flex-col w-[72px] h-full' 
-      } ${
-        isModern ? 'liquid-nav' : (isDark 
+      <div className={`flex-shrink-0 flex transition-all duration-300 ease-in-out ${isNavBottom ? 'flex-row h-16 w-full items-center justify-center' : 'flex-col w-[72px] h-full'
+        } ${isModern ? 'liquid-nav' : (isDark
           ? 'bg-gray-900/95'
           : 'bg-white/95')
-      }`}>
-        <div className={`flex items-center justify-center w-full h-full ${
-           isNavBottom ? 'flex-row' : 'flex-col'
         }`}>
-          {/* Liquid Glass Container для Modern стиля */}
-          <div className={`relative flex gap-2 ${
-            isNavBottom ? 'flex-row' : 'flex-col'
-          } ${
-            isModern ? `liquid-nav-container ${isNavBottom ? 'horizontal' : ''}` : ''
+        <div className={`flex items-center justify-center w-full h-full ${isNavBottom ? 'flex-row' : 'flex-col'
           }`}>
+          {/* Liquid Glass Container для Modern стиля */}
+          <div className={`relative flex gap-2 ${isNavBottom ? 'flex-row' : 'flex-col'
+            } ${isModern ? `liquid-nav-container ${isNavBottom ? 'horizontal' : ''}` : ''
+            }`}>
             {/* Анимированный индикатор (только для не-modern стиля) */}
             {!isModern && indicatorPosition !== null && (
               <div
-                className={`absolute transition-all duration-300 ease-out bg-primary-500 ${isNavBottom 
-                  ? 'bottom-[-14px] h-1 w-8 rounded-t-full left-0' 
+                className={`absolute transition-all duration-300 ease-out bg-primary-500 ${isNavBottom
+                  ? 'bottom-[-14px] h-1 w-8 rounded-t-full left-0'
                   : `w-1 h-8 top-0 ${isNavRight ? 'right-[-14px] rounded-l-full' : 'left-[-14px] rounded-r-full'}`
-                }`}
+                  }`}
                 style={{
-                  transform: isNavBottom 
-                    ? `translateX(${indicatorPosition}px)` 
+                  transform: isNavBottom
+                    ? `translateX(${indicatorPosition}px)`
                     : `translateY(${indicatorPosition}px)`,
                 }}
               />
             )}
-            
+
             {navItems.map((item) => {
               const isActive = activeNavItem === item.id
               return (
@@ -642,21 +636,19 @@ const MessengerPage: React.FC = () => {
                       handleCloseSettings()
                     }
                   }}
-                  className={`relative flex items-center justify-center transition-all duration-300 ease-out ${
-                    isModern 
+                  className={`relative flex items-center justify-center transition-all duration-300 ease-out ${isModern
                       ? `modern-nav-btn ${isActive ? 'active' : ''}`
                       : `w-12 h-12 ${isActive
-                          ? 'text-primary-500 scale-105'
-                          : isDark
-                            ? 'text-gray-500 hover:text-primary-300 hover:bg-primary-500/10'
-                            : 'text-gray-400 hover:text-primary-500 hover:bg-primary-500/10'
-                        }`
-                  } ${
-                    isModern && !isActive 
+                        ? 'text-primary-500 scale-105'
+                        : isDark
+                          ? 'text-gray-500 hover:text-primary-300 hover:bg-primary-500/10'
+                          : 'text-gray-400 hover:text-primary-500 hover:bg-primary-500/10'
+                      }`
+                    } ${isModern && !isActive
                       ? (isDark ? 'text-white/80 hover:text-white' : 'text-gray-500 hover:text-gray-800')
                       : ''
-                  }`}
-                  style={{ 
+                    }`}
+                  style={{
                     borderRadius: isModern ? '50%' : `var(--border-radius, 0.75rem)`,
                     fontSize: `calc(1rem * var(--font-scale, 1))`,
                     width: isModern ? '52px' : '48px',
@@ -678,19 +670,16 @@ const MessengerPage: React.FC = () => {
         Порядок зависит от настройки chatsPosition.
       */}
       {/* WRAPPER для Чатов и Контента с закруглённым углом */}
-      <div className={`flex-1 flex overflow-hidden relative h-full flex-row rounded-tl-2xl ${
-        isDark ? 'bg-gray-950' : 'bg-gray-100'
-      } ${
-        isChatsRight ? 'flex-row-reverse' : ''
-      }`}>
-        
+      <div className={`flex-1 flex overflow-hidden relative h-full flex-row rounded-tl-2xl ${isDark ? 'bg-gray-950' : 'bg-gray-100'
+        } ${isChatsRight ? 'flex-row-reverse' : ''
+        }`}>
+
         {/* Панель с чатами (масштабируемая) */}
         <div
           ref={chatsPanelRef}
-          className={`relative flex flex-col overflow-hidden border-r ${
-            isModern ? 'modern-chat-panel' : (isDark ? 'bg-gray-900/50 border-gray-700/40' : 'bg-white/80 border-gray-200')
-          }`}
-            style={{
+          className={`relative flex flex-col overflow-hidden border-r ${isModern ? 'modern-chat-panel' : (isDark ? 'bg-gray-900/50 border-gray-700/40' : 'bg-white/80 border-gray-200')
+            }`}
+          style={{
             width: `${chatsPanelWidth}px`,
             transition: isPanelAnimating ? `width ${ANIMATION_DURATION}ms cubic-bezier(0.4, 0, 0.2, 1)` : 'none'
           }}
@@ -698,25 +687,23 @@ const MessengerPage: React.FC = () => {
           {/* ... [Весь контент панели чатов без изменений] ... */}
           {/* Блок профиля пользователя */}
           <div
-            className={`transition-all duration-300 ease-in-out ${
-              (isSearchActive && !isMinimized) || (!isProfileVisible && !isMinimized) ? 'opacity-0 max-h-0 m-0 p-0 overflow-hidden' : 'opacity-100 max-h-[200px] overflow-visible'
-            }`}
+            className={`transition-all duration-300 ease-in-out ${(isSearchActive && !isMinimized) || (!isProfileVisible && !isMinimized) ? 'opacity-0 max-h-0 m-0 p-0 overflow-hidden' : 'opacity-100 max-h-[200px] overflow-visible'
+              }`}
           >
             <div className="mt-3 mb-1 flex-shrink-0">
               <div className="flex items-center py-2 pl-5 pr-3">
-                <div 
+                <div
                   className={`relative flex-shrink-0 w-10 h-10 cursor-pointer ${isModern && isOnlineState ? 'modern-avatar-ring' : ''}`}
                   onClick={() => setIsSettingsOpen(true)}
                 >
-                  <div className={`relative w-full h-full rounded-full overflow-hidden ${
-                    !isModern ? `border-2 ${isOnlineState ? 'border-green-500/60' : 'border-gray-600/40'}` : ''
-                  }`}>
+                  <div className={`relative w-full h-full rounded-full overflow-hidden ${!isModern ? `border-2 ${isOnlineState ? 'border-green-500/60' : 'border-gray-600/40'}` : ''
+                    }`}>
                     {user?.avatar_url && avatarUrl && !avatarError ? (
                       <img
                         src={avatarUrl}
                         alt={`${user?.first_name} ${user?.last_name || ''}`}
                         className="w-full h-full"
-                        style={{ 
+                        style={{
                           objectFit: 'cover',
                           objectPosition: 'center',
                           width: '100%',
@@ -745,13 +732,12 @@ const MessengerPage: React.FC = () => {
                   </div>
                   {/* Индикатор онлайн */}
                   {!isModern && (
-                    <div 
-                      className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${
-                        isOnlineState 
-                          ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]' 
+                    <div
+                      className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${isOnlineState
+                          ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]'
                           : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
-                      }`}
-                      style={{ 
+                        }`}
+                      style={{
                         zIndex: 20,
                         opacity: isMinimized ? 0 : 1,
                         transform: isMinimized ? 'scale(0)' : 'scale(1)'
@@ -759,9 +745,9 @@ const MessengerPage: React.FC = () => {
                     ></div>
                   )}
                   {isModern && isOnlineState && (
-                    <div 
+                    <div
                       className="modern-online-indicator absolute -bottom-0.5 -right-0.5"
-                      style={{ 
+                      style={{
                         zIndex: 20,
                         opacity: isMinimized ? 0 : 1,
                         transform: isMinimized ? 'scale(0)' : 'scale(1)'
@@ -769,90 +755,86 @@ const MessengerPage: React.FC = () => {
                     ></div>
                   )}
                 </div>
-                <div 
-                  className={`flex-1 min-w-0 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden ${
-                    isMinimized 
-                      ? 'opacity-0 w-0 ml-0 mr-0' 
+                <div
+                  className={`flex-1 min-w-0 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden ${isMinimized
+                      ? 'opacity-0 w-0 ml-0 mr-0'
                       : 'opacity-100 w-auto ml-3'
-                  }`}
+                    }`}
                   onClick={() => setIsSettingsOpen(true)}
                 >
-                    <div className={`font-semibold text-sm truncate mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
-                      {user?.first_name || 'Пользователь'} {user?.last_name || ''}
-                    </div>
-                    <div
-                      className="relative h-4 overflow-hidden"
-                      onMouseEnter={() => setHoveredStatus(true)}
-                      onMouseLeave={() => setHoveredStatus(false)}
-                    >
-                      {!isOnlineState ? (
-                        <div className={`text-xs truncate flex items-center gap-1 ${
-                          isDark ? 'text-primary-400' : 'text-primary-500'
+                  <div className={`font-semibold text-sm truncate mb-0.5 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                    {user?.first_name || 'Пользователь'} {user?.last_name || ''}
+                  </div>
+                  <div
+                    className="relative h-4 overflow-hidden"
+                    onMouseEnter={() => setHoveredStatus(true)}
+                    onMouseLeave={() => setHoveredStatus(false)}
+                  >
+                    {!isOnlineState ? (
+                      <div className={`text-xs truncate flex items-center gap-1 ${isDark ? 'text-primary-400' : 'text-primary-500'
                         }`}>
-                          <span>Connecting</span>
-                          <span className="flex gap-0.5">
-                            <span className="connecting-dot">.</span>
-                            <span className="connecting-dot">.</span>
-                            <span className="connecting-dot">.</span>
-                          </span>
-                        </div>
-                      ) : userStatus ? (
-                        <>
-                          {/* Статус */}
-                          <div 
-                            className={`text-xs truncate cursor-pointer transition-all duration-300 absolute inset-0 ${
-                              isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                        <span>Connecting</span>
+                        <span className="flex gap-0.5">
+                          <span className="connecting-dot">.</span>
+                          <span className="connecting-dot">.</span>
+                          <span className="connecting-dot">.</span>
+                        </span>
+                      </div>
+                    ) : userStatus ? (
+                      <>
+                        {/* Статус */}
+                        <div
+                          className={`text-xs truncate cursor-pointer transition-all duration-300 absolute inset-0 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
                             }`}
+                          style={{
+                            transform: hoveredStatus ? 'translateY(-100%)' : 'translateY(0)',
+                            opacity: hoveredStatus ? 0 : 1
+                          }}
+                        >
+                          {userStatus}
+                        </div>
+                        {/* Username */}
+                        {user?.username && (
+                          <div
+                            className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0 cursor-pointer hover:text-primary-400"
                             style={{
-                              transform: hoveredStatus ? 'translateY(-100%)' : 'translateY(0)',
-                              opacity: hoveredStatus ? 0 : 1
+                              transform: hoveredStatus ? 'translateY(0)' : 'translateY(100%)',
+                              opacity: hoveredStatus ? 1 : 0
                             }}
-                          >
-                            {userStatus}
-                          </div>
-                          {/* Username */}
-                          {user?.username && (
-                            <div 
-                              className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0 cursor-pointer hover:text-primary-400"
-                              style={{
-                                transform: hoveredStatus ? 'translateY(0)' : 'translateY(100%)',
-                                opacity: hoveredStatus ? 1 : 0
-                              }}
-                              onClick={(e) => copyUsername(user.username!, e)}
-                              title="Нажмите, чтобы скопировать username"
-                            >
-                              @{user.username}
-                            </div>
-                          )}
-                        </>
-                      ) : (
-                        user?.username && (
-                          <div 
-                            className={`text-xs truncate cursor-pointer hover:text-primary-500 transition-colors ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
                             onClick={(e) => copyUsername(user.username!, e)}
                             title="Нажмите, чтобы скопировать username"
                           >
                             @{user.username}
                           </div>
-                        )
-                      )}
-                    </div>
+                        )}
+                      </>
+                    ) : (
+                      user?.username && (
+                        <div
+                          className={`text-xs truncate cursor-pointer hover:text-primary-500 transition-colors ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
+                          onClick={(e) => copyUsername(user.username!, e)}
+                          title="Нажмите, чтобы скопировать username"
+                        >
+                          @{user.username}
+                        </div>
+                      )
+                    )}
+                  </div>
                 </div>
                 {!isMinimized && (
                   <div className="relative z-50 flex-shrink-0" ref={profileMenuRef}>
-                    <button 
+                    <button
                       onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                      className={`transition-colors flex-shrink-0 p-1.5 rounded-lg ${
-                        isDark
+                      className={`transition-colors flex-shrink-0 p-1.5 rounded-lg ${isDark
                           ? `text-gray-500 hover:text-primary-300 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-400 bg-primary-500/10' : ''}`
                           : `text-gray-400 hover:text-primary-500 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-500 bg-primary-500/10' : ''}`
-                      }`}
+                        }`}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
                       </svg>
                     </button>
-                    
+
                     {/* Выпадающее меню */}
                     {isProfileMenuOpen && (
                       <div className={`absolute top-full mt-2 w-48 rounded-xl shadow-xl z-[100] overflow-hidden animate-fade-in ${
@@ -860,25 +842,23 @@ const MessengerPage: React.FC = () => {
                         // Когда панель чатов справа, меню открывается справа (чтобы не выходить за экран)
                         // Когда панель чатов слева, меню открывается справа (относительно кнопки)
                         'right-0'
-                      } ${
-                        isModern 
-                          ? 'modern-dropdown' 
+                        } ${isModern
+                          ? 'modern-dropdown'
                           : `backdrop-blur-xl ${isDark
-                              ? 'bg-gray-900/95 border border-gray-800/50'
-                              : 'bg-white/95 border border-gray-200/50'
-                            }`
-                      }`}>
+                            ? 'bg-gray-900/95 border border-gray-800/50'
+                            : 'bg-white/95 border border-gray-200/50'
+                          }`
+                        }`}>
                         <div className="py-1">
                           <button
                             onClick={() => {
                               setIsSettingsOpen(true)
                               setIsProfileMenuOpen(false)
                             }}
-                            className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                              isDark
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${isDark
                                 ? 'text-gray-300 hover:bg-white/5'
                                 : 'text-gray-700 hover:bg-gray-100'
-                            }`}
+                              }`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -891,11 +871,10 @@ const MessengerPage: React.FC = () => {
                               toggleTheme()
                               setIsProfileMenuOpen(false)
                             }}
-                            className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                              isDark
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${isDark
                                 ? 'text-gray-300 hover:bg-white/5'
                                 : 'text-gray-700 hover:bg-gray-100'
-                            }`}
+                              }`}
                           >
                             {theme === 'dark' ? (
                               <>
@@ -919,11 +898,10 @@ const MessengerPage: React.FC = () => {
                               logout()
                               setIsProfileMenuOpen(false)
                             }}
-                            className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${
-                              isDark
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${isDark
                                 ? 'text-red-400 hover:bg-white/5 hover:text-red-300'
                                 : 'text-red-500 hover:bg-red-50 hover:text-red-600'
-                            }`}
+                              }`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -947,9 +925,8 @@ const MessengerPage: React.FC = () => {
             <div className="mx-4 mt-3 mb-2 flex items-center justify-center flex-shrink-0">
               <button
                 onClick={handleSearchIconClick}
-                className={`transition-colors p-2 ${
-                  isDark ? 'text-gray-500 hover:text-primary-300' : 'text-gray-400 hover:text-primary-500'
-                }`}
+                className={`transition-colors p-2 ${isDark ? 'text-gray-500 hover:text-primary-300' : 'text-gray-400 hover:text-primary-500'
+                  }`}
               >
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -957,9 +934,8 @@ const MessengerPage: React.FC = () => {
               </button>
             </div>
           ) : (
-            <div className={`mx-4 px-3 py-2 flex-shrink-0 transition-all duration-300 ease-in-out relative z-10 ${
-              isSearchActive ? 'mt-3 mb-2' : 'mt-1 mb-2'
-            }`}>
+            <div className={`mx-4 px-3 py-2 flex-shrink-0 transition-all duration-300 ease-in-out relative z-10 ${isSearchActive ? 'mt-3 mb-2' : 'mt-1 mb-2'
+              }`}>
               <div className="flex items-center gap-2">
                 <input
                   ref={searchInputRef}
@@ -968,24 +944,21 @@ const MessengerPage: React.FC = () => {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={handleSearchFocus}
-                  className={`flex-1 px-4 py-2 text-sm placeholder-gray-500/60 focus:outline-none transition-all shadow-lg select-text ${
-                    isModern 
+                  className={`flex-1 px-4 py-2 text-sm placeholder-gray-500/60 focus:outline-none transition-all shadow-lg select-text ${isModern
                       ? `modern-input ${isDark ? 'text-white' : 'text-gray-900'}`
-                      : `border-2 rounded-xl focus:border-primary-500/60 focus:bg-primary-500/10 ${
-                          isDark
-                            ? 'bg-gray-800/30 border-gray-700/40 text-white'
-                            : 'bg-white border-gray-300/60 text-gray-900'
-                        }`
-                  }`}
+                      : `border-2 rounded-xl focus:border-primary-500/60 focus:bg-primary-500/10 ${isDark
+                        ? 'bg-gray-800/30 border-gray-700/40 text-white'
+                        : 'bg-white border-gray-300/60 text-gray-900'
+                      }`
+                    }`}
                 />
                 {isSearchActive && (
                   <button
                     onClick={handleSearchClose}
-                    className={`p-1.5 rounded-lg transition-all ${
-                      isDark
+                    className={`p-1.5 rounded-lg transition-all ${isDark
                         ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
                         : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-                    }`}
+                      }`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -1002,7 +975,7 @@ const MessengerPage: React.FC = () => {
           {/* Вкладки для поиска */}
           {!isMinimized && isSearchActive && (
             <div className={`mx-4 mb-2 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-300/50'}`}>
-              <div 
+              <div
                 ref={searchTabsRef}
                 className="flex gap-1 overflow-x-auto scrollbar-hide"
               >
@@ -1015,21 +988,19 @@ const MessengerPage: React.FC = () => {
                   <button
                     key={tab.id}
                     onClick={() => setActiveSearchTab(tab.id)}
-                    className={`px-4 py-2 text-sm font-medium transition-colors relative flex-shrink-0 ${
-                      activeSearchTab === tab.id
+                    className={`px-4 py-2 text-sm font-medium transition-colors relative flex-shrink-0 ${activeSearchTab === tab.id
                         ? isDark
                           ? 'text-primary-400'
                           : 'text-primary-500'
                         : isDark
                           ? 'text-gray-500 hover:text-gray-300'
                           : 'text-gray-500 hover:text-gray-700'
-                    }`}
+                      }`}
                   >
                     {tab.label}
                     {activeSearchTab === tab.id && (
-                      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${
-                        isDark ? 'bg-primary-400' : 'bg-primary-500'
-                      }`} />
+                      <div className={`absolute bottom-0 left-0 right-0 h-0.5 ${isDark ? 'bg-primary-400' : 'bg-primary-500'
+                        }`} />
                     )}
                   </button>
                 ))}
@@ -1059,26 +1030,24 @@ const MessengerPage: React.FC = () => {
                               return (
                                 <button
                                   key={foundUser.id}
-                                  className={`w-full transition-colors text-left ${
-                                    isModern 
+                                  className={`w-full transition-colors text-left ${isModern
                                       ? 'modern-search-result'
-                                      : `px-6 py-3 ${isDark 
-                                          ? 'hover:bg-primary-500/10' 
-                                          : 'hover:bg-primary-500/5'
-                                        }`
-                                  }`}
+                                      : `px-6 py-3 ${isDark
+                                        ? 'hover:bg-primary-500/10'
+                                        : 'hover:bg-primary-500/5'
+                                      }`
+                                    }`}
                                 >
                                   <div className="flex items-center gap-3">
                                     <div className="relative flex-shrink-0 w-12 h-12">
-                                      <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${
-                                        foundUser.is_online ? 'border-green-500/60' : 'border-gray-600/40'
-                                      }`}>
+                                      <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${foundUser.is_online ? 'border-green-500/60' : 'border-gray-600/40'
+                                        }`}>
                                         {foundUser.avatar_url && foundUserAvatarUrl ? (
                                           <img
                                             src={foundUserAvatarUrl}
                                             alt={`${foundUser.first_name} ${foundUser.last_name || ''}`}
                                             className="w-full h-full"
-                                            style={{ 
+                                            style={{
                                               objectFit: 'cover',
                                               objectPosition: 'center',
                                               width: '100%',
@@ -1098,12 +1067,11 @@ const MessengerPage: React.FC = () => {
                                           </div>
                                         )}
                                       </div>
-                                      <div 
-                                        className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${
-                                          foundUser.is_online 
-                                            ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]' 
+                                      <div
+                                        className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${foundUser.is_online
+                                            ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]'
                                             : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
-                                        }`}
+                                          }`}
                                         style={{ zIndex: 20 }}
                                       ></div>
                                     </div>
@@ -1120,7 +1088,7 @@ const MessengerPage: React.FC = () => {
                                           <>
                                             {/* Username */}
                                             {foundUser.username && (
-                                              <div 
+                                              <div
                                                 className="text-primary-500 text-xs truncate transition-all duration-300 absolute inset-0 cursor-pointer hover:text-primary-400"
                                                 style={{
                                                   transform: hoveredUserStatus === foundUser.id ? 'translateY(-100%)' : 'translateY(0)',
@@ -1133,10 +1101,9 @@ const MessengerPage: React.FC = () => {
                                               </div>
                                             )}
                                             {/* Статус */}
-                                            <div 
-                                              className={`text-xs truncate cursor-pointer transition-all duration-300 absolute inset-0 ${
-                                                isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
-                                              }`}
+                                            <div
+                                              className={`text-xs truncate cursor-pointer transition-all duration-300 absolute inset-0 ${isDark ? 'text-gray-500 hover:text-gray-300' : 'text-gray-500 hover:text-gray-700'
+                                                }`}
                                               style={{
                                                 transform: hoveredUserStatus === foundUser.id ? 'translateY(0)' : 'translateY(100%)',
                                                 opacity: hoveredUserStatus === foundUser.id ? 1 : 0
@@ -1146,7 +1113,7 @@ const MessengerPage: React.FC = () => {
                                             </div>
                                           </>
                                         ) : foundUser.username ? (
-                                          <div 
+                                          <div
                                             className={`text-xs truncate cursor-pointer hover:text-primary-500 transition-colors ${isDark ? 'text-gray-500' : 'text-gray-500'}`}
                                             onClick={(e) => copyUsername(foundUser.username, e)}
                                             title="Нажмите, чтобы скопировать username"
@@ -1227,28 +1194,25 @@ const MessengerPage: React.FC = () => {
                       <button
                         key={index}
                         onClick={() => setSelectedChat(index)}
-                        className={`w-full transition-all duration-300 ease-in-out text-left ${
-                          isModern 
+                        className={`w-full transition-all duration-300 ease-in-out text-left ${isModern
                             ? `modern-chat-item ${selectedChat === index ? 'selected' : ''}`
-                            : `${isCompact ? 'px-3 py-2' : 'px-6 py-3'} ${isDark 
-                                ? 'hover:bg-primary-500/10' 
-                                : 'hover:bg-primary-500/5'
-                              }`
-                        }`}
+                            : `${isCompact ? 'px-3 py-2' : 'px-6 py-3'} ${isDark
+                              ? 'hover:bg-primary-500/10'
+                              : 'hover:bg-primary-500/5'
+                            }`
+                          }`}
                       >
                         <div className={`flex items-center transition-all duration-300 ease-in-out ${isCompact ? 'gap-2' : 'gap-3'}`}>
                           <div className="relative">
-                            <div className={`${isCompact ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-2 flex-shrink-0 transition-all duration-300 ease-in-out ${
-                              isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
-                            }`} />
+                            <div className={`${isCompact ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-2 flex-shrink-0 transition-all duration-300 ease-in-out ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
+                              }`} />
                             <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)] transition-all duration-300 ease-in-out"></div>
                           </div>
-                          <div 
-                            className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${
-                              isCompact || isCompactCollapsing 
-                                ? 'opacity-0 max-w-0 overflow-hidden' 
+                          <div
+                            className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${isCompact || isCompactCollapsing
+                                ? 'opacity-0 max-w-0 overflow-hidden'
                                 : 'opacity-100 max-w-full'
-                            }`}
+                              }`}
                           >
                             <div className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Чат {index + 1}</div>
                             <div className={`text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Последнее сообщение...</div>
@@ -1289,9 +1253,8 @@ const MessengerPage: React.FC = () => {
               {chats.length > 0 ? (
                 chats.slice(0, 8).map((_chat, index) => (
                   <div key={index} className="relative">
-                    <div className={`w-10 h-10 rounded-full border-2 ${
-                      isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
-                    }`}></div>
+                    <div className={`w-10 h-10 rounded-full border-2 ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
+                      }`}></div>
                     <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)]"></div>
                   </div>
                 ))
@@ -1319,7 +1282,7 @@ const MessengerPage: React.FC = () => {
 
           {/* Разделитель для ресайза */}
           <div
-            className="absolute top-0 w-1 h-full cursor-col-resize z-20 group"
+            className="absolute top-0 w-1 h-full cursor-ew-resize z-20 group"
             style={{
               [isChatsRight ? 'left' : 'right']: 0
             }}
@@ -1339,18 +1302,16 @@ const MessengerPage: React.FC = () => {
               }
             }}
           >
-            <div 
-              className={`absolute top-1/2 -translate-y-1/2 w-1 h-20 transition-all ${
-                isChatsRight 
-                  ? 'rounded-r-full' 
+            <div
+              className={`absolute top-1/2 -translate-y-1/2 w-1 h-20 transition-all ${isChatsRight
+                  ? 'rounded-r-full'
                   : 'rounded-l-full'
-              } ${
-                isModern 
+                } ${isModern
                   ? 'modern-resize-handle'
-                  : (isDark 
-                      ? 'bg-gray-700/30 group-hover:bg-primary-500/70'
-                      : 'bg-gray-300/50 group-hover:bg-primary-500/70')
-              }`}
+                  : (isDark
+                    ? 'bg-gray-700/30 group-hover:bg-primary-500/70'
+                    : 'bg-gray-300/50 group-hover:bg-primary-500/70')
+                }`}
               style={{
                 [isChatsRight ? 'left' : 'right']: 0
               }}
@@ -1359,9 +1320,8 @@ const MessengerPage: React.FC = () => {
         </div>
 
         {/* Центральная область - чат, пустое состояние */}
-        <div className={`flex-1 flex items-center justify-center relative ${
-          isModern ? 'modern-message-area' : (isDark ? 'bg-gray-950/50' : 'bg-gray-100/50')
-        }`}>
+        <div className={`flex-1 flex items-center justify-center relative ${isModern ? 'modern-message-area' : (isDark ? 'bg-gray-950/50' : 'bg-gray-100/50')
+          }`}>
           {hasSelectedChat ? (
             // TODO: Область открытого чата
             <div className="text-center">
@@ -1431,11 +1391,10 @@ const MessengerPage: React.FC = () => {
                     setIsSearchActive(true)
                     setTimeout(() => searchInputRef.current?.focus(), 300)
                   }}
-                  className={`px-8 py-3 rounded-lg transition-colors text-white font-semibold text-base ${
-                    isModern 
-                      ? 'modern-btn' 
+                  className={`px-8 py-3 rounded-lg transition-colors text-white font-semibold text-base ${isModern
+                      ? 'modern-btn'
                       : 'bg-primary-500 hover:bg-primary-400 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50'
-                  }`}
+                    }`}
                 >
                   Найти друзей
                 </button>
@@ -1446,7 +1405,7 @@ const MessengerPage: React.FC = () => {
       </div>
 
       {/* Модальное окно настроек */}
-      <SettingsModal 
+      <SettingsModal
         isOpen={isSettingsOpen}
         onClose={handleCloseSettings}
         activeTab={settingsActiveTab}

@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { getApiBaseUrl } from '../utils/platform'
+import { getApiBaseUrl } from './utils/platform'
 
 const API_BASE_URL = getApiBaseUrl()
 
@@ -24,19 +24,12 @@ apiClient.interceptors.request.use(
   }
 )
 
-// Interceptor для обработки ошибок
+// Interceptor для обработки ошибок (детальная обработка в axiosInterceptors.ts)
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-      if (error.response?.status === 401) {
-      // Не перенаправляем на странице входа/регистрации - там 401 это нормальная ошибка
-      const currentPath = window.location.hash.replace('#', '') || window.location.pathname
-      if (currentPath !== '/login' && currentPath !== '/signup') {
-        localStorage.removeItem('access_token')
-        // Используем hash routing
-        window.location.hash = '#/login'
-      }
-    }
+    // Основная логика 401/refresh находится в axiosInterceptors.ts
+    // Здесь оставляем только базовую обработку для случаев когда interceptors еще не настроены
     return Promise.reject(error)
   }
 )

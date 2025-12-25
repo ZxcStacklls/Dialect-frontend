@@ -119,5 +119,29 @@ class Token(BaseModel):
     access_token: str
     token_type: str
 
+class TokenPair(BaseModel):
+    """Пара токенов при логине/обновлении"""
+    access_token: str
+    refresh_token: str
+    token_type: str = "bearer"
+
+class RefreshTokenRequest(BaseModel):
+    """Запрос на обновление токена"""
+    refresh_token: str
+
 class TokenData(BaseModel):
     user_id: Optional[int] = None
+    session_id: Optional[int] = None
+
+# --- Sessions ---
+class SessionInfo(BaseModel):
+    """Информация о сессии для отображения пользователю"""
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    device_name: Optional[str] = None
+    device_type: Optional[str] = None
+    ip_address: Optional[str] = None
+    location: Optional[str] = None
+    created_at: datetime
+    last_used_at: datetime
+    is_current: bool = False  # Текущая сессия пользователя

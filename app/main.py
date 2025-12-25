@@ -18,6 +18,7 @@ from app.api.v1 import auth as auth_v1
 from app.api.v1 import users as users_v1
 from app.api.v1 import chats as chats_v1
 from app.api.v1 import messages as messages_v1
+from app.api.v1 import sessions as sessions_v1
 
 # Настраиваем базовый логгер
 logging.basicConfig(level=logging.INFO)
@@ -82,6 +83,7 @@ app.include_router(auth_v1.router, prefix="/api")
 app.include_router(users_v1.router, prefix="/api")
 app.include_router(chats_v1.router, prefix="/api")
 app.include_router(messages_v1.router, prefix="/api")
+app.include_router(sessions_v1.router, prefix="/api")
 
 # Подключаем раздачу файлов
 app.mount("/static", StaticFiles(directory="uploads"), name="static")

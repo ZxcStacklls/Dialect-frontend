@@ -5,7 +5,7 @@ from jose import JWTError, ExpiredSignatureError
 
 from app.db import database, models, schemas
 from app.core import security
-from app.services import user_service
+from app.services import user_service, session_service
 
 # Эта строка создает "схему" для FastAPI.
 # "tokenUrl" указывает, что токен можно получить по адресу "/api/v1/auth/token".
@@ -60,6 +60,65 @@ def get_current_user(
         raise credentials_exception
 
     # 3. Возвращаем полную модель пользователя
+    return user
+
+
+def get_current_user_and_session(
+        token: str = Depends(oauth2_scheme),
+        db: Session = Depends(database.get_db)
+) -> models.User:
+    """
+    Зависимость для получения пользователя с проверкой активности сессии.
+    
+    Дополнительно к get_current_user:
+    - Проверяет, что сессия (session_id из токена) все еще активна
+    - Прикрепляет session_id к объекту пользователя для дальнейшего использования
+    
+    Используется в эндпоинтах управления сессиями.
+    """
+
+    credentials_exception = HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED,
+        detail="Не удалось проверить учетные данные",
+        headers={"WWW-Authenticate": "Bearer"},
+    )
+
+    try:
+        token_data = security.verify_and_decode_token(token)
+
+        if token_data.user_id is None:
+            raise credentials_exception
+
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Токен истек",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except JWTError:
+        raise credentials_exception
+
+    # Загружаем пользователя
+    user = user_service.get_user(db, user_id=token_data.user_id)
+
+    if user is None:
+        raise credentials_exception
+
+    # Проверяем активность сессии (если session_id есть в токене)
+    if token_data.session_id:
+        session = session_service.get_session_by_id(
+            db, token_data.session_id, token_data.user_id
+        )
+        if not session:
+            # Сессия была отозвана или истекла
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Сессия была завершена",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        # Прикрепляем session_id к объекту пользователя
+        user._current_session_id = token_data.session_id
+
     return user
 
 
