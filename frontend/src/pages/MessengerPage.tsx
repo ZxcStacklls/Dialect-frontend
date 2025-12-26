@@ -589,10 +589,7 @@ const MessengerPage: React.FC = () => {
   }
 
   return (
-    <div className={`messenger-container flex h-full overflow-hidden select-none ${isDark
-      ? 'bg-gray-900/95 text-white'
-      : 'bg-white/95 text-gray-900'
-      } ${
+    <div className={`messenger-container flex h-full overflow-hidden select-none ${
       // Flex direction: 
       // left -> row (Nav | Workspace)
       // right -> row-reverse (Workspace | Nav) -> Workspace keeps (Chats | Content)
@@ -600,10 +597,8 @@ const MessengerPage: React.FC = () => {
       isNavBottom ? 'flex-col-reverse' : isNavRight ? 'flex-row-reverse' : 'flex-row'
       }`}>
       {/* Навигационная панель - в цвет titlebar */}
-      <div className={`flex-shrink-0 flex transition-all duration-300 ease-in-out ${isNavBottom ? 'flex-row h-16 w-full items-center justify-center' : 'flex-col w-[72px] h-full'
-        } ${isModern ? 'liquid-nav' : (isDark
-          ? 'bg-gray-900/95'
-          : 'bg-white/95')
+      <div className={`nav-panel flex-shrink-0 flex ${isNavBottom ? 'flex-row h-16 w-full items-center justify-center' : 'flex-col w-[72px] h-full'
+        } ${isModern ? 'liquid-nav' : ''
         }`}>
         <div className={`flex items-center justify-center w-full h-full ${isNavBottom ? 'flex-row' : 'flex-col'
           }`}>
@@ -674,14 +669,13 @@ const MessengerPage: React.FC = () => {
         Порядок зависит от настройки chatsPosition.
       */}
       {/* WRAPPER для Чатов и Контента с закруглённым углом */}
-      <div className={`flex-1 flex overflow-hidden relative h-full flex-row rounded-tl-2xl ${isDark ? 'bg-gray-950' : 'bg-gray-100'
-        } ${isChatsRight ? 'flex-row-reverse' : ''
+      <div className={`content-wrapper flex-1 flex overflow-hidden relative h-full flex-row rounded-tl-2xl ${isChatsRight ? 'flex-row-reverse' : ''
         }`}>
 
         {/* Панель с чатами (масштабируемая) */}
         <div
           ref={chatsPanelRef}
-          className={`relative flex flex-col overflow-hidden border-r ${isModern ? 'modern-chat-panel' : (isDark ? 'bg-gray-900/50 border-gray-700/40' : 'bg-white/80 border-gray-200')
+          className={`chat-panel relative flex flex-col overflow-hidden border-r rounded-tl-2xl ${isModern ? 'modern-chat-panel' : ''}
             }`}
           style={{
             width: `${chatsPanelWidth}px`,
@@ -1000,7 +994,7 @@ const MessengerPage: React.FC = () => {
           {!isMinimized && (
             <>
               {/* Блок результатов поиска или списка чатов */}
-              <div className={`flex-1 overflow-y-auto transition-all duration-300 ease-in-out chat-panel-scrollbar ${isDark ? 'bg-gray-900/20' : 'bg-gray-50/30'}`}>
+              <div className="chat-list flex-1 overflow-y-auto chat-panel-scrollbar">
                 <div className="py-2 transition-all duration-300 ease-in-out">
                   {isSearchActive ? (
                     activeSearchTab === 'users' ? (
@@ -1317,8 +1311,8 @@ const MessengerPage: React.FC = () => {
         </div>
 
         {/* Центральная область - чат, пустое состояние */}
-        <div className={`flex-1 flex items-center justify-center relative ${isModern ? 'modern-message-area' : (isDark ? 'bg-gray-950/50' : 'bg-gray-100/50')
-          }`}>
+        <div className={`message-area flex-1 flex items-center justify-center relative ${isModern ? 'modern-message-area' : ''}
+          `}>
           {hasSelectedChat ? (
             // TODO: Область открытого чата
             <div className="text-center">

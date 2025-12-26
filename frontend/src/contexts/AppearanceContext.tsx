@@ -162,21 +162,37 @@ export const AppearanceProvider: React.FC<AppearanceProviderProps> = ({ children
     }
 
     const theme = determineTheme()
-    setCurrentTheme(theme)
 
-    // Применяем тему
-    document.documentElement.setAttribute('data-theme', theme)
-    document.body.setAttribute('data-theme', theme)
-    const root = document.getElementById('root')
-    if (root) {
-      root.setAttribute('data-theme', theme)
+    // Мгновенная смена темы без анимации
+    const applyThemeInstantly = () => {
+      // Применяем новую тему
+      document.documentElement.setAttribute('data-theme', theme)
+      document.body.setAttribute('data-theme', theme)
+      const root = document.getElementById('root')
+      if (root) {
+        root.setAttribute('data-theme', theme)
+      }
+
+      // Прямая манипуляция DOM для nav-panel для мгновенного изменения
+      const navPanel = document.querySelector('.nav-panel')
+      if (navPanel) {
+        const bgColor = theme === 'light'
+          ? 'rgba(243, 244, 246, 0.95)'
+          : 'rgba(17, 24, 39, 0.95)'
+          ; (navPanel as HTMLElement).style.backgroundColor = bgColor
+      }
+
+      setCurrentTheme(theme)
     }
+
+    applyThemeInstantly()
 
     // Если режим auto, проверяем каждую минуту
     if (settings.themeMode === 'auto') {
       const interval = setInterval(() => {
         const newTheme = determineTheme()
-        if (newTheme !== theme) {
+        if (newTheme !== currentTheme) {
+          // Тема изменится при следующем рендере через useEffect
           setCurrentTheme(newTheme)
         }
       }, 60000) // Проверяем каждую минуту

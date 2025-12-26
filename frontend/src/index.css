@@ -23,6 +23,30 @@
     --ui-scale: 1;
     --font-scale: 1;
     --transition-duration: 0.3s;
+
+    /* Theme color variables - default dark */
+    --bg-main: rgba(17, 24, 39, 0.95);
+    --bg-content: rgb(3, 7, 18);
+    --bg-panel: rgba(17, 24, 39, 0.5);
+    --bg-list: rgba(17, 24, 39, 0.2);
+    --bg-message-area: rgba(3, 7, 18, 0.5);
+    --text-primary: white;
+    --text-secondary: rgb(156, 163, 175);
+    --border-panel: rgba(55, 65, 81, 0.4);
+  }
+
+  /* Light theme color overrides */
+  :root[data-theme="light"],
+  html[data-theme="light"],
+  [data-theme="light"] {
+    --bg-main: rgba(243, 244, 246, 0.95) !important;
+    --bg-content: rgb(243, 244, 246) !important;
+    --bg-panel: white !important;
+    --bg-list: rgba(249, 250, 251, 0.3) !important;
+    --bg-message-area: rgba(243, 244, 246, 0.5) !important;
+    --text-primary: rgb(17, 24, 39) !important;
+    --text-secondary: rgb(107, 114, 128) !important;
+    --border-panel: rgb(229, 231, 235) !important;
   }
 
   html {
@@ -37,8 +61,6 @@
     /* Fallback background color на случай, если Tailwind не загрузится */
     background: linear-gradient(to bottom right, #030712, #111827, #030712);
     background-color: #030712;
-    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 
     /* Применяем масштаб шрифта */
     font-size: calc(16px * var(--font-scale, 1));
@@ -76,8 +98,6 @@
     /* Убеждаемся, что root имеет фон */
     background: linear-gradient(to bottom right, #030712, #111827, #030712);
     background-color: #030712;
-    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      background-image 0.5s cubic-bezier(0.4, 0, 0.2, 1);
   }
 
   #root[data-theme="dark"] {
@@ -164,10 +184,63 @@
     z-index: 1000;
     user-select: none;
     -webkit-app-region: drag;
-    transition: background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      border-color 0.5s cubic-bezier(0.4, 0, 0.2, 1),
-      color 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    background-color: var(--bg-main);
   }
+
+  /* Messenger container - uses CSS variable */
+  .messenger-container {
+    background-color: var(--bg-main);
+    color: var(--text-primary);
+  }
+
+  /* Nav panel - uses CSS variable */
+  .nav-panel {
+    background-color: var(--bg-main) !important;
+  }
+
+  /* Content wrapper - uses CSS variable */
+  .content-wrapper {
+    background-color: var(--bg-content);
+  }
+
+  /* Chat panel - uses CSS variable */
+  .chat-panel {
+    background-color: var(--bg-panel);
+    border-color: var(--border-panel);
+  }
+
+  /* Message area - uses CSS variable */
+  .message-area {
+    background-color: var(--bg-message-area);
+  }
+
+  /* Chat list - uses CSS variable */
+  .chat-list {
+    background-color: var(--bg-list);
+  }
+
+  /* CRITICAL: Disable ALL transitions on theme-dependent elements for instant theme change */
+  /* NOTE: .chat-panel removed to preserve panel expand/collapse animation */
+  .titlebar,
+  .messenger-container,
+  .nav-panel,
+  .content-wrapper,
+  .message-area,
+  .chat-list,
+  input,
+  textarea,
+  button,
+  .modern-input,
+  [type="text"],
+  [type="search"] {
+    transition: none !important;
+  }
+
+  /* Chat panel: only disable background-color transition, preserve width animation */
+  .chat-panel {
+    transition-property: width !important;
+  }
+
 
   .titlebar-button {
     -webkit-app-region: no-drag;

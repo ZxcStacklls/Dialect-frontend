@@ -34,12 +34,14 @@ export const DatePicker: React.FC<DatePickerProps> = ({
 }) => {
     const [isOpen, setIsOpen] = useState(false)
     const [viewDate, setViewDate] = useState(value || new Date())
+    const [selectedDate, setSelectedDate] = useState<Date | null>(value)
     const [mode, setMode] = useState<'day' | 'month' | 'year'>('day')
     const containerRef = useRef<HTMLDivElement>(null)
 
     useEffect(() => {
-        if (isOpen && value) {
-            setViewDate(value)
+        if (isOpen) {
+            setViewDate(value || new Date())
+            setSelectedDate(value)
         }
     }, [isOpen, value])
 
@@ -84,8 +86,22 @@ export const DatePicker: React.FC<DatePickerProps> = ({
     const handleDaySelect = (day: number) => {
         const newDate = new Date(viewDate.getFullYear(), viewDate.getMonth(), day)
         newDate.setHours(12, 0, 0, 0)
-        onChange(newDate)
+        setSelectedDate(newDate)
+    }
+
+    const handleCancel = (e: React.MouseEvent) => {
+        e.stopPropagation()
         setIsOpen(false)
+        setMode('day')
+    }
+
+    const handleSave = (e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (selectedDate) {
+            onChange(selectedDate)
+        }
+        setIsOpen(false)
+        setMode('day')
     }
 
     const renderCalendar = () => {
@@ -105,7 +121,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         }
 
         for (let i = 1; i <= daysInMonth; i++) {
-            const isSelected = value && value.getDate() === i && value.getMonth() === month && value.getFullYear() === year
+            const isSelected = selectedDate && selectedDate.getDate() === i && selectedDate.getMonth() === month && selectedDate.getFullYear() === year
             const isToday = new Date().getDate() === i && new Date().getMonth() === month && new Date().getFullYear() === year
 
             days.push(
@@ -183,6 +199,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
         : ''
 
     const age = value ? getAge(value) : null
+    const tempAge = selectedDate ? getAge(selectedDate) : null
 
     return (
         <div className={`relative ${className}`} ref={containerRef}>
@@ -220,17 +237,17 @@ export const DatePicker: React.FC<DatePickerProps> = ({
           w-80 bottom-full left-0
         `}>
                     {/* Header Info Gradient */}
-                    {value && age !== null && (
+                    {selectedDate && tempAge !== null && (
                         <div className="relative overflow-hidden rounded-t-xl p-4 bg-gradient-to-r from-primary-600 to-indigo-600 text-white shadow-md">
                             <div className="absolute top-0 right-0 -mt-2 -mr-2 w-24 h-24 bg-white opacity-10 rounded-full blur-2xl"></div>
                             <div className="relative z-10 flex items-center justify-between">
                                 <div>
-                                    <div className="text-3xl font-bold mb-0.5 tracking-tight">{value.getDate()}</div>
-                                    <div className="text-sm opacity-90 capitalize font-medium">{MONTHS[value.getMonth()]} {value.getFullYear()}</div>
+                                    <div className="text-3xl font-bold mb-0.5 tracking-tight">{selectedDate.getDate()}</div>
+                                    <div className="text-sm opacity-90 capitalize font-medium">{MONTHS[selectedDate.getMonth()]} {selectedDate.getFullYear()}</div>
                                 </div>
                                 <div className="text-right">
                                     <div className="text-5xl font-black tracking-tighter opacity-100 drop-shadow-lg" style={{ fontFamily: 'Inter, sans-serif' }}>
-                                        {age}
+                                        {tempAge}
                                     </div>
                                     <div className="text-xs uppercase tracking-widest font-bold opacity-80 mt-[-4px]">лет</div>
                                 </div>
@@ -250,7 +267,7 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                                     <span className="hover:text-primary-500 transition-colors" onClick={(e) => { e.stopPropagation(); setMode('year') }}>{viewDate.getFullYear()}</span>
                                 </div>
                                 <button onClick={(e) => { e.stopPropagation(); handleNextMonth() }} className={`p-1.5 rounded-full transition-colors ${isDark ? 'hover:bg-white/10 hover:text-white' : 'hover:bg-gray-100 hover:text-gray-900 text-gray-600'}`}>
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" /></svg>
+                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" /></svg>
                                 </button>
                             </>
                         )}
@@ -273,6 +290,29 @@ export const DatePicker: React.FC<DatePickerProps> = ({
                         {mode === 'day' && renderCalendar()}
                         {mode === 'year' && renderYears()}
                         {mode === 'month' && renderMonths()}
+                    </div>
+
+                    {/* Footer Actions */}
+                    <div className={`p-3 border-t flex justify-end gap-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                        <button
+                            onClick={handleCancel}
+                            className={`px-3 py-1.5 text-sm rounded-lg transition-colors ${isDark
+                                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300'
+                                : 'bg-gray-100 hover:bg-gray-200 text-gray-700'
+                                }`}
+                        >
+                            Отмена
+                        </button>
+                        <button
+                            onClick={handleSave}
+                            disabled={!selectedDate}
+                            className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-colors ${!selectedDate
+                                ? 'opacity-50 cursor-not-allowed bg-gray-500 text-white'
+                                : 'bg-primary-500 hover:bg-primary-600 text-white shadow-lg shadow-primary-500/20'
+                                }`}
+                        >
+                            Сохранить
+                        </button>
                     </div>
                 </div>
             )}

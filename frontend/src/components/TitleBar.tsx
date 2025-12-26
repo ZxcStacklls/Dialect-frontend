@@ -122,13 +122,7 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
 
   return (
     <div
-      className={`titlebar flex items-center justify-between h-10 select-none ${isDark
-        ? 'bg-gray-900/95'
-        : 'bg-white/95'
-        }`}
-      style={{
-        transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
-      }}
+      className="titlebar flex items-center justify-between h-10 select-none"
     >
       {/* Левая часть - Drag область */}
       <div className="flex-1 drag-region cursor-move" />
