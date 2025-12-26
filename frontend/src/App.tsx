@@ -3,6 +3,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { LogoAnimationProvider } from './contexts/LogoAnimationContext'
 import { ToastProvider } from './contexts/ToastContext'
 import { AppearanceProvider } from './contexts/AppearanceContext'
+import { TitleBarContextProvider, useTitleBar } from './contexts/TitleBarContext'
 import TitleBar, { TitleBarProvider } from './components/TitleBar'
 import WelcomePage from './pages/WelcomePage'
 import LoginPage from './pages/LoginPage'
@@ -15,9 +16,9 @@ import ParticleBackground from './components/ParticleBackground'
 // Компонент для определения, показывать ли ParticleBackground
 const AppContent = () => {
   const location = useLocation()
-  const isAuthPage = location.pathname === '/' || 
-                     location.pathname === '/login' || 
-                     location.pathname === '/signup'
+  const isAuthPage = location.pathname === '/' ||
+    location.pathname === '/login' ||
+    location.pathname === '/signup'
 
   return (
     <div className="app-content">
@@ -50,6 +51,12 @@ const AppContent = () => {
   )
 }
 
+// Wrapper компонент для TitleBar с контекстом
+const TitleBarWithContext = () => {
+  const { currentTab } = useTitleBar()
+  return <TitleBar activeTab={currentTab} />
+}
+
 function App() {
   return (
     <AppearanceProvider>
@@ -57,12 +64,14 @@ function App() {
         <AuthProvider>
           <LogoAnimationProvider>
             <TitleBarProvider>
-              <div className="app-container">
-                <TitleBar />
-                <HashRouter>
-                  <AppContent />
-                </HashRouter>
-              </div>
+              <TitleBarContextProvider>
+                <div className="app-container">
+                  <TitleBarWithContext />
+                  <HashRouter>
+                    <AppContent />
+                  </HashRouter>
+                </div>
+              </TitleBarContextProvider>
             </TitleBarProvider>
           </LogoAnimationProvider>
         </AuthProvider>

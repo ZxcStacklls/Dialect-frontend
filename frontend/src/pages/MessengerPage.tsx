@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAppearance } from '../contexts/AppearanceContext'
 import { useToast } from '../contexts/ToastContext'
+import { useTitleBar } from '../contexts/TitleBarContext'
 import DefaultAvatar from '../components/DefaultAvatar'
 import SettingsModal from '../components/SettingsModal'
 import { getApiBaseUrl } from '../utils/platform'
@@ -28,6 +29,7 @@ const MessengerPage: React.FC = () => {
   const { theme, toggleTheme } = useTheme()
   const { settings } = useAppearance()
   const { addToast } = useToast()
+  const { setCurrentTab } = useTitleBar()
   const [selectedChat, setSelectedChat] = useState<number | null>(null)
   const [isOnlineState, setIsOnlineState] = useState(isOnline())
   const [chatsPanelWidth, setChatsPanelWidth] = useState(300)
@@ -69,13 +71,15 @@ const MessengerPage: React.FC = () => {
   useEffect(() => {
     if (isSettingsOpen) {
       setActiveNavItem('settings')
+      setCurrentTab('settings')
     }
-  }, [isSettingsOpen])
+  }, [isSettingsOpen, setCurrentTab])
 
   // Обработчик закрытия окна настроек
   const handleCloseSettings = () => {
     setIsSettingsOpen(false)
     setActiveNavItem('chats')
+    setCurrentTab('chats')
   }
   const chatsPanelRef = useRef<HTMLDivElement>(null)
   const profileMenuRef = useRef<HTMLDivElement>(null)
@@ -586,8 +590,8 @@ const MessengerPage: React.FC = () => {
 
   return (
     <div className={`messenger-container flex h-full overflow-hidden select-none ${isDark
-        ? 'bg-gray-900/95 text-white'
-        : 'bg-white/95 text-gray-900'
+      ? 'bg-gray-900/95 text-white'
+      : 'bg-white/95 text-gray-900'
       } ${
       // Flex direction: 
       // left -> row (Nav | Workspace)
@@ -637,13 +641,13 @@ const MessengerPage: React.FC = () => {
                     }
                   }}
                   className={`relative flex items-center justify-center transition-all duration-300 ease-out ${isModern
-                      ? `modern-nav-btn ${isActive ? 'active' : ''}`
-                      : `w-12 h-12 ${isActive
-                        ? 'text-primary-500 scale-105'
-                        : isDark
-                          ? 'text-gray-500 hover:text-primary-300 hover:bg-primary-500/10'
-                          : 'text-gray-400 hover:text-primary-500 hover:bg-primary-500/10'
-                      }`
+                    ? `modern-nav-btn ${isActive ? 'active' : ''}`
+                    : `w-12 h-12 ${isActive
+                      ? 'text-primary-500 scale-105'
+                      : isDark
+                        ? 'text-gray-500 hover:text-primary-300 hover:bg-primary-500/10'
+                        : 'text-gray-400 hover:text-primary-500 hover:bg-primary-500/10'
+                    }`
                     } ${isModern && !isActive
                       ? (isDark ? 'text-white/80 hover:text-white' : 'text-gray-500 hover:text-gray-800')
                       : ''
@@ -734,8 +738,8 @@ const MessengerPage: React.FC = () => {
                   {!isModern && (
                     <div
                       className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${isOnlineState
-                          ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]'
-                          : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
+                        ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]'
+                        : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
                         }`}
                       style={{
                         zIndex: 20,
@@ -757,8 +761,8 @@ const MessengerPage: React.FC = () => {
                 </div>
                 <div
                   className={`flex-1 min-w-0 cursor-pointer transition-all duration-300 ease-in-out overflow-hidden ${isMinimized
-                      ? 'opacity-0 w-0 ml-0 mr-0'
-                      : 'opacity-100 w-auto ml-3'
+                    ? 'opacity-0 w-0 ml-0 mr-0'
+                    : 'opacity-100 w-auto ml-3'
                     }`}
                   onClick={() => setIsSettingsOpen(true)}
                 >
@@ -826,8 +830,8 @@ const MessengerPage: React.FC = () => {
                     <button
                       onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                       className={`transition-colors flex-shrink-0 p-1.5 rounded-lg ${isDark
-                          ? `text-gray-500 hover:text-primary-300 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-400 bg-primary-500/10' : ''}`
-                          : `text-gray-400 hover:text-primary-500 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-500 bg-primary-500/10' : ''}`
+                        ? `text-gray-500 hover:text-primary-300 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-400 bg-primary-500/10' : ''}`
+                        : `text-gray-400 hover:text-primary-500 hover:bg-primary-500/10 ${isProfileMenuOpen ? 'text-primary-500 bg-primary-500/10' : ''}`
                         }`}
                     >
                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -856,8 +860,8 @@ const MessengerPage: React.FC = () => {
                               setIsProfileMenuOpen(false)
                             }}
                             className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${isDark
-                                ? 'text-gray-300 hover:bg-white/5'
-                                : 'text-gray-700 hover:bg-gray-100'
+                              ? 'text-gray-300 hover:bg-white/5'
+                              : 'text-gray-700 hover:bg-gray-100'
                               }`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -872,8 +876,8 @@ const MessengerPage: React.FC = () => {
                               setIsProfileMenuOpen(false)
                             }}
                             className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${isDark
-                                ? 'text-gray-300 hover:bg-white/5'
-                                : 'text-gray-700 hover:bg-gray-100'
+                              ? 'text-gray-300 hover:bg-white/5'
+                              : 'text-gray-700 hover:bg-gray-100'
                               }`}
                           >
                             {theme === 'dark' ? (
@@ -899,8 +903,8 @@ const MessengerPage: React.FC = () => {
                               setIsProfileMenuOpen(false)
                             }}
                             className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${isDark
-                                ? 'text-red-400 hover:bg-white/5 hover:text-red-300'
-                                : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+                              ? 'text-red-400 hover:bg-white/5 hover:text-red-300'
+                              : 'text-red-500 hover:bg-red-50 hover:text-red-600'
                               }`}
                           >
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -945,19 +949,19 @@ const MessengerPage: React.FC = () => {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onFocus={handleSearchFocus}
                   className={`flex-1 px-4 py-2 text-sm placeholder-gray-500/60 focus:outline-none transition-all shadow-lg select-text ${isModern
-                      ? `modern-input ${isDark ? 'text-white' : 'text-gray-900'}`
-                      : `border-2 rounded-xl focus:border-primary-500/60 focus:bg-primary-500/10 ${isDark
-                        ? 'bg-gray-800/30 border-gray-700/40 text-white'
-                        : 'bg-white border-gray-300/60 text-gray-900'
-                      }`
+                    ? `modern-input ${isDark ? 'text-white' : 'text-gray-900'}`
+                    : `border-2 rounded-xl focus:border-primary-500/60 focus:bg-primary-500/10 ${isDark
+                      ? 'bg-gray-800/30 border-gray-700/40 text-white'
+                      : 'bg-white border-gray-300/60 text-gray-900'
+                    }`
                     }`}
                 />
                 {isSearchActive && (
                   <button
                     onClick={handleSearchClose}
                     className={`p-1.5 rounded-lg transition-all ${isDark
-                        ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                      ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                       }`}
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -989,12 +993,12 @@ const MessengerPage: React.FC = () => {
                     key={tab.id}
                     onClick={() => setActiveSearchTab(tab.id)}
                     className={`px-4 py-2 text-sm font-medium transition-colors relative flex-shrink-0 ${activeSearchTab === tab.id
-                        ? isDark
-                          ? 'text-primary-400'
-                          : 'text-primary-500'
-                        : isDark
-                          ? 'text-gray-500 hover:text-gray-300'
-                          : 'text-gray-500 hover:text-gray-700'
+                      ? isDark
+                        ? 'text-primary-400'
+                        : 'text-primary-500'
+                      : isDark
+                        ? 'text-gray-500 hover:text-gray-300'
+                        : 'text-gray-500 hover:text-gray-700'
                       }`}
                   >
                     {tab.label}
@@ -1031,11 +1035,11 @@ const MessengerPage: React.FC = () => {
                                 <button
                                   key={foundUser.id}
                                   className={`w-full transition-colors text-left ${isModern
-                                      ? 'modern-search-result'
-                                      : `px-6 py-3 ${isDark
-                                        ? 'hover:bg-primary-500/10'
-                                        : 'hover:bg-primary-500/5'
-                                      }`
+                                    ? 'modern-search-result'
+                                    : `px-6 py-3 ${isDark
+                                      ? 'hover:bg-primary-500/10'
+                                      : 'hover:bg-primary-500/5'
+                                    }`
                                     }`}
                                 >
                                   <div className="flex items-center gap-3">
@@ -1069,8 +1073,8 @@ const MessengerPage: React.FC = () => {
                                       </div>
                                       <div
                                         className={`absolute top-0 right-0 w-2.5 h-2.5 rounded-full transition-all duration-300 ease-in-out ${foundUser.is_online
-                                            ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]'
-                                            : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
+                                          ? 'bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_2px_rgba(0,0,0,0.8),0_0_4px_rgba(34,197,94,0.6)]'
+                                          : 'bg-gray-500 border border-white/50 shadow-[0_0_0_2px_rgba(0,0,0,0.8)]'
                                           }`}
                                         style={{ zIndex: 20 }}
                                       ></div>
@@ -1195,11 +1199,11 @@ const MessengerPage: React.FC = () => {
                         key={index}
                         onClick={() => setSelectedChat(index)}
                         className={`w-full transition-all duration-300 ease-in-out text-left ${isModern
-                            ? `modern-chat-item ${selectedChat === index ? 'selected' : ''}`
-                            : `${isCompact ? 'px-3 py-2' : 'px-6 py-3'} ${isDark
-                              ? 'hover:bg-primary-500/10'
-                              : 'hover:bg-primary-500/5'
-                            }`
+                          ? `modern-chat-item ${selectedChat === index ? 'selected' : ''}`
+                          : `${isCompact ? 'px-3 py-2' : 'px-6 py-3'} ${isDark
+                            ? 'hover:bg-primary-500/10'
+                            : 'hover:bg-primary-500/5'
+                          }`
                           }`}
                       >
                         <div className={`flex items-center transition-all duration-300 ease-in-out ${isCompact ? 'gap-2' : 'gap-3'}`}>
@@ -1210,8 +1214,8 @@ const MessengerPage: React.FC = () => {
                           </div>
                           <div
                             className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${isCompact || isCompactCollapsing
-                                ? 'opacity-0 max-w-0 overflow-hidden'
-                                : 'opacity-100 max-w-full'
+                              ? 'opacity-0 max-w-0 overflow-hidden'
+                              : 'opacity-100 max-w-full'
                               }`}
                           >
                             <div className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Чат {index + 1}</div>
@@ -1280,11 +1284,11 @@ const MessengerPage: React.FC = () => {
             </div>
           )}
 
-          {/* Разделитель для ресайза */}
+          {/* Разделитель для ресайза - игольчатый градиент */}
           <div
-            className="absolute top-0 w-1 h-full cursor-ew-resize z-20 group"
+            className="absolute top-0 w-3 h-full cursor-ew-resize z-20 group"
             style={{
-              [isChatsRight ? 'left' : 'right']: 0
+              [isChatsRight ? 'left' : 'right']: -6
             }}
             onMouseDown={(e) => {
               e.preventDefault()
@@ -1302,18 +1306,27 @@ const MessengerPage: React.FC = () => {
               }
             }}
           >
+            {/* Внутренний градиент - игла */}
             <div
-              className={`absolute top-1/2 -translate-y-1/2 w-1 h-20 transition-all ${isChatsRight
-                  ? 'rounded-r-full'
-                  : 'rounded-l-full'
-                } ${isModern
-                  ? 'modern-resize-handle'
-                  : (isDark
-                    ? 'bg-gray-700/30 group-hover:bg-primary-500/70'
-                    : 'bg-gray-300/50 group-hover:bg-primary-500/70')
-                }`}
+              className="absolute left-1/2 -translate-x-1/2 w-[2px] transition-all duration-300 ease-out"
               style={{
-                [isChatsRight ? 'left' : 'right']: 0
+                top: '20%',
+                height: '60%',
+                background: isDark
+                  ? 'linear-gradient(to bottom, transparent 0%, rgba(100, 116, 139, 0.2) 30%, rgba(100, 116, 139, 0.4) 50%, rgba(100, 116, 139, 0.2) 70%, transparent 100%)'
+                  : 'linear-gradient(to bottom, transparent 0%, rgba(148, 163, 184, 0.3) 30%, rgba(148, 163, 184, 0.5) 50%, rgba(148, 163, 184, 0.3) 70%, transparent 100%)',
+                opacity: 0.6
+              }}
+            />
+            {/* Hover состояние - растягивается на всю высоту */}
+            <div
+              className="absolute left-1/2 -translate-x-1/2 w-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 ease-out"
+              style={{
+                top: '5%',
+                height: '90%',
+                background: isDark
+                  ? 'linear-gradient(to bottom, transparent 0%, rgba(99, 102, 241, 0.3) 15%, rgba(99, 102, 241, 0.5) 50%, rgba(99, 102, 241, 0.3) 85%, transparent 100%)'
+                  : 'linear-gradient(to bottom, transparent 0%, rgba(99, 102, 241, 0.4) 15%, rgba(99, 102, 241, 0.6) 50%, rgba(99, 102, 241, 0.4) 85%, transparent 100%)',
               }}
             />
           </div>
@@ -1392,8 +1405,8 @@ const MessengerPage: React.FC = () => {
                     setTimeout(() => searchInputRef.current?.focus(), 300)
                   }}
                   className={`px-8 py-3 rounded-lg transition-colors text-white font-semibold text-base ${isModern
-                      ? 'modern-btn'
-                      : 'bg-primary-500 hover:bg-primary-400 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50'
+                    ? 'modern-btn'
+                    : 'bg-primary-500 hover:bg-primary-400 shadow-lg shadow-primary-500/30 hover:shadow-primary-500/50'
                     }`}
                 >
                   Найти друзей

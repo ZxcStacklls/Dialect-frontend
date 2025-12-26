@@ -279,10 +279,10 @@ const AppearanceTab: React.FC<{
                   handleSettingChange({ themeMode: option.value })
                 }}
                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 group ${isActive
-                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
-                    : isDark
-                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
-                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
+                  ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
+                  : isDark
+                    ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                    : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
                   }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
@@ -326,10 +326,10 @@ const AppearanceTab: React.FC<{
                   handleSettingChange({ designStyle: option.value })
                 }}
                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${isActive
-                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
-                    : isDark
-                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
-                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
+                  ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
+                  : isDark
+                    ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                    : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
                   }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
@@ -372,10 +372,10 @@ const AppearanceTab: React.FC<{
                   handleSettingChange({ navPosition: option.value })
                 }}
                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${isActive
-                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
-                    : isDark
-                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
-                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
+                  ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
+                  : isDark
+                    ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                    : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
                   }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
@@ -417,10 +417,10 @@ const AppearanceTab: React.FC<{
                   handleSettingChange({ chatsPosition: option.value })
                 }}
                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${isActive
-                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
-                    : isDark
-                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
-                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
+                  ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
+                  : isDark
+                    ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                    : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
                   }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
@@ -462,10 +462,10 @@ const AppearanceTab: React.FC<{
                   handleSettingChange({ compactMode: option.value })
                 }}
                 className={`relative p-4 rounded-xl border-2 transition-all duration-300 hover:scale-105 ${isActive
-                    ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
-                    : isDark
-                      ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
-                      : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
+                  ? '!border-primary-500 bg-primary-500/10 focus:!border-primary-500 ring-2 ring-primary-500/20'
+                  : isDark
+                    ? 'border-gray-700 bg-gray-800/30 hover:border-gray-600 focus:border-gray-600'
+                    : 'border-gray-300 bg-white hover:border-gray-400 focus:border-gray-400'
                   }`}
                 style={isActive ? { borderColor: 'var(--color-primary-500, #3b82f6)', borderWidth: '2px' } : undefined}
               >
@@ -635,8 +635,8 @@ const AppearanceTab: React.FC<{
         </h3>
         <div
           className={`overflow-hidden shadow-2xl ${isModern
-              ? 'border border-white/10'
-              : `border-2 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-300'}`
+            ? 'border border-white/10'
+            : `border-2 ${isDark ? 'bg-gray-900 border-gray-800' : 'bg-gray-50 border-gray-300'}`
             }`}
           style={{
             borderRadius: isModern ? '20px' : `var(--border-radius, 0.75rem)`,
@@ -656,8 +656,8 @@ const AppearanceTab: React.FC<{
               {/* Навигация - показываем только для left/right */}
               {pendingSettings.navPosition !== 'bottom' && (
                 <div className={`w-14 flex-shrink-0 flex flex-col items-center justify-center ${isModern
-                    ? ''
-                    : `${pendingSettings.navPosition === 'right' ? 'border-l' : 'border-r'} ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
+                  ? ''
+                  : `${pendingSettings.navPosition === 'right' ? 'border-l' : 'border-r'} ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
                   }`}>
                   <div
                     className={`flex flex-col gap-1 ${isModern ? 'p-2' : ''}`}
@@ -673,8 +673,8 @@ const AppearanceTab: React.FC<{
                       <div
                         key={i}
                         className={`w-8 h-8 flex items-center justify-center transition-all duration-300 ${isModern
-                            ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
-                            : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
+                          ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
+                          : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
                           }`}
                         style={isModern && i === 3 ? { boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)' } : undefined}
                       >
@@ -753,8 +753,8 @@ const AppearanceTab: React.FC<{
                 <div className="px-3 py-2">
                   <div
                     className={`px-2 py-1.5 flex items-center gap-2 ${isModern
-                        ? 'border border-white/10'
-                        : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
+                      ? 'border border-white/10'
+                      : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
                       }`}
                     style={{
                       borderRadius: isModern ? '12px' : `var(--border-radius, 0.75rem)`,
@@ -779,13 +779,13 @@ const AppearanceTab: React.FC<{
                     <div
                       key={i}
                       className={`px-3 py-2 transition-colors ${isModern
-                          ? `mx-2 rounded-xl ${i === 1
-                            ? 'bg-[rgba(99,130,255,0.2)] border border-[rgba(99,130,255,0.3)]'
-                            : 'bg-white/[0.03]'
-                          }`
-                          : (i === 1
-                            ? (isDark ? 'bg-primary-500/10' : 'bg-primary-500/5')
-                            : (isDark ? 'hover:bg-primary-500/5' : 'hover:bg-gray-100'))
+                        ? `mx-2 rounded-xl ${i === 1
+                          ? 'bg-[rgba(99,130,255,0.2)] border border-[rgba(99,130,255,0.3)]'
+                          : 'bg-white/[0.03]'
+                        }`
+                        : (i === 1
+                          ? (isDark ? 'bg-primary-500/10' : 'bg-primary-500/5')
+                          : (isDark ? 'hover:bg-primary-500/5' : 'hover:bg-gray-100'))
                         }`}
                       style={{ marginBottom: `calc(${pendingSettings.messageSpacing}px / 3)` }}
                     >
@@ -847,8 +847,8 @@ const AppearanceTab: React.FC<{
                     />
                     <div
                       className={`px-3 py-2 max-w-xs ${isModern
-                          ? 'border border-white/10'
-                          : (isDark ? 'bg-gray-800/50' : 'bg-white')
+                        ? 'border border-white/10'
+                        : (isDark ? 'bg-gray-800/50' : 'bg-white')
                         }`}
                       style={{
                         borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
@@ -891,8 +891,8 @@ const AppearanceTab: React.FC<{
                     />
                     <div
                       className={`px-3 py-2 max-w-xs ${isModern
-                          ? 'border border-white/10'
-                          : (isDark ? 'bg-gray-800/50' : 'bg-white')
+                        ? 'border border-white/10'
+                        : (isDark ? 'bg-gray-800/50' : 'bg-white')
                         }`}
                       style={{
                         borderRadius: isModern ? '16px' : `var(--border-radius, 0.75rem)`,
@@ -913,8 +913,8 @@ const AppearanceTab: React.FC<{
                   }`}>
                   <div
                     className={`px-3 py-2 flex items-center gap-2 ${isModern
-                        ? 'border border-white/10'
-                        : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
+                      ? 'border border-white/10'
+                      : `border ${isDark ? 'bg-gray-800/30 border-gray-700/40' : 'bg-white border-gray-300/60'}`
                       }`}
                     style={{
                       borderRadius: isModern ? '14px' : `var(--border-radius, 0.75rem)`,
@@ -941,8 +941,8 @@ const AppearanceTab: React.FC<{
             {/* Навигация снизу - показываем только для bottom */}
             {pendingSettings.navPosition === 'bottom' && (
               <div className={`h-14 flex-shrink-0 flex items-center justify-center ${isModern
-                  ? ''
-                  : `border-t ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
+                ? ''
+                : `border-t ${isDark ? 'bg-gray-900/40 border-gray-800/50' : 'bg-gray-100/90 border-gray-300/50'}`
                 }`}>
                 <div
                   className={`flex flex-row gap-1 ${isModern ? 'px-3 py-2' : ''}`}
@@ -958,8 +958,8 @@ const AppearanceTab: React.FC<{
                     <div
                       key={i}
                       className={`w-8 h-8 flex items-center justify-center transition-all duration-300 ${isModern
-                          ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
-                          : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
+                        ? `rounded-full ${i === 3 ? 'bg-white/97 text-gray-900' : 'text-white/80'}`
+                        : `rounded-lg ${i === 3 ? 'text-primary-500' : isDark ? 'text-gray-500' : 'text-gray-400'}`
                         }`}
                       style={isModern && i === 3 ? { boxShadow: '0 4px 15px rgba(255, 255, 255, 0.3)' } : undefined}
                     >
@@ -985,8 +985,8 @@ const AppearanceTab: React.FC<{
             handleReset()
           }}
           className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
-              ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+            ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
             }`}
         >
           Сбросить настройки
@@ -998,8 +998,8 @@ const AppearanceTab: React.FC<{
               handleCancel()
             }}
             className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
-                ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+              ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
               }`}
           >
             Отмена
@@ -1011,10 +1011,10 @@ const AppearanceTab: React.FC<{
             }}
             disabled={!hasChanges}
             className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${hasChanges
-                ? 'bg-primary-500 text-white hover:bg-primary-600'
-                : isDark
-                  ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
-                  : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+              ? 'bg-primary-500 text-white hover:bg-primary-600'
+              : isDark
+                ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
           >
             Сохранить
@@ -1061,8 +1061,45 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [showCloseWarning, setShowCloseWarning] = useState(false)
   const [indicatorTop, setIndicatorTop] = useState(0)
+  const [settingsSearch, setSettingsSearch] = useState('')
+  const [isSearchFocused, setIsSearchFocused] = useState(false)
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
   const appearanceSaveRef = useRef<(() => void) | null>(null)
+  const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Поисковые элементы настроек
+  const searchableSettings = [
+    { id: 'profile', tab: 'profile', label: 'Редактировать профиль', keywords: ['профиль', 'имя', 'фамилия', 'аватар', 'фото', 'статус', 'username', 'дата рождения'] },
+    { id: 'profile-avatar', tab: 'profile', label: 'Изменить аватар', keywords: ['аватар', 'фото', 'изображение', 'профиль'] },
+    { id: 'profile-name', tab: 'profile', label: 'Имя и фамилия', keywords: ['имя', 'фамилия', 'name'] },
+    { id: 'profile-username', tab: 'profile', label: 'Имя пользователя', keywords: ['username', 'юзернейм', 'ник', 'никнейм'] },
+    { id: 'profile-status', tab: 'profile', label: 'Статус', keywords: ['статус', 'bio', 'о себе'] },
+    { id: 'privacy', tab: 'privacy', label: 'Приватность', keywords: ['приватность', 'конфиденциальность', 'скрыть', 'видимость', 'блокировка'] },
+    { id: 'privacy-online', tab: 'privacy', label: 'Статус онлайн', keywords: ['онлайн', 'статус', 'в сети', 'видимость'] },
+    { id: 'privacy-read', tab: 'privacy', label: 'Прочитанные сообщения', keywords: ['прочитано', 'галочки', 'отметка'] },
+    { id: 'notifications', tab: 'notifications', label: 'Уведомления', keywords: ['уведомления', 'звук', 'оповещения', 'notifications'] },
+    { id: 'notifications-sound', tab: 'notifications', label: 'Звук уведомлений', keywords: ['звук', 'мелодия', 'рингтон'] },
+    { id: 'notifications-desktop', tab: 'notifications', label: 'Push-уведомления', keywords: ['push', 'десктоп', 'системные'] },
+    { id: 'chats', tab: 'chats', label: 'Чаты и медиа', keywords: ['чаты', 'медиа', 'сообщения', 'история'] },
+    { id: 'chats-media', tab: 'chats', label: 'Автозагрузка медиа', keywords: ['медиа', 'фото', 'видео', 'загрузка'] },
+    { id: 'chats-history', tab: 'chats', label: 'История чатов', keywords: ['история', 'экспорт', 'удаление'] },
+    { id: 'language', tab: 'language', label: 'Язык интерфейса', keywords: ['язык', 'language', 'локализация', 'русский', 'english'] },
+    { id: 'appearance', tab: 'appearance', label: 'Внешний вид', keywords: ['тема', 'внешний вид', 'дизайн', 'оформление'] },
+    { id: 'appearance-theme', tab: 'appearance', label: 'Тема оформления', keywords: ['тема', 'темная', 'светлая', 'dark', 'light'] },
+    { id: 'appearance-colors', tab: 'appearance', label: 'Цветовая схема', keywords: ['цвет', 'акцент', 'оттенок'] },
+    { id: 'appearance-font', tab: 'appearance', label: 'Размер шрифта', keywords: ['шрифт', 'размер', 'текст'] },
+    { id: 'sessions', tab: 'sessions', label: 'Активные сессии', keywords: ['сессии', 'устройства', 'входы', 'безопасность'] },
+    { id: 'sessions-devices', tab: 'sessions', label: 'Управление устройствами', keywords: ['устройства', 'выход', 'завершить'] },
+  ]
+
+  // Фильтрация результатов поиска
+  const filteredSearchResults = settingsSearch.trim()
+    ? searchableSettings.filter(item => {
+      const query = settingsSearch.toLowerCase()
+      return item.label.toLowerCase().includes(query) ||
+        item.keywords.some(k => k.toLowerCase().includes(query))
+    })
+    : []
 
   const getFormattedPhoneNumber = (phoneNumber?: string, countryCode?: string) => {
     if (!phoneNumber) return ''
@@ -1285,26 +1322,15 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
       {/* Модальное окно */}
       <div
-        className={`relative w-[90vw] h-[90vh] max-w-[1200px] rounded-2xl shadow-2xl overflow-hidden ${isModern
-            ? 'modern-modal'
-            : (isDark
-              ? 'bg-gray-900 border border-gray-800/50'
-              : 'bg-white border border-gray-200')
+        className={`relative w-[90vw] h-[90vh] max-w-[1200px] rounded-lg shadow-2xl overflow-hidden ${isModern
+          ? 'modern-modal'
+          : (isDark
+            ? 'bg-gray-900 border border-gray-800/50'
+            : 'bg-white border border-gray-200')
           } ${shouldAnimateEnter && isOpen ? 'animate-modal-enter' : !isOpen && isAnimating ? 'animate-modal-exit' : 'opacity-0 scale-95 translate-y-4'}`}
         onClick={(e) => e.stopPropagation()}
       >
-        {/* Кнопка закрытия */}
-        <button
-          onClick={handleClose}
-          className={`absolute top-4 right-4 z-10 p-2 rounded-lg transition-all hover:rotate-90 ${isDark
-              ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-              : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
-            }`}
-        >
-          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
+        {/* Кнопка закрытия теперь в сайдбаре */}
 
         {/* Модальное окно предупреждения */}
         {showCloseWarning && (
@@ -1359,8 +1385,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         onClose()
                       }}
                       className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${isDark
-                          ? 'bg-gray-700 text-red-400 hover:bg-gray-600 hover:text-red-300'
-                          : 'bg-gray-100 text-red-600 hover:bg-gray-200 hover:text-red-700'
+                        ? 'bg-gray-700 text-red-400 hover:bg-gray-600 hover:text-red-300'
+                        : 'bg-gray-100 text-red-600 hover:bg-gray-200 hover:text-red-700'
                         }`}
                     >
                       Не сохранять
@@ -1371,8 +1397,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         setShowCloseWarning(false)
                       }}
                       className={`flex-1 py-3 px-4 rounded-xl text-sm font-medium transition-colors focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2 focus:ring-offset-gray-900 ${isDark
-                          ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
-                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
+                        ? 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-gray-900'
                         }`}
                     >
                       Отмена
@@ -1388,18 +1414,56 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className={`flex h-full w-full ${shouldAnimateEnter && isOpen ? 'animate-modal-content-enter' : 'opacity-0'}`}>
           {/* Левая панель навигации */}
           <div className={`w-72 flex-shrink-0 border-r flex flex-col ${isModern
-              ? 'modern-settings-sidebar'
-              : (isDark ? 'border-gray-800/50 bg-gray-900/50' : 'border-gray-200 bg-gray-50/50')
+            ? 'modern-settings-sidebar'
+            : (isDark ? 'border-gray-800/50 bg-gray-900/50' : 'border-gray-200 bg-gray-50/50')
             }`}>
             {/* Заголовок */}
-            <div className={`px-6 py-6 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
-              <h2 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            <div className={`px-6 py-5 border-b ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+              <h2 className={`text-lg font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
                 Настройки
               </h2>
             </div>
 
+            {/* Поиск по настройкам */}
+            <div className={`px-4 py-3 ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+              <div className={`relative flex items-center rounded-lg transition-all ${isSearchFocused
+                ? (isDark ? 'bg-gray-700/50 ring-2 ring-primary-500/50' : 'bg-white ring-2 ring-primary-500/50')
+                : (isDark ? 'bg-gray-800/50' : 'bg-gray-100')
+                }`}>
+                <svg
+                  className={`w-4 h-4 ml-3 flex-shrink-0 transition-colors ${isDark ? 'text-gray-500' : 'text-gray-400'}`}
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Поиск настроек..."
+                  value={settingsSearch}
+                  onChange={(e) => setSettingsSearch(e.target.value)}
+                  onFocus={() => setIsSearchFocused(true)}
+                  onBlur={() => setIsSearchFocused(false)}
+                  className={`w-full px-3 py-2 text-sm bg-transparent border-none outline-none ${isDark ? 'text-white placeholder-gray-500' : 'text-gray-900 placeholder-gray-400'
+                    }`}
+                />
+                {settingsSearch && (
+                  <button
+                    onClick={() => setSettingsSearch('')}
+                    className={`mr-2 p-1 rounded transition-colors ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-200'}`}
+                  >
+                    <svg className="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
+
             {/* Навигационные вкладки */}
-            <div className="flex-1 overflow-y-auto py-2 scrollbar-thin relative">
+            <div className="flex-1 overflow-y-auto py-2 settings-scrollbar relative">
               {/* Анимированный индикатор */}
               <div
                 className={`absolute right-0 w-1 h-11 rounded-l-full transition-all duration-300 ease-out ${isModern ? 'modern-tab-indicator' : 'bg-primary-500'
@@ -1410,7 +1474,18 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 }}
               />
 
-              {navTabs.map((tab) => {
+              {navTabs.filter(tab => {
+                if (!settingsSearch.trim()) return true
+                const query = settingsSearch.toLowerCase()
+                // Проверяем label вкладки
+                if (tab.label.toLowerCase().includes(query)) return true
+                // Проверяем keywords из searchableSettings
+                const tabSettings = searchableSettings.filter(s => s.tab === tab.id)
+                return tabSettings.some(s =>
+                  s.label.toLowerCase().includes(query) ||
+                  s.keywords.some(k => k.toLowerCase().includes(query))
+                )
+              }).map((tab) => {
                 const isActive = activeTab === tab.id
                 return (
                   <button
@@ -1421,8 +1496,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       setActiveTab(tab.id)
                     }}
                     className={`w-full px-6 py-3 flex items-center gap-3 text-left transition-all duration-300 ${isModern
-                        ? `modern-settings-item ${isActive ? 'active' : ''}`
-                        : ''
+                      ? `modern-settings-item ${isActive ? 'active' : ''}`
+                      : ''
                       } ${!isModern && (isActive
                         ? isDark
                           ? 'text-primary-400'
@@ -1479,8 +1554,32 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 
           {/* Правая часть - контент */}
           <div className="flex-1 flex flex-col overflow-hidden">
+            {/* Заголовок с текущей категорией и кнопкой закрытия */}
+            <div className={`px-8 py-3 border-b flex items-center justify-between ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+              <div className="flex items-center gap-3">
+                <div className={`p-1.5 rounded-lg ${isDark ? 'bg-gray-800/50' : 'bg-gray-100'}`}>
+                  {getTabIcon(navTabs.find(t => t.id === activeTab)?.icon || 'edit')}
+                </div>
+                <h2 className={`text-lg font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  {navTabs.find(t => t.id === activeTab)?.label || 'Редактировать профиль'}
+                </h2>
+              </div>
+              <button
+                onClick={handleClose}
+                className={`p-2.5 rounded-xl transition-all hover:rotate-90 ${isDark
+                  ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                  : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                  }`}
+                title="Закрыть настройки"
+              >
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+
             {/* Контент вкладки */}
-            <div className="flex-1 overflow-y-auto scrollbar-thin">
+            <div className="flex-1 overflow-y-auto settings-scrollbar">
               {activeTab === 'profile' ? (
                 <div className="p-8 max-w-3xl mx-auto">
                   {/* Аватар */}
@@ -1510,16 +1609,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       <div className="flex flex-col gap-2">
                         <button
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark
-                              ? 'bg-primary-500 text-white hover:bg-primary-600'
-                              : 'bg-primary-500 text-white hover:bg-primary-600'
+                            ? 'bg-primary-500 text-white hover:bg-primary-600'
+                            : 'bg-primary-500 text-white hover:bg-primary-600'
                             }`}
                         >
                           Загрузить фото
                         </button>
                         <button
                           className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark
-                              ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                              : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
+                            ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
                             }`}
                         >
                           Удалить фото
@@ -1537,8 +1636,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       type="text"
                       defaultValue={user?.first_name || ''}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
-                          ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                        ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                         }`}
                       placeholder="Введите имя"
                     />
@@ -1553,8 +1652,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       type="text"
                       defaultValue={user?.last_name || ''}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
-                          ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                        ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                         }`}
                       placeholder="Введите фамилию"
                     />
@@ -1573,8 +1672,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                         type="text"
                         defaultValue={user?.username || ''}
                         className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
-                            ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
-                            : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                          ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
+                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                           }`}
                         placeholder="username"
                       />
@@ -1591,8 +1690,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       defaultValue={getFormattedPhoneNumber(user?.phone_number, user?.country || 'US')}
                       disabled
                       className={`w-full px-4 py-3 border rounded-lg cursor-not-allowed opacity-60 ${isDark
-                          ? 'bg-gray-800/30 border-gray-700 text-gray-400'
-                          : 'bg-gray-100 border-gray-300 text-gray-500'
+                        ? 'bg-gray-800/30 border-gray-700 text-gray-400'
+                        : 'bg-gray-100 border-gray-300 text-gray-500'
                         }`}
                     />
                     <p className={`mt-1 text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
@@ -1609,8 +1708,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       type="text"
                       defaultValue={user?.status_text || ''}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
-                          ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                        ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
                         }`}
                       placeholder="Ваш статус"
                     />
@@ -1626,8 +1725,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       value={birthday}
                       onChange={(e) => setBirthday(e.target.value)}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
-                          ? 'bg-gray-800/50 border-gray-700 text-white'
-                          : 'bg-white border-gray-300 text-gray-900'
+                        ? 'bg-gray-800/50 border-gray-700 text-white'
+                        : 'bg-white border-gray-300 text-gray-900'
                         }`}
                     />
                   </div>
@@ -1638,16 +1737,16 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     <button
                       onClick={onClose}
                       className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
-                          ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                          : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
+                        ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
+                        : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                         }`}
                     >
                       Отмена
                     </button>
                     <button
                       className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
-                          ? 'bg-primary-500 text-white hover:bg-primary-600'
-                          : 'bg-primary-500 text-white hover:bg-primary-600'
+                        ? 'bg-primary-500 text-white hover:bg-primary-600'
+                        : 'bg-primary-500 text-white hover:bg-primary-600'
                         }`}
                     >
                       Сохранить изменения
