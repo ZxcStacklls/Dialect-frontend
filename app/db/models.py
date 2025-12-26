@@ -1,7 +1,7 @@
 import enum
 from sqlalchemy import (
     Column, Integer, String, ForeignKey, Enum, TIMESTAMP, TEXT, BLOB, BIGINT,
-    create_engine, UniqueConstraint, Boolean
+    create_engine, UniqueConstraint, Boolean, Date
 )
 from sqlalchemy.orm import relationship, declarative_base
 from sqlalchemy.sql import func
@@ -41,6 +41,7 @@ class User(Base):
     avatar_url = Column(String(255), nullable=True)
     banner_url = Column(String(255), nullable=True)
     bio = Column(String(500), nullable=True)
+    birth_date = Column(Date, nullable=True)
     
     status_text = Column(String(100), nullable=True)
     status_expires_at = Column(TIMESTAMP, nullable=True)

@@ -1,6 +1,6 @@
 from pydantic import BaseModel, ConfigDict
 from typing import Optional, List
-from datetime import datetime
+from datetime import datetime, date
 import enum
 
 from .models import ChatTypeEnum, MessageStatusEnum, MessageTypeEnum
@@ -29,6 +29,7 @@ class UserUpdate(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     bio: Optional[str] = None
+    birth_date: Optional[date] = None
     status_text: Optional[str] = None
     status_duration: Optional[StatusDurationEnum] = None 
 
@@ -43,6 +44,7 @@ class UserPublic(BaseModel):
     avatar_url: Optional[str] = None
     banner_url: Optional[str] = None
     bio: Optional[str] = None
+    birth_date: Optional[date] = None
     status_text: Optional[str] = None
     status_expires_at: Optional[datetime] = None
     last_seen_at: datetime

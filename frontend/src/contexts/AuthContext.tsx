@@ -9,6 +9,7 @@ interface AuthContextType {
   user: User | null
   token: string | null
   login: (phone_number: string, password: string) => Promise<void>
+  loginWithTokens: (access_token: string, refresh_token?: string) => Promise<void>
   register: (data: {
     phone_number: string
     username?: string
@@ -70,6 +71,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, [user])
 
   const logout = useCallback(() => {
+    // Отправляем запрос на логаут в бэкенд
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (refreshToken) {
+      authAPI.logout(refreshToken).catch(err => console.error('Logout error:', err))
+    }
+
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem(USER_STORAGE_KEY)
@@ -176,6 +183,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  const loginWithTokens = async (access_token: string, refresh_token?: string) => {
+    localStorage.setItem('access_token', access_token)
+    if (refresh_token) {
+      localStorage.setItem('refresh_token', refresh_token)
+    }
+    setToken(access_token)
+    await loadUser(access_token)
+  }
+
   const register = async (data: {
     phone_number: string
     username?: string
@@ -203,6 +219,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     user,
     token,
     login,
+    loginWithTokens,
     register,
     logout,
     refreshUser,

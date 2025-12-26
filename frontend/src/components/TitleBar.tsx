@@ -100,29 +100,32 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
 
   // Получаем название текущей вкладки
   const getTabName = (): string => {
-    // Приоритет: activeTab (для модальных окон) > URL path
+    const path = effectivePath
+
+    // Скрываем текст ТОЛЬКО на страницах входа и регистрации
+    if (path === '/login') return ''
+    if (path === '/signup') return ''
+
+    // Для остальных страниц: activeTab (для модальных окон) > URL path
     if (activeTab === 'settings') return 'Настройки'
     if (activeTab === 'chats') return 'Чаты'
     if (activeTab === 'contacts') return 'Контакты'
     if (activeTab === 'calls') return 'Звонки'
-    
-    const path = effectivePath
-    if (path === '/' || path === '/messenger') return 'Чаты'
-    if (path === '/login') return 'Вход'
-    if (path === '/signup') return 'Регистрация'
+
+    if (path === '/messenger') return 'Чаты'
+    if (path === '/') return 'Dialect'
     if (path === '/settings') return 'Настройки'
     if (path === '/contacts') return 'Контакты'
     if (path === '/calls') return 'Звонки'
-    return 'Dialect'
+    return ''
   }
 
   return (
-    <div 
-      className={`titlebar flex items-center justify-between h-10 select-none ${
-        isDark
-          ? 'bg-gray-900/95'
-          : 'bg-white/95'
-      }`}
+    <div
+      className={`titlebar flex items-center justify-between h-10 select-none ${isDark
+        ? 'bg-gray-900/95'
+        : 'bg-white/95'
+        }`}
       style={{
         transition: 'background-color 0.5s cubic-bezier(0.4, 0, 0.2, 1)'
       }}
@@ -131,13 +134,13 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
       <div className="flex-1 drag-region cursor-move" />
 
       {/* Центральная часть - Текущее местоположение */}
-      <div 
-        className={`absolute left-1/2 -translate-x-1/2 text-[13px] font-medium drag-region cursor-move transition-all duration-300 ${
-          isDark ? 'text-gray-400' : 'text-gray-500'
-        }`}
+      <div
+        className={`absolute left-1/2 -translate-x-1/2 text-sm font-bold drag-region cursor-move transition-all duration-300 ${isDark ? 'text-gray-200' : 'text-gray-800'
+          }`}
         style={{
-          fontFamily: "'Nunito', 'Segoe UI', system-ui, sans-serif",
-          letterSpacing: '0.02em'
+          fontFamily: "'Inter', 'Nunito', sans-serif",
+          letterSpacing: '0.01em',
+          textShadow: isDark ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
         }}
       >
         {getTabName()}

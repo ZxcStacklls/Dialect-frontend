@@ -35,6 +35,20 @@ def create_session(
     expires_at = datetime.utcnow() + timedelta(days=settings.REFRESH_TOKEN_EXPIRE_DAYS)
     
     # Создаем запись сессии
+    # Сначала отзываем старые сессии с того же устройства и IP
+    existing_session = db.query(models.UserSession).filter(
+        and_(
+            models.UserSession.user_id == user_id,
+            models.UserSession.device_name == device_name,
+            models.UserSession.ip_address == ip_address,
+            models.UserSession.is_active == True
+        )
+    ).first()
+    
+    if existing_session:
+        existing_session.is_active = False
+        # Не делаем commit здесь, он будет сделан при добавлении новой сессии
+    
     session = models.UserSession(
         user_id=user_id,
         refresh_token_hash=token_hash,

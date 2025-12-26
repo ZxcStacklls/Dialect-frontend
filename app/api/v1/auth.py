@@ -3,14 +3,34 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from typing import Dict
 from pydantic import BaseModel
+from datetime import datetime, timedelta
+import random
+import logging
 
 from app.db import schemas, database
 from app.services import auth_service, user_service, session_service
 from app.core.security import create_access_token
 
+# Настройка логирования для вывода SMS кода
+logger = logging.getLogger("uvicorn.error")
+
+# In-memory хранилище SMS кодов: {phone_number: {"code": str, "expires_at": datetime}}
+sms_codes_storage: Dict[str, dict] = {}
+
 
 class PhoneCheckRequest(BaseModel):
     phone_number: str
+
+
+class SendCodeRequest(BaseModel):
+    phone_number: str
+    for_registration: bool = False  # If True, skip user existence check
+
+
+class VerifyCodeRequest(BaseModel):
+    phone_number: str
+    code: str
+    for_registration: bool = False  # If True, just verify code without getting user
 
 
 # Создаем "роутер" - мини-приложение FastAPI для этого модуля.
@@ -65,11 +85,32 @@ def _get_device_info(request: Request) -> dict:
     # Получаем IP адрес
     ip_address = request.client.host if request.client else None
     
+    # Определяем локацию
+    location = "Unknown Location"
+    if ip_address:
+        if ip_address in ["127.0.0.1", "::1", "localhost"]:
+             location = "Local System"
+        else:
+            try:
+                # Используем urllib для избежания внешних зависимостей типа requests
+                from urllib.request import urlopen
+                import json
+                # Тайм-аут 2 секунды чтобы не блокировать надолго
+                with urlopen(f"http://ip-api.com/json/{ip_address}?fields=status,city,country", timeout=2) as url:
+                    data = json.loads(url.read().decode())
+                    if data.get("status") == "success":
+                        city = data.get("city", "")
+                        country = data.get("country", "")
+                        location = f"{city}, {country}" if city and country else city or country
+            except Exception as e:
+                logger.warning(f"Failed to resolve location for IP {ip_address}: {e}")
+                pass
+
     return {
         "device_name": device_name,
         "device_type": device_type,
         "ip_address": ip_address,
-        "location": None  # TODO: добавить геолокацию по IP
+        "location": location
     }
 
 
@@ -117,6 +158,140 @@ def check_phone_exists(
     exists = user is not None
     
     return {"exists": exists}
+
+
+@router.post("/send-code")
+def send_sms_code(
+    code_request: SendCodeRequest,
+    db: Session = Depends(database.get_db)
+):
+    """
+    Отправляет SMS код для входа (MOCK - выводит в консоль).
+    
+    Генерирует 6-значный код, сохраняет в памяти с истечением через 5 минут,
+    и выводит в консоль uvicorn.
+    """
+    phone = code_request.phone_number
+    
+    if not phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Номер телефона обязателен"
+        )
+    
+    # Проверяем, существует ли пользователь (только для входа, не для регистрации)
+    user = user_service.get_user_by_phone(db, phone_number=phone)
+    if not code_request.for_registration and not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь с таким номером не найден"
+        )
+    
+    # Для регистрации: проверяем, что пользователь НЕ существует
+    if code_request.for_registration and user:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Пользователь с таким номером уже зарегистрирован"
+        )
+    
+    # Генерируем 6-значный код
+    code = str(random.randint(100000, 999999))
+    
+    # Сохраняем код с временем истечения (5 минут)
+    sms_codes_storage[phone] = {
+        "code": code,
+        "expires_at": datetime.now() + timedelta(minutes=5)
+    }
+    
+    # Выводим код в консоль uvicorn
+    logger.info("=" * 50)
+    logger.info(f"📱 SMS КОД ДЛЯ {phone}: {code}")
+    logger.info("=" * 50)
+    print(f"\n{'='*50}")
+    print(f"📱 SMS КОД ДЛЯ {phone}: {code}")
+    print(f"{'='*50}\n")
+    
+    return {"success": True, "message": "Код отправлен"}
+
+
+@router.post("/verify-code")
+def verify_sms_code(
+    request: Request,
+    verify_request: VerifyCodeRequest,
+    db: Session = Depends(database.get_db)
+):
+    """
+    Проверяет SMS код. 
+    Для регистрации (for_registration=True) - просто подтверждает код.
+    Для входа (for_registration=False) - выдает токены.
+    """
+    phone = verify_request.phone_number
+    code = verify_request.code
+    for_registration = verify_request.for_registration
+    
+    if not phone or not code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Номер телефона и код обязательны"
+        )
+    
+    # Проверяем, есть ли код для этого номера
+    stored = sms_codes_storage.get(phone)
+    
+    if not stored:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Код не был запрошен для этого номера"
+        )
+    
+    # Проверяем, не истек ли код
+    if datetime.now() > stored["expires_at"]:
+        del sms_codes_storage[phone]
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Код истек. Запросите новый код."
+        )
+    
+    # Проверяем совпадение кода
+    if stored["code"] != code:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Неверный код"
+        )
+    
+    # Код верный - удаляем из хранилища
+    del sms_codes_storage[phone]
+    
+    # Для регистрации - просто возвращаем успех, не нужны токены
+    if for_registration:
+        return {"success": True, "message": "Код подтвержден"}
+    
+    # Для входа - получаем пользователя и создаем токены
+    user = user_service.get_user_by_phone(db, phone_number=phone)
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Пользователь не найден"
+        )
+    
+    # Получаем информацию об устройстве
+    device_info = _get_device_info(request)
+    
+    # Создаем сессию и получаем refresh токен
+    refresh_token, session = session_service.create_session(
+        db=db,
+        user_id=user.id,
+        **device_info
+    )
+    
+    # Создаем access токен с привязкой к сессии
+    access_token = create_access_token(user_id=user.id, session_id=session.id)
+    
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer"
+    }
 
 
 @router.post("/token", response_model=schemas.TokenPair)

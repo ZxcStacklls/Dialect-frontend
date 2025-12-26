@@ -2,10 +2,13 @@ import React, { useEffect, useState, useRef } from 'react'
 import { useAuth } from '../contexts/AuthContext'
 import { useTheme } from '../contexts/ThemeContext'
 import { useAppearance, CompactMode, ThemeMode, DesignStyle, NavPosition, ChatsPosition } from '../contexts/AppearanceContext'
+import { useToast } from '../contexts/ToastContext'
+import { authAPI } from '../api/auth'
 import DefaultAvatar from './DefaultAvatar'
 import SessionsTab from './SessionsTab'
 import { getApiBaseUrl } from '../utils/platform'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
+import { DatePicker } from './DatePicker'
 
 // ... (предыдущие функции formatDateForInput, getNavIcon, AppearanceTab без изменений) ...
 // Функция для форматирования даты в формат YYYY-MM-DD
@@ -1038,9 +1041,10 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   activeTab: externalActiveTab,
   onTabChange
 }) => {
-  const { user } = useAuth()
+  const { user, logout, refreshUser } = useAuth()
   const { theme } = useTheme()
   const { settings: appearanceSettings } = useAppearance()
+  const { addToast } = useToast()
   const isDark = theme === 'dark'
   const isModern = appearanceSettings.designStyle === 'modern'
 
@@ -1055,17 +1059,113 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   }
 
   const [avatarError, setAvatarError] = useState(false)
-  const [birthday, setBirthday] = useState<string>('')
   const [isAnimating, setIsAnimating] = useState(false)
   const [shouldAnimateEnter, setShouldAnimateEnter] = useState(false)
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false)
   const [showCloseWarning, setShowCloseWarning] = useState(false)
+  const [showLogoutConfirm, setShowLogoutConfirm] = useState(false)
   const [indicatorTop, setIndicatorTop] = useState(0)
   const [settingsSearch, setSettingsSearch] = useState('')
   const [isSearchFocused, setIsSearchFocused] = useState(false)
   const tabRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
   const appearanceSaveRef = useRef<(() => void) | null>(null)
   const searchInputRef = useRef<HTMLInputElement>(null)
+
+  // Profile Form State
+  const [firstName, setFirstName] = useState('')
+  const [lastName, setLastName] = useState('')
+  const [username, setUsername] = useState('')
+  const [bio, setBio] = useState('')
+  const [statusText, setStatusText] = useState('')
+  const [birthDate, setBirthDate] = useState('')
+  const [isSaving, setIsSaving] = useState(false)
+  const [usernameStatus, setUsernameStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
+  const [usernameError, setUsernameError] = useState('')
+
+  const [isInitialized, setIsInitialized] = useState(false)
+
+  // Initialize form when user data is available
+  useEffect(() => {
+    if (user && !isInitialized) {
+      setFirstName(user.first_name || '')
+      setLastName(user.last_name || '')
+      setUsername(user.username || '')
+      setBio(user.bio || '')
+      setStatusText(user.status_text || '')
+      setBirthDate(user.birth_date ? String(user.birth_date) : '')
+      setIsInitialized(true)
+    }
+  }, [user, isInitialized])
+
+  // Username availability check
+  useEffect(() => {
+    const checkUsername = async () => {
+      // Don't check if empty or same as current
+      if (!username || username === user?.username) {
+        setUsernameStatus('idle')
+        setUsernameError('')
+        return
+      }
+
+      if (username.length < 3) {
+        setUsernameStatus('error')
+        setUsernameError('Минимум 3 символа')
+        return
+      }
+
+      // Valid characters check
+      if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+        setUsernameStatus('error')
+        setUsernameError('Только латинские буквы, цифры и _')
+        return
+      }
+
+      setUsernameStatus('loading')
+      try {
+        const isAvailable = await authAPI.checkUsernameAvailability(username)
+        if (isAvailable) {
+          setUsernameStatus('success')
+          setUsernameError('')
+        } else {
+          setUsernameStatus('error')
+          setUsernameError('Это имя пользователя уже занято')
+        }
+      } catch (error) {
+        console.error('Username check failed:', error)
+        setUsernameStatus('error')
+        setUsernameError('Ошибка проверки')
+      }
+    }
+
+    const timeoutId = setTimeout(checkUsername, 500)
+    return () => clearTimeout(timeoutId)
+  }, [username, user?.username])
+
+  const handleProfileSave = async () => {
+    if (usernameStatus === 'error') {
+      addToast('Пожалуйста, исправьте ошибки в форме', 'error')
+      return
+    }
+
+    setIsSaving(true)
+    try {
+      await authAPI.updateProfile({
+        first_name: firstName,
+        last_name: lastName,
+        username,
+        bio,
+        status_text: statusText,
+        birth_date: birthDate || undefined
+      })
+      await refreshUser()
+      addToast('Профиль успешно обновлен', 'success')
+    } catch (error) {
+      console.error('Failed to update profile:', error)
+      addToast('Не удалось обновить профиль', 'error')
+    } finally {
+      setIsSaving(false)
+    }
+  }
 
   // Поисковые элементы настроек
   const searchableSettings = [
@@ -1092,14 +1192,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: 'sessions-devices', tab: 'sessions', label: 'Управление устройствами', keywords: ['устройства', 'выход', 'завершить'] },
   ]
 
-  // Фильтрация результатов поиска
-  const filteredSearchResults = settingsSearch.trim()
-    ? searchableSettings.filter(item => {
-      const query = settingsSearch.toLowerCase()
-      return item.label.toLowerCase().includes(query) ||
-        item.keywords.some(k => k.toLowerCase().includes(query))
-    })
-    : []
+
 
   const getFormattedPhoneNumber = (phoneNumber?: string, countryCode?: string) => {
     if (!phoneNumber) return ''
@@ -1550,6 +1643,22 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
             </div>
+
+            {/* Кнопка выхода */}
+            <div className={`px-4 py-3 border-t ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
+              <button
+                onClick={() => setShowLogoutConfirm(true)}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-all ${isDark
+                  ? 'text-red-400 hover:bg-red-500/10 hover:text-red-300'
+                  : 'text-red-500 hover:bg-red-50 hover:text-red-600'
+                  }`}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Выйти из аккаунта
+              </button>
+            </div>
           </div>
 
           {/* Правая часть - контент */}
@@ -1634,7 +1743,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </label>
                     <input
                       type="text"
-                      defaultValue={user?.first_name || ''}
+                      value={firstName}
+                      onChange={(e) => setFirstName(e.target.value)}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                         ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
@@ -1650,7 +1760,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </label>
                     <input
                       type="text"
-                      defaultValue={user?.last_name || ''}
+                      value={lastName}
+                      onChange={(e) => setLastName(e.target.value)}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                         ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
@@ -1670,14 +1781,37 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       </span>
                       <input
                         type="text"
-                        defaultValue={user?.username || ''}
-                        className={`w-full pl-8 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
+                        value={username}
+                        onChange={(e) => setUsername(e.target.value)}
+                        className={`w-full pl-8 pr-12 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                           ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
                           : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
-                          }`}
+                          } ${usernameStatus === 'error' ? 'border-red-500 focus:ring-red-500' : ''} ${usernameStatus === 'success' ? 'border-green-500 focus:ring-green-500' : ''}`}
                         placeholder="username"
                       />
+                      {/* Индикаторы статуса */}
+                      <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                        {usernameStatus === 'loading' && (
+                          <svg className="animate-spin h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        )}
+                        {usernameStatus === 'success' && (
+                          <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        )}
+                        {usernameStatus === 'error' && (
+                          <svg className="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                        )}
+                      </div>
                     </div>
+                    {usernameError && (
+                      <p className="mt-1 text-xs text-red-500 pl-1">{usernameError}</p>
+                    )}
                   </div>
 
                   {/* Телефон */}
@@ -1706,7 +1840,8 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     </label>
                     <input
                       type="text"
-                      defaultValue={user?.status_text || ''}
+                      value={statusText}
+                      onChange={(e) => setStatusText(e.target.value)}
                       className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
                         ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
                         : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
@@ -1715,20 +1850,48 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                     />
                   </div>
 
-                  {/* День рождения */}
+                  {/* О себе (Bio) */}
                   <div className="mb-6">
+                    <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                      О себе
+                    </label>
+                    <textarea
+                      value={bio}
+                      onChange={(e) => setBio(e.target.value)}
+                      maxLength={500}
+                      rows={4}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all resize-none ${isDark
+                        ? 'bg-gray-800/50 border-gray-700 text-white placeholder-gray-500'
+                        : 'bg-white border-gray-300 text-gray-900 placeholder-gray-400'
+                        }`}
+                      placeholder="Расскажите немного о себе..."
+                    />
+                    <div className={`text-right text-xs mt-1 ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      {bio.length}/500
+                    </div>
+                  </div>
+
+                  {/* День рождения */}
+                  <div className="mb-8">
                     <label className={`block text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
                       День рождения
                     </label>
-                    <input
-                      type="date"
-                      value={birthday}
-                      onChange={(e) => setBirthday(e.target.value)}
-                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 transition-all ${isDark
-                        ? 'bg-gray-800/50 border-gray-700 text-white'
-                        : 'bg-white border-gray-300 text-gray-900'
-                        }`}
-                    />
+                    <div className="relative z-10">
+                      <DatePicker
+                        value={birthDate ? new Date(birthDate) : null}
+                        onChange={(date) => {
+                          const year = date.getFullYear()
+                          const month = String(date.getMonth() + 1).padStart(2, '0')
+                          const day = String(date.getDate()).padStart(2, '0')
+                          setBirthDate(`${year}-${month}-${day}`)
+                        }}
+                        isDark={isDark}
+                        isModern={isModern}
+                      />
+                    </div>
+                    <p className={`mt-1 text-xs ${isDark ? 'text-gray-500' : 'text-gray-400'}`}>
+                      Укажите дату рождения
+                    </p>
                   </div>
 
                   {/* Кнопки сохранения и отмены */}
@@ -1744,11 +1907,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       Отмена
                     </button>
                     <button
-                      className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${isDark
-                        ? 'bg-primary-500 text-white hover:bg-primary-600'
-                        : 'bg-primary-500 text-white hover:bg-primary-600'
-                        }`}
+                      onClick={handleProfileSave}
+                      disabled={isSaving}
+                      className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${isSaving
+                        ? 'bg-primary-500/50 cursor-not-allowed'
+                        : 'bg-primary-500 hover:bg-primary-600'
+                        } text-white`}
                     >
+                      {isSaving && (
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                      )}
                       Сохранить изменения
                     </button>
                   </div>
@@ -1772,6 +1943,45 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             </div>
           </div>
         </div>
+        {/* Logout Confirmation Modal */}
+        {showLogoutConfirm && (
+          <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <div className={`w-full max-w-sm rounded-2xl p-6 ${isDark ? 'bg-gray-900 border border-gray-800' : 'bg-white border border-gray-200'} shadow-xl transform transition-all scale-100 animate-fade-in-scale`}>
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="w-16 h-16 rounded-full bg-red-500/10 flex items-center justify-center mb-4 text-red-500">
+                  <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                  </svg>
+                </div>
+                <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>Выход из аккаунта</h3>
+                <p className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-500'}`}>
+                  Вы уверены, что хотите выйти? Вам придется снова вводить номер телефона для входа.
+                </p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowLogoutConfirm(false)}
+                  className={`flex-1 py-3 rounded-xl font-medium transition-colors ${isDark
+                    ? 'bg-gray-800 text-white hover:bg-gray-700'
+                    : 'bg-gray-100 text-gray-900 hover:bg-gray-200'
+                    }`}
+                >
+                  Отмена
+                </button>
+                <button
+                  onClick={() => {
+                    logout()
+                    onClose()
+                    setShowLogoutConfirm(false)
+                  }}
+                  className="flex-1 py-3 rounded-xl font-medium bg-red-500 text-white hover:bg-red-600 transition-colors shadow-lg shadow-red-500/20"
+                >
+                  Выйти
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

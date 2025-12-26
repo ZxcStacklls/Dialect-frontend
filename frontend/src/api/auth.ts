@@ -32,6 +32,7 @@ export interface User {
   is_online: boolean
   phone_number?: string // Добавляем сюда
   country?: string // Добавляем сюда
+  birth_date?: string
 }
 
 export const authAPI = {
@@ -96,6 +97,29 @@ export const authAPI = {
 
   getCurrentUser: async (): Promise<User> => {
     const response = await apiClient.get('/v1/users/me')
+    return response.data
+  },
+
+  updateProfile: async (data: Partial<User>): Promise<User> => {
+    const response = await apiClient.patch('/v1/users/me', data)
+    return response.data
+  },
+
+  sendCode: async (phone_number: string, forRegistration: boolean = false): Promise<{ success: boolean; message: string }> => {
+    const response = await apiClient.post('/v1/auth/send-code', {
+      phone_number,
+      for_registration: forRegistration
+    })
+    return response.data
+  },
+
+  verifyCode: async (phone_number: string, code: string, forRegistration: boolean = false): Promise<TokenResponse | { success: boolean; message: string }> => {
+    const response = await apiClient.post('/v1/auth/verify-code', { phone_number, code, for_registration: forRegistration })
+    return response.data
+  },
+
+  logout: async (refresh_token: string): Promise<{ message: string }> => {
+    const response = await apiClient.post('/v1/auth/logout', { refresh_token })
     return response.data
   },
 }
