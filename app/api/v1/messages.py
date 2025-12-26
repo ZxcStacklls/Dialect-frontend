@@ -7,7 +7,7 @@ import os
 import shutil
 
 from app.db import database, schemas, models
-from app.services import message_service, user_service, notification_service
+from app.services import message_service, user_service, notification_service, chat_service
 from app.services.connection_manager import manager
 from app.core import security
 from app.api.deps import get_current_active_user
@@ -26,6 +26,32 @@ def get_user_from_token(token: str, db: Session):
     except Exception as e:
         print(f"❌ ОШИБКА АВТОРИЗАЦИИ WEBSOCKET: {e}")
         return None
+
+# --- Helpers for Status Broadcasting ---
+async def broadcast_status_change(db: Session, user_id: int, is_online: bool):
+    """
+    Рассылает всем собеседникам уведомление о смене статуса.
+    """
+    # 1. Находим все чаты, где есть этот юзер
+    # Оптимизация: Можно использовать RAW SQL для скорости, но пока так
+    chats = chat_service.get_user_chats(db, user_id)
+    
+    # 2. Собираем уникальные ID собеседников
+    recipient_ids = set()
+    for chat in chats:
+        for p in chat.participant_links:
+            if p.user_id != user_id:
+                recipient_ids.add(p.user_id)
+    
+    # 3. Отправляем уведомление
+    payload = {
+        "type": "user_status",
+        "user_id": user_id,
+        "is_online": is_online
+    }
+    
+    for rid in recipient_ids:
+        await manager.send_personal_message(payload, rid)
 
 
 # 🔵 HTTP Эндпоинт: Загрузка истории
@@ -96,6 +122,9 @@ async def websocket_endpoint(
     # 2. Подключаем пользователя
     await manager.connect(websocket, user_id)
     
+    # 📢 Уведомляем всех, что мы ОНЛАЙН
+    await broadcast_status_change(db, user_id, is_online=True)
+    
     try:
         while True:
             # 3. Ждем сообщение
@@ -114,11 +143,17 @@ async def websocket_endpoint(
 
                     # Получаем тип сообщения (text, image, file), по умолчанию text
                     msg_type_str = data.get("message_type", "text")
+                    
+                    # Получаем reply_to_id если это ответ на сообщение
+                    reply_to_id = data.get("reply_to_id")
+                    if reply_to_id:
+                        reply_to_id = int(reply_to_id)
 
                     msg_create = schemas.MessageCreate(
                         chat_id=data.get("chat_id"),
                         content=raw_content,
-                        message_type=msg_type_str
+                        message_type=msg_type_str,
+                        reply_to_id=reply_to_id
                     )
                     
                     # Сохраняем в БД (здесь же внутри проверяется ЧС)
@@ -129,15 +164,29 @@ async def websocket_endpoint(
                     )
 
                     # Формируем ответ для WebSocket
+                    # Получаем данные ответа на сообщение если есть
+                    reply_to_data = None
+                    if new_msg.reply_to_id:
+                        replied_msg = db.query(models.Message).filter(models.Message.id == new_msg.reply_to_id).first()
+                        if replied_msg:
+                            reply_to_data = {
+                                "id": replied_msg.id,
+                                "content": replied_msg.content.decode('utf-8') if isinstance(replied_msg.content, bytes) else replied_msg.content,
+                                "sender_id": replied_msg.sender_id
+                            }
+                    
                     response_data = {
                         "type": "new_message",
                         "id": new_msg.id,
                         "chat_id": new_msg.chat_id,
                         "sender_id": user_id,
                         "content": new_msg.content.decode('utf-8') if isinstance(new_msg.content, bytes) else new_msg.content,
-                        "message_type": new_msg.message_type, # Возвращаем тип
+                        "message_type": new_msg.message_type,
                         "sent_at": new_msg.sent_at.isoformat(),
-                        "status": "sent"
+                        "status": "sent",
+                        "reply_to_id": new_msg.reply_to_id,
+                        "reply_to": reply_to_data,
+                        "is_edited": new_msg.is_edited
                     }
 
                     participant_ids = message_service.get_chat_participants(db, chat_id=new_msg.chat_id)
@@ -195,8 +244,8 @@ async def websocket_endpoint(
                     }
                     parts = message_service.get_chat_participants(db, chat_id=chat_id)
                     for pid in parts:
-                        if pid != user_id:
-                            await manager.send_personal_message(read_notification, pid)
+                        # Broadcast to EVERYONE (including self) to sync read status across devices
+                        await manager.send_personal_message(read_notification, pid)
 
 
             # === 3. РЕДАКТИРОВАНИЕ (EDIT) ===
@@ -295,10 +344,15 @@ async def websocket_endpoint(
                 await websocket.send_json({"error": f"Unknown event type: {event_type}"})
 
     except WebSocketDisconnect:
-        manager.disconnect(user_id)
-        user_service.update_last_seen(db, user_id)
+        manager.disconnect(websocket, user_id)
+        # При разрыве соединения сразу ставим статус "Офлайн"
+        user_service.update_last_seen(db, user_id, force_offline=True)
+        # 📢 Уведомляем всех, что мы ОФЛАЙН
+        await broadcast_status_change(db, user_id, is_online=False)
         
     except Exception as e:
         print(f"WebSocket Error: {e}")
-        manager.disconnect(user_id)
-        user_service.update_last_seen(db, user_id)
+        manager.disconnect(websocket, user_id)
+        user_service.update_last_seen(db, user_id, force_offline=True)
+        # 📢 Уведомляем всех, что мы ОФЛАЙН
+        await broadcast_status_change(db, user_id, is_online=False)

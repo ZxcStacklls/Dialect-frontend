@@ -81,6 +81,11 @@ export const authAPI = {
     return response.data
   },
 
+  deleteAvatar: async (): Promise<User> => {
+    const response = await apiClient.delete('/v1/users/me/avatar')
+    return response.data
+  },
+
   checkUsernameAvailability: async (username: string): Promise<boolean> => {
     try {
       if (!username || username.length < 3) {

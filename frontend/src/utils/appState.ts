@@ -33,7 +33,7 @@ export const isOnline = (): boolean => {
  * @returns Promise<boolean> true если сервер доступен, false если нет
  */
 let serverCheckCache: { result: boolean; timestamp: number } | null = null
-const SERVER_CHECK_CACHE_DURATION = 10000 // Кешируем результат на 10 секунд
+const SERVER_CHECK_CACHE_DURATION = 2000 // Кешируем результат на 2 секунды (было 10)
 
 export const isServerAvailable = async (): Promise<boolean> => {
   // Проверяем кеш
@@ -51,22 +51,22 @@ export const isServerAvailable = async (): Promise<boolean> => {
     // Импортируем getApiBaseUrl динамически, чтобы избежать циклических зависимостей
     const { getApiBaseUrl } = await import('./platform')
     const apiBaseUrl = getApiBaseUrl()
-    
+
     // Убираем /api из базового URL, чтобы получить корневой URL сервера
     const baseUrl = apiBaseUrl.replace('/api', '').replace(/\/$/, '')
-    
+
     // Используем корневой эндпоинт "/" для проверки доступности сервера
     const controller = new AbortController()
-    const timeoutId = setTimeout(() => controller.abort(), 3000) // Таймаут 3 секунды
-    
+    const timeoutId = setTimeout(() => controller.abort(), 1000) // Таймаут 1 секунда (было 3)
+
     const response = await fetch(`${baseUrl}/`, {
       method: 'GET', // Используем GET вместо HEAD, так как HEAD возвращает 405
       signal: controller.signal,
       cache: 'no-cache'
     }).catch(() => null)
-    
+
     clearTimeout(timeoutId)
-    
+
     // Сервер доступен, если получили успешный ответ
     const isAvailable = response !== null && response.ok
     serverCheckCache = { result: isAvailable, timestamp: Date.now() }
@@ -97,7 +97,7 @@ export const useVisibilityChange = (callback: (isVisible: boolean) => void) => {
   }
 
   document.addEventListener('visibilitychange', handleVisibilityChange)
-  
+
   return () => {
     document.removeEventListener('visibilitychange', handleVisibilityChange)
   }
@@ -115,7 +115,7 @@ export const useOnlineStatus = (callback: (isOnline: boolean) => void) => {
 
   window.addEventListener('online', handleOnline)
   window.addEventListener('offline', handleOffline)
-  
+
   return () => {
     window.removeEventListener('online', handleOnline)
     window.removeEventListener('offline', handleOffline)

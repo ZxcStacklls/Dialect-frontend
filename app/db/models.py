@@ -46,6 +46,7 @@ class User(Base):
     status_text = Column(String(100), nullable=True)
     status_expires_at = Column(TIMESTAMP, nullable=True)
 
+
     last_seen_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
@@ -58,6 +59,14 @@ class User(Base):
     devices = relationship("UserDevice", back_populates="user")
     blocked_users = relationship("UserBlock", foreign_keys="UserBlock.blocker_id", back_populates="blocker")
     sessions = relationship("UserSession", back_populates="user", cascade="all, delete-orphan")
+
+    @property
+    def is_online(self) -> bool:
+        """Считает пользователя онлайн, если last_seen_at < 5 минут назад (как Telegram)."""
+        from datetime import datetime, timedelta
+        if not self.last_seen_at:
+            return False
+        return datetime.utcnow() - self.last_seen_at < timedelta(minutes=5)
 
 
 class UserSession(Base):
@@ -121,8 +130,8 @@ class Chat(Base):
     owner_id = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
 
-    participant_links = relationship("ChatParticipant", back_populates="chat")
-    messages = relationship("Message", back_populates="chat")
+    participant_links = relationship("ChatParticipant", back_populates="chat", cascade="all, delete-orphan")
+    messages = relationship("Message", back_populates="chat", cascade="all, delete-orphan")
     owner = relationship("User", back_populates="owned_chats")
 
 
@@ -150,16 +159,25 @@ class Message(Base):
     # Теперь контент может быть ссылкой на файл, а тип указывает, как его отображать
     content = Column(BLOB, nullable=False) 
     
-    # ⭐ НОВОЕ ПОЛЕ: Тип сообщения
+    # Тип сообщения
     message_type = Column(Enum(MessageTypeEnum), default=MessageTypeEnum.text, nullable=False)
     
     sent_at = Column(TIMESTAMP, server_default=func.now(), nullable=False)
     status = Column(Enum(MessageStatusEnum), nullable=False, default=MessageStatusEnum.sent)
     is_pinned = Column(Boolean, default=False, nullable=False)
+    
+    # ⭐ Ответ на сообщение (self-referencing FK)
+    reply_to_id = Column(BIGINT, ForeignKey("messages.id", ondelete="SET NULL"), nullable=True)
+    
+    # ⭐ Флаг редактирования
+    is_edited = Column(Boolean, default=False, nullable=False)
 
     chat = relationship("Chat", back_populates="messages")
     sender = relationship("User", back_populates="sent_messages")
-    read_by = relationship("MessageRead", back_populates="message")
+    read_by = relationship("MessageRead", back_populates="message", cascade="all, delete-orphan")
+    
+    # Связь с ответом (для легкого доступа к цитируемому сообщению)
+    reply_to = relationship("Message", remote_side=[id], foreign_keys=[reply_to_id])
 
 
 class MessageRead(Base):

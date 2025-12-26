@@ -17,7 +17,6 @@ router = APIRouter(
 def read_users_me(
     current_user: models.User = Depends(get_current_active_user)
 ):
-    current_user.is_online = True 
     return current_user
 
 @router.patch("/me", response_model=schemas.UserPublic)
@@ -99,11 +98,7 @@ def search_for_users(
         offset=offset
     )
     
-    # Для каждого найденного проверяем онлайн статус
-    for user in users:
-        user_public = schemas.UserPublic.from_orm(user)
-        user_public.is_online = manager.is_user_online(user.id)
-        
+    # Для каждого найденного проверяем онлайн статус через свойство is_online
     return users
 
 @router.get("/{user_id}", response_model=schemas.UserPublic)
@@ -113,10 +108,7 @@ def read_user_by_id(
 ):
     user = user_service.get_user(db, user_id)
     if not user: raise HTTPException(404, "User not found")
-
-    user_public = schemas.UserPublic.from_orm(user)
-    user_public.is_online = manager.is_user_online(user.id)
-    return user_public
+    return user
 
 @router.delete("/me/avatar", response_model=schemas.UserPublic)
 def delete_my_avatar(

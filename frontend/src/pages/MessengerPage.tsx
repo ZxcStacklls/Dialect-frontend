@@ -6,9 +6,14 @@ import { useToast } from '../contexts/ToastContext'
 import { useTitleBar } from '../contexts/TitleBarContext'
 import DefaultAvatar from '../components/DefaultAvatar'
 import SettingsModal from '../components/SettingsModal'
+import CreateChatModal from '../components/CreateChatModal'
+import UserContextMenu from '../components/UserContextMenu'
 import { getApiBaseUrl } from '../utils/platform'
 import { canSendRequests, isOnline, isServerAvailable } from '../utils/appState'
 import apiClient from '../api/client'
+import { fetchChats, createPrivateChat, findExistingPrivateChat, Chat, ChatParticipant } from '../api/chats'
+import ChatContextMenu from '../components/ChatContextMenu'
+import ChatInterface from '../components/ChatInterface'
 
 const formatChatTimestamp = (value?: string | number | Date | null): string | null => {
   if (!value) return null
@@ -31,7 +36,8 @@ const MessengerPage: React.FC = () => {
   const { addToast } = useToast()
   const { setCurrentTab } = useTitleBar()
   const [selectedChat, setSelectedChat] = useState<number | null>(null)
-  const [isOnlineState, setIsOnlineState] = useState(isOnline())
+  // Initial state is true (optimistic) to avoid "Connecting..." flash
+  const [isOnlineState, setIsOnlineState] = useState(navigator.onLine)
   const [chatsPanelWidth, setChatsPanelWidth] = useState(300)
   const [hoveredStatus, setHoveredStatus] = useState(false)
   const [isResizing, setIsResizing] = useState(false)
@@ -51,6 +57,39 @@ const MessengerPage: React.FC = () => {
   const [settingsActiveTab, setSettingsActiveTab] = useState<string>('profile')
   const [isCompactCollapsing, setIsCompactCollapsing] = useState(false)
   const [isPanelAnimating, setIsPanelAnimating] = useState(false)
+
+  // Состояние для чатов
+  const [chats, setChats] = useState<Chat[]>(() => {
+    try {
+      const cached = localStorage.getItem('cached_chats')
+      return cached ? JSON.parse(cached) : []
+    } catch {
+      return []
+    }
+  })
+  const [isLoadingChats, setIsLoadingChats] = useState(() => {
+    // Если есть кеш, не показываем лоадер (или показываем только фоновое обновление)
+    // Но для UX лучше показать лоадер ненадолго, или если кеша нет
+    return !localStorage.getItem('cached_chats')
+  })
+  const [isCreateChatOpen, setIsCreateChatOpen] = useState(false)
+
+  // Состояние для контекстного меню чата
+  const [chatContextMenu, setChatContextMenu] = useState<{
+    isOpen: boolean
+    x: number
+    y: number
+    chatId: number | null
+    chatName?: string
+  }>({ isOpen: false, x: 0, y: 0, chatId: null, chatName: undefined })
+
+  // Состояние для контекстного меню
+  const [contextMenu, setContextMenu] = useState<{
+    isOpen: boolean
+    x: number
+    y: number
+    user: any | null
+  }>({ isOpen: false, x: 0, y: 0, user: null })
 
   // Ref для кнопок навигации
   const navButtonRefs = useRef<{ [key: string]: HTMLButtonElement | null }>({})
@@ -247,7 +286,7 @@ const MessengerPage: React.FC = () => {
 
     checkConnection()
 
-    const interval = setInterval(checkConnection, 15000)
+    const interval = setInterval(checkConnection, 5000)
 
     const handleOnline = () => {
       setTimeout(checkConnection, 500)
@@ -330,7 +369,206 @@ const MessengerPage: React.FC = () => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  const chats: any[] = []
+  // Загрузка чатов
+  const loadChats = useCallback(async () => {
+    if (!canSendRequests()) return
+
+    try {
+      const loadedChats = await fetchChats()
+      setChats(loadedChats)
+      localStorage.setItem('cached_chats', JSON.stringify(loadedChats))
+    } catch (error) {
+      console.error('Ошибка при загрузке чатов:', error)
+    } finally {
+      setIsLoadingChats(false)
+    }
+  }, [])
+
+  useEffect(() => {
+    loadChats()
+  }, [loadChats])
+
+  // Global WebSocket for Real-time Updates (Chat List & Global Events)
+  useEffect(() => {
+    // We can use the token from the hook since this component is wrapped in AuthProvider
+    // But we need to use a ref or ensure we don't reconnect constantly if token object reference changes (rare for string).
+    // Let's use localStorage for stability in this effect or just the prop if it's stable.
+    const storedToken = localStorage.getItem('access_token') // use access_token key as defined in AuthContext
+    if (!storedToken) return
+
+    // Construct WS URL based on API Base URL
+    const apiBase = getApiBaseUrl().replace(/^http/, 'ws')
+    const wsUrl = `${apiBase}/v1/messages/ws?token=${storedToken}`
+
+    const ws = new WebSocket(wsUrl)
+
+    ws.onopen = () => {
+      console.log('Global WS Connected')
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data)
+
+        if (data.type === 'new_message') {
+          // Update Chat List
+          setChats(prevChats => {
+            const chatIndex = prevChats.findIndex(c => c.id === data.chat_id)
+
+            // Если чат уже есть в списке
+            if (chatIndex !== -1) {
+              const updatedChat = { ...prevChats[chatIndex] }
+              updatedChat.last_message = {
+                content: data.content,
+                sent_at: data.sent_at,
+                sender_id: data.sender_id // Important for "You:" prefix
+              }
+              // Увеличиваем счетчик, если чат не открыт прямо сейчас
+              if (selectedChat !== data.chat_id) {
+                updatedChat.unread_count = (updatedChat.unread_count || 0) + 1
+              }
+
+              // Перемещаем чат наверх
+              const newChats = [...prevChats]
+              newChats.splice(chatIndex, 1)
+              return [updatedChat, ...newChats]
+            } else {
+              // Новый чат - загружаем список заново
+              loadChats()
+              return prevChats
+            }
+          })
+        } else if (data.type === 'chat_deleted') {
+          // Remove chat from list
+          setChats(prev => prev.filter(c => c.id !== data.chat_id))
+
+          // If this chat was open, close it (deselect)
+          if (selectedChat === data.chat_id) {
+            const isPrivateDelete = !data.for_everyone
+            // If I deleted it for myself, definitely close.
+            // If someone else deleted it 'for everyone', also close.
+            // In both cases, the chat is gone for me.
+            setSelectedChat(null)
+          }
+        } else if (data.type === 'chat_history_cleared') {
+          // If history cleared, update last message in list to empty/null
+          setChats(prev => prev.map(c => {
+            if (c.id === data.chat_id) {
+              return { ...c, last_message: undefined, unread_count: 0 }
+            }
+            return c
+          }))
+
+          // If open, we might want to clear messages... 
+          // but ChatInterface should handle its own "clear" event if it has a separate WS connection on the chat?
+          // Actually, the global WS event is good enough to reload or clear.
+          // Ideally ChatInterface also listens to this or we emit an event.
+          // Since ChatInterface connects to /messages/ws, it doesn't receive this CHAT level event.
+          // BUT, we changed backend to send to 'user_id' via manager. 
+          // Since manager sends to ALL connections of user, ChatInterface WILL receive this event too.
+        } else if (data.type === 'user_status') {
+          // --- REAL-TIME ONLINE STATUS UPDATE ---
+          const { user_id, is_online } = data
+
+          setChats(prevChats => {
+            return prevChats.map(chat => {
+              // Ищем участника в чате
+              const updatedParticipants = chat.participants.map(p => {
+                if (p.id === user_id) {
+                  return { ...p, is_online: is_online }
+                }
+                return p
+              })
+
+              // Проверяем, изменилось ли что-то (чтобы не триггерить ре-рендер лишний раз)
+              const hasChanged = chat.participants.some((p, index) => p.is_online !== updatedParticipants[index].is_online)
+
+              if (hasChanged) {
+                return { ...chat, participants: updatedParticipants }
+              }
+              return chat
+            })
+          })
+        }
+      } catch (error) {
+        console.error('Global WS Error:', error)
+      }
+    }
+
+    ws.onclose = () => {
+      console.log('Global WS Disconnected')
+    }
+
+    return () => {
+      ws.close()
+    }
+  }, [selectedChat, loadChats])
+
+  // Обработчик создания/открытия чата с пользователем
+  const handleStartChat = async (userId: number) => {
+    try {
+      // Проверяем, есть ли уже чат с этим пользователем
+      const existingChat = findExistingPrivateChat(chats, userId)
+
+      if (existingChat) {
+        // Открываем существующий чат
+        setSelectedChat(existingChat.id)
+      } else {
+        // Создаем новый чат
+        const newChat = await createPrivateChat(userId)
+        setChats(prev => [newChat, ...prev])
+        setSelectedChat(newChat.id)
+      }
+
+      // Закрываем поиск и модальное окно
+      handleSearchClose()
+      setIsCreateChatOpen(false)
+      setActiveNavItem('chats')
+
+    } catch (error) {
+      console.error('Ошибка при создании чата:', error)
+      addToast('Не удалось создать чат', 'error', 3000)
+    }
+  }
+
+  // Обработчик контекстного меню
+  const handleContextMenu = (e: React.MouseEvent, user: any) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setContextMenu({
+      isOpen: true,
+      x: e.clientX,
+      y: e.clientY,
+      user
+    })
+  }
+
+  const handleChatContextMenu = (e: React.MouseEvent, chatId: number, chatName?: string) => {
+    e.preventDefault()
+    e.stopPropagation()
+    setChatContextMenu({
+      isOpen: true,
+      x: e.clientX,
+      y: e.clientY,
+      chatId,
+      chatName
+    })
+  }
+
+  // This is called AFTER successful deletion from ChatContextMenu
+  const handleDeleteChat = (chatId: number) => {
+    setChats(prev => prev.filter(c => c.id !== chatId))
+    if (selectedChat === chatId) {
+      setSelectedChat(null)
+    }
+    // Success toast is shown by context menu or we can show it here if context menu doesn't
+    addToast('Чат удален', 'success')
+  }
+
+  const closeContextMenu = () => {
+    setContextMenu({ isOpen: false, x: 0, y: 0, user: null })
+  }
+
   const hasChats = chats.length > 0
   const hasSelectedChat = selectedChat !== null
 
@@ -568,7 +806,7 @@ const MessengerPage: React.FC = () => {
 
   const userStatus = user?.status_text || null
   const isMinimized = chatsPanelWidth <= MIN_WIDTH
-  const isCompact = false
+  const isCompact = isMinimized // Совпадает с isMinimized для одинакового поведения с профилем
   const avatarUrl = getAvatarUrl(user?.avatar_url)
 
   const isDark = theme === 'dark'
@@ -691,7 +929,7 @@ const MessengerPage: React.FC = () => {
             <div className="mt-3 mb-1 flex-shrink-0">
               <div className="flex items-center py-2 pl-5 pr-3">
                 <div
-                  className={`relative flex-shrink-0 w-10 h-10 cursor-pointer ${isModern && isOnlineState ? 'modern-avatar-ring' : ''}`}
+                  className={`relative flex-shrink-0 w-12 h-12 cursor-pointer ${isModern && isOnlineState ? 'modern-avatar-ring' : ''}`}
                   onClick={() => setIsSettingsOpen(true)}
                 >
                   <div className={`relative w-full h-full rounded-full overflow-hidden ${!isModern ? `border-2 ${isOnlineState ? 'border-green-500/60' : 'border-gray-600/40'}` : ''
@@ -722,7 +960,7 @@ const MessengerPage: React.FC = () => {
                         <DefaultAvatar
                           firstName={user?.first_name || 'П'}
                           lastName={user?.last_name}
-                          size={40}
+                          size={48}
                           className="border-0"
                         />
                       </div>
@@ -863,6 +1101,21 @@ const MessengerPage: React.FC = () => {
                             </svg>
                             Редактировать профиль
                           </button>
+                          <button
+                            onClick={() => {
+                              setIsCreateChatOpen(true)
+                              setIsProfileMenuOpen(false)
+                            }}
+                            className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center gap-2 ${isDark
+                              ? 'text-gray-300 hover:bg-white/5'
+                              : 'text-gray-700 hover:bg-gray-100'
+                              }`}
+                          >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                            </svg>
+                            Создать чат
+                          </button>
                           <div className={`border-t my-1 ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'}`}></div>
                           <button
                             onClick={() => {
@@ -910,7 +1163,7 @@ const MessengerPage: React.FC = () => {
                 className={`transition-colors p-2 ${isDark ? 'text-gray-500 hover:text-primary-300' : 'text-gray-400 hover:text-primary-500'
                   }`}
               >
-                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                 </svg>
               </button>
@@ -996,7 +1249,11 @@ const MessengerPage: React.FC = () => {
               {/* Блок результатов поиска или списка чатов */}
               <div className="chat-list flex-1 overflow-y-auto chat-panel-scrollbar">
                 <div className="py-2 transition-all duration-300 ease-in-out">
-                  {isSearchActive ? (
+                  {isLoadingChats && !isSearchActive ? (
+                    <div className="flex items-center justify-center py-10">
+                      <div className="w-8 h-8 rounded-full border-2 border-primary-500 border-t-transparent animate-spin" />
+                    </div>
+                  ) : isSearchActive ? (
                     activeSearchTab === 'users' ? (
                       <>
                         {isSearching ? (
@@ -1012,6 +1269,8 @@ const MessengerPage: React.FC = () => {
                               return (
                                 <button
                                   key={foundUser.id}
+                                  onClick={() => handleStartChat(foundUser.id)}
+                                  onContextMenu={(e) => handleContextMenu(e, foundUser)}
                                   className={`w-full transition-colors text-left ${isModern
                                     ? 'modern-search-result'
                                     : `px-6 py-3 ${isDark
@@ -1172,36 +1431,101 @@ const MessengerPage: React.FC = () => {
                       </div>
                     )
                   ) : chats.length > 0 ? (
-                    chats.map((_chat, index) => (
-                      <button
-                        key={index}
-                        onClick={() => setSelectedChat(index)}
-                        className={`w-full transition-all duration-300 ease-in-out text-left ${isModern
-                          ? `modern-chat-item ${selectedChat === index ? 'selected' : ''}`
-                          : `${isCompact ? 'px-3 py-2' : 'px-6 py-3'} ${isDark
-                            ? 'hover:bg-primary-500/10'
-                            : 'hover:bg-primary-500/5'
-                          }`
-                          }`}
-                      >
-                        <div className={`flex items-center transition-all duration-300 ease-in-out ${isCompact ? 'gap-2' : 'gap-3'}`}>
-                          <div className="relative">
-                            <div className={`${isCompact ? 'w-10 h-10' : 'w-12 h-12'} rounded-full border-2 flex-shrink-0 transition-all duration-300 ease-in-out ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
-                              }`} />
-                            <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)] transition-all duration-300 ease-in-out"></div>
+                    chats.map((chat) => {
+                      console.log('Rendering chat:', chat)
+                      // Для приватных чатов берем собеседника
+                      const otherUser = chat.chat_type === 'private'
+                        ? chat.participants.find(p => p.id !== user?.id)
+                        : null
+
+                      // Аватар: для приватного чата — аватар собеседника, для группы — аватар группы
+                      const chatAvatarUrl = getAvatarUrl(chat.avatar_url)
+
+                      // Имя чата: для приватного чата — имя собеседника (уже приходит с бэка)
+                      const chatDisplayName = chat.chat_name || 'Чат'
+
+                      // Подсообщение: последнее сообщение или @username
+                      const getSubtitle = () => {
+                        if (chat.last_message?.content) {
+                          return chat.last_message.content
+                        }
+                        // Если нет последнего сообщения — показываем @username
+                        if (otherUser?.username) {
+                          return `@${otherUser.username}`
+                        }
+                        return 'Нет сообщений'
+                      }
+
+                      // Онлайн статус собеседника (только если мы сами в сети)
+                      const isUserOnline = (otherUser?.is_online ?? false) && isOnlineState
+
+                      return (
+                        <button
+                          key={chat.id}
+                          onClick={() => setSelectedChat(chat.id)}
+                          onContextMenu={(e) => handleChatContextMenu(e, chat.id, chatDisplayName)}
+                          className={`w-full transition-all duration-300 ease-in-out text-left relative group ${isModern
+                            ? `modern-chat-item ${selectedChat === chat.id ? 'selected' : ''}`
+                            : `${isCompact ? 'px-2 py-1.5' : 'px-4 py-2'} ${isDark
+                              ? 'hover:bg-primary-500/10'
+                              : 'hover:bg-primary-500/5'
+                            } ${selectedChat === chat.id ? (isDark ? 'bg-primary-500/20' : 'bg-primary-500/15') : ''}`
+                            }`}
+                        >
+                          {/* Индикатор выбранного чата */}
+                          {selectedChat === chat.id && !isModern && (
+                            <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-md"></div>
+                          )}
+                          <div className={`flex items-center transition-all duration-300 ease-in-out ${isCompact ? 'justify-center' : 'gap-3'}`}>
+                            <div className="relative flex-shrink-0">
+                              <div className={`${isCompact ? 'w-10 h-10' : 'w-12 h-12'} rounded-full overflow-hidden border-2 transition-all duration-300 ease-in-out ${isUserOnline
+                                ? 'border-green-500/60'
+                                : isDark ? 'border-gray-700/50' : 'border-gray-300/60'
+                                }`}>
+                                {chatAvatarUrl ? (
+                                  <img
+                                    src={chatAvatarUrl}
+                                    alt={chatDisplayName}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <DefaultAvatar
+                                    firstName={otherUser?.first_name || chatDisplayName.charAt(0)}
+                                    lastName={otherUser?.last_name}
+                                    size={isCompact ? 40 : 48}
+                                  />
+                                )}
+                              </div>
+                              {isUserOnline && (
+                                <div className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)] transition-all duration-300 ease-in-out"></div>
+                              )}
+                            </div>
+                            <div
+                              className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${isCompact || isCompactCollapsing
+                                ? 'opacity-0 max-w-0 overflow-hidden ml-0'
+                                : 'opacity-100 max-w-full ml-0'
+                                }`}
+                            >
+                              <div className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                                {chatDisplayName}
+                              </div>
+                              <div className={`text-sm truncate ${chat.last_message?.content
+                                ? (isDark ? 'text-gray-500' : 'text-gray-500')
+                                : (isDark ? 'text-primary-400' : 'text-primary-500')
+                                }`}>
+                                {getSubtitle()}
+                              </div>
+                            </div>
+                            {/* Время последнего сообщения */}
+                            {!isCompact && chat.last_message?.sent_at && (
+                              <div className={`text-xs flex-shrink-0 ${isDark ? 'text-gray-600' : 'text-gray-400'}`}>
+                                {formatChatTimestamp(chat.last_message.sent_at)}
+                              </div>
+                            )}
                           </div>
-                          <div
-                            className={`flex-1 min-w-0 transition-all duration-300 ease-in-out ${isCompact || isCompactCollapsing
-                              ? 'opacity-0 max-w-0 overflow-hidden'
-                              : 'opacity-100 max-w-full'
-                              }`}
-                          >
-                            <div className={`font-medium truncate ${isDark ? 'text-white' : 'text-gray-900'}`}>Чат {index + 1}</div>
-                            <div className={`text-sm truncate ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>Последнее сообщение...</div>
-                          </div>
-                        </div>
-                      </button>
-                    ))
+                        </button>
+                      )
+                    })
                   ) : (
                     <div className="flex items-center justify-center min-h-[calc(100vh-300px)] w-full">
                       <div className="flex flex-col items-center justify-center text-center">
@@ -1231,15 +1555,59 @@ const MessengerPage: React.FC = () => {
 
           {/* Минимальный вид - только аватарки чатов */}
           {isMinimized && (
-            <div className={`flex-1 flex flex-col items-center py-2 gap-3 overflow-y-auto chat-panel-scrollbar`}>
+            <div className={`flex-1 flex flex-col items-center py-2 gap-2 overflow-y-auto chat-panel-scrollbar`}>
               {chats.length > 0 ? (
-                chats.slice(0, 8).map((_chat, index) => (
-                  <div key={index} className="relative">
-                    <div className={`w-10 h-10 rounded-full border-2 ${isDark ? 'bg-gray-800/50 border-gray-700/50' : 'bg-gray-200/80 border-gray-300/60'
-                      }`}></div>
-                    <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)]"></div>
-                  </div>
-                ))
+                chats.map((chat) => {
+                  // Получаем данные чата так же, как в развернутом виде
+                  const otherUser = chat.chat_type === 'private'
+                    ? chat.participants.find(p => p.id !== user?.id)
+                    : null
+                  const chatAvatarUrl = getAvatarUrl(chat.avatar_url)
+                  const chatDisplayName = chat.chat_name || 'Чат'
+                  // Онлайн статус собеседника (только если мы сами в сети)
+                  const isUserOnline = (otherUser?.is_online ?? false) && isOnlineState
+                  const isSelected = selectedChat === chat.id
+
+                  return (
+                    <button
+                      key={chat.id}
+                      onClick={() => setSelectedChat(chat.id)}
+                      onContextMenu={(e) => handleChatContextMenu(e, chat.id, chatDisplayName)}
+                      className={`relative w-full flex items-center justify-center py-1.5 transition-all duration-200 ${isSelected
+                        ? isDark ? 'bg-primary-500/20' : 'bg-primary-500/15'
+                        : isDark ? 'hover:bg-primary-500/10' : 'hover:bg-primary-500/5'
+                        }`}
+                    >
+                      {/* Индикатор выбранного чата */}
+                      {isSelected && !isModern && (
+                        <div className="absolute left-0 top-0 bottom-0 w-1 bg-blue-500 rounded-r-md"></div>
+                      )}
+                      <div className="relative">
+                        <div className={`w-10 h-10 rounded-full overflow-hidden border-2 ${isUserOnline
+                          ? 'border-green-500/60'
+                          : isDark ? 'border-gray-700/50' : 'border-gray-300/60'
+                          }`}>
+                          {chatAvatarUrl ? (
+                            <img
+                              src={chatAvatarUrl}
+                              alt={chatDisplayName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <DefaultAvatar
+                              firstName={otherUser?.first_name || chatDisplayName.charAt(0)}
+                              lastName={otherUser?.last_name}
+                              size={40}
+                            />
+                          )}
+                        </div>
+                        {isUserOnline && (
+                          <div className="absolute top-0 right-0 w-2 h-2 rounded-full bg-gradient-to-br from-green-400 to-green-500 border border-white/90 shadow-[0_0_0_1.5px_rgba(0,0,0,0.8),0_0_3px_rgba(34,197,94,0.5)]"></div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })
               ) : (
                 <div className="flex flex-col items-center justify-center flex-1 w-full">
                   <div className="flex items-center justify-center mb-2">
@@ -1311,13 +1679,35 @@ const MessengerPage: React.FC = () => {
         </div>
 
         {/* Центральная область - чат, пустое состояние */}
-        <div className={`message-area flex-1 flex items-center justify-center relative ${isModern ? 'modern-message-area' : ''}
+        <div className={`message-area flex-1 flex relative ${!hasSelectedChat ? 'items-center justify-center' : ''} ${isModern ? 'modern-message-area' : ''}
           `}>
           {hasSelectedChat ? (
-            // TODO: Область открытого чата
-            <div className="text-center">
-              <p className={isDark ? 'text-gray-500' : 'text-gray-500'}>Чат открыт</p>
-            </div>
+            // Область открытого чата
+            <ChatInterface
+              chatId={selectedChat}
+              initialData={(() => {
+                const chat = chats.find(c => c.id === selectedChat)
+                if (!chat) return undefined
+
+                const otherUser = chat.chat_type === 'private'
+                  ? chat.participants.find(p => p.id !== user?.id)
+                  : null
+
+                // Для приватных чатов используем аватар собеседника, иначе аватар группы
+                const avatarToUse = chat.chat_type === 'private'
+                  ? otherUser?.avatar_url
+                  : chat.avatar_url
+
+                return {
+                  title: chat.chat_name || 'Чат',
+                  avatarUrl: avatarToUse || null,
+                  isOnline: (otherUser?.is_online === true) && isOnlineState, // Явное сравнение + проверка сети
+                  type: chat.chat_type as 'private' | 'group'
+                }
+              })()}
+              isAppOnline={isOnlineState}
+              onClose={() => setSelectedChat(null)}
+            />
           ) : hasChats ? (
             // Есть чаты, но ни один не выбран
             <div className="text-center px-8">
@@ -1342,6 +1732,29 @@ const MessengerPage: React.FC = () => {
                 </h2>
                 <p className={`text-lg ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
                   Выберите чат, чтобы начать общаться
+                </p>
+              </div>
+            </div>
+          ) : !isOnlineState ? (
+            // Нет подключения
+            <div className="text-center px-8">
+              <div className="max-w-md mx-auto">
+                <div className="mb-6">
+                  <svg
+                    className={`w-24 h-24 mx-auto ${isDark ? 'text-gray-700' : 'text-gray-400'}`}
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01" />
+                  </svg>
+                </div>
+                <h2 className={`text-2xl font-semibold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Нет подключения
+                </h2>
+                <p className={`text-lg ${isDark ? 'text-gray-500' : 'text-gray-500'}`}>
+                  Проверьте ваше интернет-соединение
                 </p>
               </div>
             </div>
@@ -1396,12 +1809,42 @@ const MessengerPage: React.FC = () => {
       </div>
 
       {/* Модальное окно настроек */}
+      <ChatContextMenu
+        isOpen={chatContextMenu.isOpen}
+        x={chatContextMenu.x}
+        y={chatContextMenu.y}
+        chatId={chatContextMenu.chatId!}
+        chatName={chatContextMenu.chatName}
+        onClose={() => setChatContextMenu(prev => ({ ...prev, isOpen: false }))}
+        onDeleteChat={handleDeleteChat}
+      />
+
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={handleCloseSettings}
         activeTab={settingsActiveTab}
         onTabChange={setSettingsActiveTab}
       />
+
+      {/* Модальное окно создания чата */}
+      <CreateChatModal
+        isOpen={isCreateChatOpen}
+        onClose={() => setIsCreateChatOpen(false)}
+        onUserSelected={handleStartChat}
+      />
+
+      {/* Контекстное меню для пользователей */}
+      {contextMenu.user && (
+        <UserContextMenu
+          isOpen={contextMenu.isOpen}
+          x={contextMenu.x}
+          y={contextMenu.y}
+          user={contextMenu.user}
+          onClose={closeContextMenu}
+          onSendMessage={handleStartChat}
+          onCopyUsername={(username) => copyUsername(username)}
+        />
+      )}
 
     </div>
   )

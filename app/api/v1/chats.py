@@ -35,13 +35,25 @@ def _format_chat_response(chat: models.Chat, current_user_id: int) -> schemas.Ch
         else:
             display_name = "Неизвестный"
 
+    # Формируем список участников с актуальным онлайн-статусом из WebSocket менеджера
+    participants_list = []
+    
+    # Ленивый импорт внутри функции или в начале файла (лучше в начале, но тут уже есть импорт в конце файла)
+    from app.services.connection_manager import manager
+    
+    for p in participants:
+        p_dto = schemas.UserPublic.from_orm(p)
+        # ЖЕСТКАЯ ПРОВЕРКА: Онлайн только если есть активное соединение
+        p_dto.is_online = manager.is_user_online(p.id)
+        participants_list.append(p_dto)
+
     return schemas.Chat(
         id=chat.id,
         chat_type=chat.chat_type,
         chat_name=display_name,   # Итоговое имя
         avatar_url=display_avatar, # Итоговая аватарка
         owner_id=chat.owner_id,
-        participants=[schemas.UserPublic.from_orm(p) for p in participants]
+        participants=participants_list
     )
 
 
@@ -148,8 +160,11 @@ def rename_chat(
     return {"message": "Chat renamed successfully"}
 
 
+# from app.services.connection_manager import manager # Уже импортировали внутри, или перенесем в начало
+from app.services.connection_manager import manager
+
 @router.delete("/{chat_id}", status_code=status.HTTP_200_OK)
-def delete_chat_endpoint(
+async def delete_chat_endpoint(
     chat_id: int,
     for_everyone: bool = Query(False), # ?for_everyone=true/false
     current_user: models.User = Depends(get_current_active_user),
@@ -160,12 +175,24 @@ def delete_chat_endpoint(
     - for_everyone=false (default): Удалить у себя (выйти).
     - for_everyone=true: Удалить у всех (удалить чат физически).
     """
-    chat_service.delete_chat(db, chat_id, current_user.id, for_everyone)
+    affected_users = chat_service.delete_chat(db, chat_id, current_user.id, for_everyone)
+    
+    # Отправляем уведомления
+    notify_payload = {
+        "type": "chat_deleted",
+        "chat_id": chat_id,
+        "for_everyone": for_everyone
+    }
+    
+    for uid in affected_users:
+        if manager.is_user_online(uid):
+            await manager.send_personal_message(notify_payload, uid)
+            
     return {"message": "Chat deleted"}
 
 
 @router.delete("/{chat_id}/messages", status_code=status.HTTP_200_OK)
-def clear_history_endpoint(
+async def clear_history_endpoint(
     chat_id: int,
     for_everyone: bool = Query(False),
     current_user: models.User = Depends(get_current_active_user),
@@ -176,7 +203,18 @@ def clear_history_endpoint(
     - for_everyone=false: Скрыть старые сообщения только для себя.
     - for_everyone=true: Удалить сообщения физически.
     """
-    chat_service.clear_chat_history(db, chat_id, current_user.id, for_everyone)
+    affected_users = chat_service.clear_chat_history(db, chat_id, current_user.id, for_everyone)
+    
+    notify_payload = {
+        "type": "chat_history_cleared",
+        "chat_id": chat_id,
+        "for_everyone": for_everyone
+    }
+    
+    for uid in affected_users:
+        if manager.is_user_online(uid):
+            await manager.send_personal_message(notify_payload, uid)
+            
     return {"message": "History cleared"}
 
 @router.delete("/{chat_id}/avatar", response_model=schemas.Chat)

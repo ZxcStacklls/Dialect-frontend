@@ -99,12 +99,21 @@ class MessageBase(BaseModel):
 class MessageCreate(BaseModel):
     chat_id: int
     content: bytes
-    # ⭐ НОВОЕ: Тип сообщения (по умолчанию text)
+    # Тип сообщения (по умолчанию text)
     message_type: MessageTypeEnum = MessageTypeEnum.text
+    # Ответ на сообщение (опционально)
+    reply_to_id: Optional[int] = None
 
 class MessageUpdate(BaseModel):
     message_id: int
     content: bytes
+
+# Schema for replied message info
+class ReplyInfo(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+    id: int
+    content: bytes
+    sender_id: Optional[int] = None
 
 class Message(MessageBase):
     model_config = ConfigDict(from_attributes=True)
@@ -115,6 +124,9 @@ class Message(MessageBase):
     status: MessageStatusEnum
     is_pinned: bool = False
     message_type: MessageTypeEnum
+    reply_to_id: Optional[int] = None
+    reply_to: Optional[ReplyInfo] = None  # Replied message info
+    is_edited: bool = False
 
 # --- Auth ---
 class Token(BaseModel):

@@ -80,6 +80,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('access_token')
     localStorage.removeItem('refresh_token')
     localStorage.removeItem(USER_STORAGE_KEY)
+    localStorage.removeItem('cached_chats')
+    // Clear all cached messages
+    Object.keys(localStorage).forEach(key => {
+      if (key.startsWith('cached_messages_')) {
+        localStorage.removeItem(key)
+      }
+    })
     setToken(null)
     setUser(null)
     // Редирект на страницу логина

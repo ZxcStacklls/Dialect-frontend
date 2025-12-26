@@ -5,6 +5,7 @@ import { useAppearance, CompactMode, ThemeMode, DesignStyle, NavPosition, ChatsP
 import { useToast } from '../contexts/ToastContext'
 import { authAPI } from '../api/auth'
 import DefaultAvatar from './DefaultAvatar'
+import AvatarUpload from './AvatarUpload'
 import SessionsTab from './SessionsTab'
 import { getApiBaseUrl } from '../utils/platform'
 import { parsePhoneNumberFromString } from 'libphonenumber-js'
@@ -1611,7 +1612,7 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
             <div className={`px-6 py-4 border-t ${isDark ? 'border-gray-800/50' : 'border-gray-200'}`}>
               <div className="flex items-center gap-3">
                 <div className="relative flex-shrink-0 w-10 h-10">
-                  <div className={`relative w-full h-full rounded-full overflow-hidden border-2 ${isDark ? 'border-gray-700' : 'border-gray-300'
+                  <div className={`relative w-full h-full rounded-full overflow-hidden border-2 flex items-center justify-center ${isDark ? 'border-gray-700' : 'border-gray-300'
                     }`}>
                     {user?.avatar_url && avatarUrl && !avatarError ? (
                       <img
@@ -1697,42 +1698,42 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
                       Аватар
                     </label>
                     <div className="flex items-center gap-6">
-                      <div className="relative w-24 h-24 rounded-full overflow-hidden border-2 border-gray-300">
-                        {user?.avatar_url && avatarUrl && !avatarError ? (
-                          <img
-                            src={avatarUrl}
-                            alt={`${user?.first_name} ${user?.last_name || ''}`}
-                            className="w-full h-full object-cover"
-                            onError={() => setAvatarError(true)}
-                            onLoad={() => setAvatarError(false)}
-                          />
-                        ) : (
-                          <DefaultAvatar
-                            firstName={user?.first_name || 'П'}
-                            lastName={user?.last_name}
-                            size={96}
-                            className="border-0"
-                          />
-                        )}
-                      </div>
-                      <div className="flex flex-col gap-2">
-                        <button
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark
-                            ? 'bg-primary-500 text-white hover:bg-primary-600'
-                            : 'bg-primary-500 text-white hover:bg-primary-600'
-                            }`}
-                        >
-                          Загрузить фото
-                        </button>
-                        <button
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark
-                            ? 'text-gray-400 hover:text-white hover:bg-gray-800/50'
-                            : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
-                            }`}
-                        >
-                          Удалить фото
-                        </button>
-                      </div>
+                      <AvatarUpload
+                        size={24}
+                        currentImage={avatarUrl || undefined}
+                        onImageChange={async (file) => {
+                          if (file) {
+                            try {
+                              setIsSaving(true)
+                              await authAPI.uploadAvatar(file)
+                              await refreshUser()
+                              setAvatarError(false)
+                              addToast('Аватар успешно загружен', 'success')
+                            } catch (error) {
+                              console.error('Failed to upload avatar:', error)
+                              addToast('Ошибка при загрузке аватара', 'error')
+                            } finally {
+                              setIsSaving(false)
+                            }
+                          } else {
+                            // Удаление аватара
+                            try {
+                              setIsSaving(true)
+                              await authAPI.deleteAvatar()
+                              await refreshUser()
+                              setAvatarError(false)
+                              addToast('Аватар удалён', 'success')
+                            } catch (error) {
+                              console.error('Failed to delete avatar:', error)
+                              addToast('Ошибка при удалении аватара', 'error')
+                            } finally {
+                              setIsSaving(false)
+                            }
+                          }
+                        }}
+                        validationError={avatarError ? 'Ошибка загрузки' : null}
+                        layout="horizontal"
+                      />
                     </div>
                   </div>
 

@@ -43,7 +43,8 @@ def create_message(
         sender_id=sender_id,
         content=msg_data.content,
         message_type=msg_data.message_type,
-        status=models.MessageStatusEnum.sent
+        status=models.MessageStatusEnum.sent,
+        reply_to_id=msg_data.reply_to_id  # Ответ на сообщение
     )
     
     db.add(db_msg)
@@ -51,9 +52,15 @@ def create_message(
     db.refresh(db_msg)
     return db_msg
 
+from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import update, and_, func
+
+# ... (imports)
+
 def get_chat_history(db: Session, chat_id: int, user_id: int, limit: int = 50, offset: int = 0) -> List[models.Message]:
     participant = check_is_participant(db, chat_id, user_id)
-    query = db.query(models.Message).filter(models.Message.chat_id == chat_id)
+    # Eager load reply_to to ensure it's available for serialization
+    query = db.query(models.Message).options(joinedload(models.Message.reply_to)).filter(models.Message.chat_id == chat_id)
     if participant.last_cleared_at:
         query = query.filter(models.Message.sent_at > participant.last_cleared_at)
     return query.order_by(models.Message.sent_at.desc()).limit(limit).offset(offset).all()
@@ -125,6 +132,7 @@ def update_message(db: Session, message_id: int, user_id: int, new_content: byte
     if not message: return None
     if message.sender_id != user_id: return False
     message.content = new_content
+    message.is_edited = True  # Помечаем как отредактированное
     db.commit()
     db.refresh(message)
     return message

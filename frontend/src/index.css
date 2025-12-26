@@ -1935,3 +1935,20 @@
     border-top-right-radius: 16px;
   }
 }
+
+/* Анимация подпрыгивания точек (как в Telegram при отправке/печати) */
+@keyframes bounceSlight {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
+.animate-bounce-slight {
+  animation: bounceSlight 1s infinite ease-in-out;
+}

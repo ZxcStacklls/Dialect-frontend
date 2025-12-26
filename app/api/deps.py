@@ -123,13 +123,12 @@ def get_current_user_and_session(
 
 
 def get_current_active_user(
-        current_user: models.User = Depends(get_current_user)
+        current_user: models.User = Depends(get_current_user),
+        db: Session = Depends(database.get_db)
 ) -> models.User:
     """
-    Эта зависимость просто вызывает get_current_user.
-    В будущем сюда можно добавить проверку (if not current_user.is_active: ...).
-    Пока она просто для красоты и правильной архитектуры.
+    Эта зависимость вызывает get_current_user и обновляет last_seen для актуального статуса онлайн.
     """
-    # if not current_user.is_active:
-    #     raise HTTPException(status_code=400, detail="Inactive user")
+    # Обновляем last_seen при каждом запросе
+    user_service.update_last_seen(db, current_user.id)
     return current_user

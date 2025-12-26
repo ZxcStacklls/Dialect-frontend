@@ -41,7 +41,9 @@ def _delete_old_file(file_url: str):
 
 def _validate_image(file: UploadFile, target_width: int, target_height: int):
     """
-    Проверяет размер, формат и разрешение изображения.
+    Проверяет размер, формат изображения.
+    Если изображение слишком большое - уменьшает его.
+    Возвращает BytesIO с обработанным изображением.
     """
     # 1. Проверка размера файла (читаем в память)
     file.file.seek(0, os.SEEK_END)
@@ -64,17 +66,25 @@ def _validate_image(file: UploadFile, target_width: int, target_height: int):
              
         width, height = image.size
         
-        # ⭐ ИЗМЕНЕНИЕ ЗДЕСЬ:
-        # Было: if width != target_width or height != target_height: (Строгое равенство)
-        # Стало: Проверяем, чтобы картинка не превышала лимиты
+        # Если картинка слишком большая - уменьшаем
         if width > target_width or height > target_height:
-             raise HTTPException(
-                 status_code=400, 
-                 detail=f"Изображение слишком большое. Максимальное разрешение {target_width}x{target_height}px. (Загружено: {width}x{height}px)"
-             )
-             
-        file.file.seek(0)
+            # Вычисляем коэффициент масштабирования
+            ratio = min(target_width / width, target_height / height)
+            new_width = int(width * ratio)
+            new_height = int(height * ratio)
+            image = image.resize((new_width, new_height), Image.Resampling.LANCZOS)
         
+        # Конвертируем в RGB если нужно (для JPEG)
+        if image.mode in ('RGBA', 'P'):
+            image = image.convert('RGB')
+        
+        # Сохраняем в BytesIO
+        output = io.BytesIO()
+        image.save(output, format='JPEG', quality=90)
+        output.seek(0)
+        
+        return output
+             
     except UnidentifiedImageError:
         raise HTTPException(status_code=400, detail="Файл не является корректным изображением.")
         
@@ -205,10 +215,14 @@ def search_users(
 
 # --- UPDATE ---
 
-def update_last_seen(db: Session, user_id: int):
+def update_last_seen(db: Session, user_id: int, force_offline: bool = False):
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if user:
-        user.last_seen_at = func.now()
+        if force_offline:
+            # Сдвигаем время назад на 6 минут, чтобы is_online (< 5 мин) стало False
+            user.last_seen_at = datetime.utcnow() - timedelta(minutes=6)
+        else:
+            user.last_seen_at = func.now()
         db.commit()
 
 def update_user_profile(db: Session, user_id: int, update_data: schemas.UserUpdate) -> models.User:
@@ -230,24 +244,23 @@ def update_user_profile(db: Session, user_id: int, update_data: schemas.UserUpda
     return user
 
 def upload_avatar(db: Session, user_id: int, file: UploadFile) -> str:
-    """Загрузка аватарки пользователя (1024x1024)."""
+    """Загрузка аватарки пользователя (макс 1024x1024)."""
     user = get_user(db, user_id)
     
-    # 1. Валидация (1024x1024)
-    _validate_image(file, target_width=1024, target_height=1024)
+    # 1. Валидация и обработка (resize если нужно)
+    processed_image = _validate_image(file, target_width=1024, target_height=1024)
 
     # 2. Удаление старой аватарки
     if user.avatar_url:
         _delete_old_file(user.avatar_url)
 
-    # 3. Сохранение новой
+    # 3. Сохранение новой (всегда .jpg так как конвертируем в JPEG)
     if not os.path.exists("uploads"): os.makedirs("uploads")
-    file_ext = file.filename.split(".")[-1]
-    file_name = f"avatar_{user_id}_{uuid.uuid4()}.{file_ext}"
+    file_name = f"avatar_{user_id}_{uuid.uuid4()}.jpg"
     file_path = f"uploads/{file_name}"
     
     with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        shutil.copyfileobj(processed_image, buffer)
         
     url = f"/static/{file_name}"
     user.avatar_url = url
@@ -256,24 +269,23 @@ def upload_avatar(db: Session, user_id: int, file: UploadFile) -> str:
     return url
 
 def upload_banner(db: Session, user_id: int, file: UploadFile) -> str:
-    """Загрузка баннера (1024x345)."""
+    """Загрузка баннера (макс 1024x345)."""
     user = get_user(db, user_id)
     
-    # 1. Валидация (1024x345)
-    _validate_image(file, target_width=1024, target_height=345)
+    # 1. Валидация и обработка (resize если нужно)
+    processed_image = _validate_image(file, target_width=1024, target_height=345)
 
     # 2. Удаление старого баннера
     if user.banner_url:
         _delete_old_file(user.banner_url)
 
-    # 3. Сохранение
+    # 3. Сохранение (всегда .jpg)
     if not os.path.exists("uploads"): os.makedirs("uploads")
-    file_ext = file.filename.split(".")[-1]
-    file_name = f"banner_{user_id}_{uuid.uuid4()}.{file_ext}"
+    file_name = f"banner_{user_id}_{uuid.uuid4()}.jpg"
     file_path = f"uploads/{file_name}"
     
     with open(file_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+        shutil.copyfileobj(processed_image, buffer)
         
     url = f"/static/{file_name}"
     user.banner_url = url

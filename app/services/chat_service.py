@@ -216,37 +216,63 @@ def update_chat_name(db: Session, chat_id: int, new_name: str, requester_id: int
     db.commit()
     return True
 
-def delete_chat(db: Session, chat_id: int, user_id: int, for_everyone: bool):
+def delete_chat(db: Session, chat_id: int, user_id: int, for_everyone: bool) -> List[int]:
+    """
+    Удаляет чат и возвращает список ID пользователей, которых нужно уведомить.
+    """
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id).first()
     if not chat: raise HTTPException(404, "Chat not found")
+    
+    affected_users = []
+
     if for_everyone:
         if chat.chat_type == models.ChatTypeEnum.group and chat.owner_id != user_id:
             raise HTTPException(403, "Owner only")
         if chat.chat_type == models.ChatTypeEnum.private and not db.query(models.ChatParticipant).filter_by(chat_id=chat_id, user_id=user_id).first():
             raise HTTPException(403, "Not member")
+            
+        # Собираем всех участников для уведомления
+        participants = db.query(models.ChatParticipant).filter(models.ChatParticipant.chat_id == chat_id).all()
+        affected_users = [p.user_id for p in participants]
+        
         db.delete(chat)
     else:
         part = db.query(models.ChatParticipant).filter_by(chat_id=chat_id, user_id=user_id).first()
-        if part: db.delete(part)
+        if part: 
+            db.delete(part)
+            affected_users = [user_id]
+            
     db.commit()
-    return True
+    return affected_users
 
-def clear_chat_history(db: Session, chat_id: int, user_id: int, for_everyone: bool):
+def clear_chat_history(db: Session, chat_id: int, user_id: int, for_everyone: bool) -> List[int]:
+    """
+    Очищает историю и возвращает список ID пользователей для уведомления.
+    """
     chat = db.query(models.Chat).filter(models.Chat.id == chat_id).first()
     if not chat: raise HTTPException(404, "Chat not found")
     
-    # Тут надо импортировать message_service внутри функции или в начале файла
     from app.services import message_service 
     
+    affected_users = []
+
     if for_everyone:
         if chat.chat_type == models.ChatTypeEnum.group and chat.owner_id != user_id:
              raise HTTPException(403, "Owner only")
         if not db.query(models.ChatParticipant).filter_by(chat_id=chat_id, user_id=user_id).first():
              raise HTTPException(403, "Not member")
+             
         message_service.delete_all_messages_in_chat(db, chat_id)
+        
+        # Уведомляем всех участников
+        participants = db.query(models.ChatParticipant).filter(models.ChatParticipant.chat_id == chat_id).all()
+        affected_users = [p.user_id for p in participants]
+
     else:
         part = db.query(models.ChatParticipant).filter_by(chat_id=chat_id, user_id=user_id).first()
         if not part: raise HTTPException(404, "Not member")
         part.last_cleared_at = func.now()
+        affected_users = [user_id]
+        
         db.commit()
-    return True
+    return affected_users
