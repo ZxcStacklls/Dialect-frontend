@@ -292,7 +292,7 @@ const SignUpPage = () => {
     const maxLength = formData.country.maxLength
 
     // Placeholder в зависимости от страны
-    if (dialCode === '+7') return '0 00 000 00 00'
+    if (dialCode === '+7') return '000 000 00 00'
     if (dialCode === '+375') return '00 000-00-00'
     if (dialCode === '+996') return '000 000-000'
     if (dialCode === '+992') return '00 000-00-00'

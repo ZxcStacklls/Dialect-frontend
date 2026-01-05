@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="ru">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Signal Background Test - Dialect</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            width: 100vw;
+            height: 100vh;
+            overflow: hidden;
+            background: #0a0f1a;
+        }
+
+        .background-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .bottom-fade {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 35%;
+            background: linear-gradient(to bottom, transparent 0%, #0a0f1a 100%);
+            pointer-events: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="background-container">
+        <canvas id="canvas"></canvas>
+        <div class="bottom-fade"></div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Saved settings from user
+        const config = {
+            lineCount: 50,
+            speedMultiplier: 1,
+            signalDensity: 20,
+            backgroundColor: '#0a0f1a',
+            lineWidth: 1,
+            // Geometry parameters (saved values)
+            angleMultiplier: 1,
+            arcCurvature: 2.3,
+            arcAngle: 120,
+            totalSpan: 0.58,
+            centerX: 0.5,
+            centerY: 0.5,
+            lineOpacity: 0.35,
+        };
+
+        let lines = [];
+        let signals = [];
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            initLines();
+        }
+
+        function initLines() {
+            lines = [];
+            const w = canvas.width;
+            const h = canvas.height;
+
+            // Base angle for diagonal lines
+            const angle = Math.atan2(h * config.angleMultiplier, w);
+            const cosA = Math.cos(angle);
+            const sinA = Math.sin(angle);
+            const perpX = -sinA;
+            const perpY = cosA;
+
+            const diagonal = Math.sqrt(w * w + h * h);
+            const lineLength = diagonal * 2.5;
+
+            const totalSpan = (w + h) * config.totalSpan;
+            const spacing = totalSpan / config.lineCount;
+
+            // arcCurvature controls wave amplitude (higher = more curve)
+            const waveAmplitude = config.arcCurvature * 300;
+            // arcAngle controls how "sharp" the curve is
+            const sharpness = config.arcAngle / 70;
+
+            const centerX = w * config.centerX;
+            const centerY = h * config.centerY;
+
+            for (let i = 0; i < config.lineCount; i++) {
+                const perpOffset = (i - config.lineCount / 2) * spacing;
+                const lineCenterX = centerX + perpX * perpOffset;
+                const lineCenterY = centerY + perpY * perpOffset;
+
+                const points = [];
+                const segments = 400;
+
+                for (let j = 0; j <= segments; j++) {
+                    const t = j / segments;
+                    const alongLine = (t - 0.5) * lineLength;
+
+                    const baseX = lineCenterX + cosA * alongLine;
+                    const baseY = lineCenterY + sinA * alongLine;
+
+                    // Enhanced curve: use power function for sharper center curve
+                    const curveT = (t - 0.5) * 2; // -1 to 1
+                    const curvedT = Math.sign(curveT) * Math.pow(Math.abs(curveT), sharpness);
+                    const waveOffset = curvedT * waveAmplitude;
+
+                    const x = baseX + perpX * waveOffset;
+                    const y = baseY + perpY * waveOffset;
+
+                    points.push({ x, y });
+                }
+
+                lines.push({ points });
+            }
+
+            initSignals();
+        }
+
+        function initSignals() {
+            signals = [];
+            for (let i = 0; i < config.signalDensity; i++) {
+                tryCreateSignal(Math.random());
+            }
+        }
+
+        const signalGradient = [
+            { r: 245, g: 240, b: 255 },
+            { r: 216, g: 180, b: 254 },
+            { r: 168, g: 85, b: 247 },
+            { r: 100, g: 40, b: 200 }
+        ];
+
+        function tryCreateSignal(startProgress = null) {
+            let attempts = 0;
+            let lineIndex = -1;
+
+            while (attempts < 15) {
+                const candidate = Math.floor(Math.random() * lines.length);
+                const signalsOnLine = signals.filter(s => s.lineIndex === candidate);
+
+                if (signalsOnLine.length === 0) {
+                    lineIndex = candidate;
+                    break;
+                } else {
+                    const isSafe = signalsOnLine.every(s => {
+                        const dist = Math.abs((startProgress ?? 0) - s.progress);
+                        return dist > 0.3;
+                    });
+                    if (isSafe) {
+                        lineIndex = candidate;
+                        break;
+                    }
+                }
+                attempts++;
+            }
+
+            if (lineIndex !== -1) {
+                createSignal(lineIndex, startProgress);
+            }
+        }
+
+        function createSignal(lineIndex, startProgress = null) {
+            let progress = startProgress !== null ? startProgress : -0.1;
+
+            const speedFactor = 0.0008 + Math.random() * 0.0012;
+            const tailLength = Math.max(5, speedFactor * 12000);
+
+            signals.push({
+                lineIndex,
+                progress: progress,
+                speed: speedFactor * config.speedMultiplier,
+                baseSpeed: speedFactor,
+                tailLength: tailLength,
+                opacity: 0.5 + Math.random() * 0.5,
+            });
+        }
+
+        function lerp(start, end, t) {
+            return start * (1 - t) + end * t;
+        }
+
+        function lerpColor(c1, c2, t) {
+            return {
+                r: Math.round(c1.r + (c2.r - c1.r) * t),
+                g: Math.round(c1.g + (c2.g - c1.g) * t),
+                b: Math.round(c1.b + (c2.b - c1.b) * t)
+            };
+        }
+
+        function getGradientColor(t) {
+            const stops = signalGradient.length - 1;
+            const scaledT = t * stops;
+            const index = Math.floor(scaledT);
+            const remainder = scaledT - index;
+            if (index >= stops) return signalGradient[stops];
+            return lerpColor(signalGradient[index], signalGradient[index + 1], remainder);
+        }
+
+        function drawLines() {
+            ctx.strokeStyle = `rgba(100, 120, 160, ${config.lineOpacity})`;
+            ctx.lineWidth = config.lineWidth;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+
+            lines.forEach(line => {
+                const points = line.points;
+                if (points.length < 2) return;
+
+                ctx.beginPath();
+                ctx.moveTo(points[0].x, points[0].y);
+                for (let i = 1; i < points.length; i++) {
+                    ctx.lineTo(points[i].x, points[i].y);
+                }
+                ctx.stroke();
+            });
+        }
+
+        function drawSignals() {
+            const toRemove = [];
+
+            signals.forEach((signal, index) => {
+                const line = lines[signal.lineIndex];
+                if (!line) {
+                    toRemove.push(index);
+                    return;
+                }
+
+                // Collision Logic
+                const signalsOnSameLine = signals.filter((s, i) => s.lineIndex === signal.lineIndex && i !== index);
+                let currentSpeed = signal.baseSpeed * config.speedMultiplier;
+
+                let minDist = 100;
+                let nearestAhead = null;
+
+                signalsOnSameLine.forEach(other => {
+                    let dist = other.progress - signal.progress;
+                    if (dist > 0 && dist < minDist) {
+                        minDist = dist;
+                        nearestAhead = other;
+                    }
+                });
+
+                if (nearestAhead && minDist < 0.05) {
+                    currentSpeed = Math.min(currentSpeed, nearestAhead.speed);
+                }
+
+                signal.speed = currentSpeed;
+
+                const points = line.points;
+                const totalPoints = points.length;
+
+                const dynamicTail = Math.max(5, currentSpeed * 12000 / config.speedMultiplier);
+
+                const floatIndex = signal.progress * (totalPoints - 1);
+
+                if (signal.progress > 1.05) {
+                    toRemove.push(index);
+                    signal.progress += signal.speed;
+                    return;
+                }
+                if (floatIndex < 0) {
+                    signal.progress += signal.speed;
+                    return;
+                }
+
+                const headIndex = Math.floor(floatIndex);
+                if (headIndex >= totalPoints - 1) {
+                    signal.progress += signal.speed;
+                    return;
+                }
+
+                const t = floatIndex - headIndex;
+
+                const p1 = points[headIndex];
+                const p2 = points[headIndex + 1];
+                const headX = lerp(p1.x, p2.x, t);
+                const headY = lerp(p1.y, p2.y, t);
+
+                const tailSegments = Math.min(Math.floor(dynamicTail), headIndex);
+
+                ctx.lineCap = 'butt';
+                ctx.lineJoin = 'round';
+
+                for (let i = 0; i < tailSegments; i++) {
+                    const idx = headIndex - i;
+                    if (idx <= 0) break;
+
+                    const ptA = points[idx];
+                    const ptB = points[idx - 1];
+
+                    const gradientPos = i / dynamicTail;
+                    const color = getGradientColor(gradientPos);
+
+                    const fadeProgress = 1 - gradientPos;
+                    const alpha = fadeProgress * signal.opacity;
+
+                    ctx.strokeStyle = `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})`;
+                    ctx.lineWidth = config.lineWidth * 1.5;
+
+                    ctx.beginPath();
+                    if (i === 0) {
+                        ctx.moveTo(headX, headY);
+                        ctx.lineTo(ptA.x, ptA.y);
+                    } else {
+                        ctx.moveTo(ptA.x, ptA.y);
+                    }
+                    ctx.lineTo(ptB.x, ptB.y);
+                    ctx.stroke();
+                }
+
+                ctx.fillStyle = `rgba(${signalGradient[0].r}, ${signalGradient[0].g}, ${signalGradient[0].b}, ${signal.opacity})`;
+                ctx.beginPath();
+                ctx.arc(headX, headY, config.lineWidth * 0.8, 0, Math.PI * 2);
+                ctx.fill();
+
+                signal.progress += signal.speed;
+            });
+
+            toRemove.sort((a, b) => b - a).forEach(index => {
+                signals.splice(index, 1);
+                tryCreateSignal(-0.02);
+            });
+
+            while (signals.length < config.signalDensity) {
+                tryCreateSignal(-0.05);
+            }
+        }
+
+        function animate() {
+            ctx.fillStyle = config.backgroundColor;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            drawLines();
+            drawSignals();
+            requestAnimationFrame(animate);
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+        animate();
+    </script>
+</body>
+
+</html>
