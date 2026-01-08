@@ -234,7 +234,7 @@ const AppearanceTab: React.FC<{
   ]
 
   const designStyleOptions: { value: DesignStyle; label: string; desc: string }[] = [
-    { value: 'default', label: 'Стандартный', desc: 'Классический стиль Dialect' },
+    { value: 'default', label: 'Стандартный', desc: 'Классический стиль Nayte' },
     { value: 'modern', label: 'Современный', desc: 'Liquid Glass, Glassmorphism и прозрачность' },
   ]
 

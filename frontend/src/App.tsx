@@ -11,21 +11,16 @@ import SignUpPage from './pages/SignUpPage'
 import Dashboard from './pages/Dashboard'
 import MessengerPage from './pages/MessengerPage'
 import ProtectedRoute from './components/ProtectedRoute'
-import ParticleBackground from './components/ParticleBackground'
+// import ParticleBackground from './components/ParticleBackground' unused
 
 // Компонент для определения, показывать ли ParticleBackground
 const AppContent = () => {
   const location = useLocation()
-  const isAuthPage = location.pathname === '/' ||
-    location.pathname === '/login' ||
-    location.pathname === '/signup'
+  const isAuthPage = ['/', '/login', '/signup', '/welcome'].includes(location.pathname)
 
   return (
-    <div className="app-content">
+    <div className={`app-content ${isAuthPage ? '!mt-0 !h-screen' : ''}`}>
       {/* Глобальный анимированный фон (только на страницах авторизации) */}
-      {isAuthPage && (
-        <ParticleBackground particleCount={60} connectionDistance={120} />
-      )}
       <Routes>
         <Route path="/" element={<WelcomePage />} />
         <Route path="/login" element={<LoginPage />} />

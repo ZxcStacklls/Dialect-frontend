@@ -38,7 +38,7 @@ interface AuthProviderProps {
   children: ReactNode
 }
 
-const USER_STORAGE_KEY = 'dialect_user_data'
+const USER_STORAGE_KEY = 'nayte_user_data'
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {

@@ -18,7 +18,7 @@ function createWindow() {
     height: 800,
     minWidth: 800,
     minHeight: 600,
-    icon: path.join(__dirname, '../public/appicon_gradient.png'),
+    icon: path.join(__dirname, '../public/nayte_icon.png'),
     frame: false, // Убираем стандартную рамку Windows
     titleBarStyle: 'hidden', // Скрываем стандартный titlebar
     backgroundColor: '#111827', // Цвет фона до загрузки контента

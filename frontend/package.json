@@ -1,5 +1,5 @@
 {
-  "name": "dialect-frontend",
+  "name": "nayte-frontend",
   "version": "1.0.0",
   "type": "module",
   "main": "electron/main.cjs",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "axios": "^1.6.2",
+    "framer-motion": "^12.24.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-router-dom": "^6.20.0"
@@ -42,8 +43,8 @@
     "wait-on": "^9.0.3"
   },
   "build": {
-    "appId": "com.dialect.messenger",
-    "productName": "Dialect",
+    "appId": "com.nayte.messenger",
+    "productName": "Nayte",
     "directories": {
       "output": "release"
     },
@@ -57,10 +58,12 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64"]
+          "arch": [
+            "x64"
+          ]
         }
       ],
-      "icon": "public/appicon_gradient.png"
+      "icon": "public/nayte.png"
     },
     "nsis": {
       "oneClick": false,
@@ -70,12 +73,12 @@
     },
     "mac": {
       "target": "dmg",
-      "icon": "public/appicon_gradient.png",
+      "icon": "public/nayte.png",
       "category": "public.app-category.social-networking"
     },
     "linux": {
       "target": "AppImage",
-      "icon": "public/appicon_gradient.png",
+      "icon": "public/nayte.png",
       "category": "Network"
     }
   }

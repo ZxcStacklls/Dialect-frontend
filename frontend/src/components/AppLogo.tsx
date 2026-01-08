@@ -3,8 +3,8 @@ const AppLogo = () => {
     <div className="flex justify-center mb-8">
       <div className="w-16 h-16 rounded-2xl bg-gray-800 border border-gray-700 flex items-center justify-center overflow-hidden">
         <img
-          src="/appicon_gradient.png"
-          alt="Dialect Logo"
+          src="/nayte.png"
+          alt="Nayte Logo"
           className="w-full h-full object-cover"
           onError={(e) => {
             // Fallback если изображение не загрузилось

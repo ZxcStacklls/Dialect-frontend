@@ -19,7 +19,7 @@ const slogans = [
   'Облачный пароль и 2FA. Двойная защита твоего входа.',
   'Мы не читаем. Мы доставляем.',
   'Уйди в "Концентрацию". Отключи шум, включи фокус.',
-  'Dialect Prime: Не просто подписка. Это статус.',
+  'Nayte Prime: Не просто подписка. Это статус.',
   'Prime: Скорость, объём (до 8 ГБ) и приоритет. Общайтесь как профессионал.',
   'Заяви о себе. Кастомизированный значок Zenith или Prime в профиле.',
   'Подписка окупается. Временем, качеством и возможностями.',
@@ -36,7 +36,7 @@ const AnimatedSlogans = () => {
     const shuffled = [...array]
     for (let i = shuffled.length - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1))
-      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
     }
     return shuffled
   }
@@ -56,12 +56,12 @@ const AnimatedSlogans = () => {
     const interval = setInterval(() => {
       // Скрываем текущий (уходит вверх)
       setIsVisible(false)
-      
+
       setTimeout(() => {
         // Меняем индекс
         setUsedIndices((prevUsed) => {
           const nextUnusedIndex = shuffledIndices.findIndex((idx) => !prevUsed.has(idx))
-          
+
           if (nextUnusedIndex === -1) {
             const newShuffled = shuffleArray(Array.from({ length: slogans.length }, (_, i) => i))
             setShuffledIndices(newShuffled)
@@ -74,7 +74,7 @@ const AnimatedSlogans = () => {
             return new Set([...prevUsed, nextSloganIndex])
           }
         })
-        
+
         // Показываем новый (приходит снизу)
         setIsVisible(true)
       }, 500)
@@ -100,12 +100,11 @@ const AnimatedSlogans = () => {
   return (
     <div className="relative min-h-[200px] flex items-center justify-center overflow-hidden px-4 sm:px-6 md:px-8">
       <p
-        className={`text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white text-center max-w-3xl leading-relaxed transition-all duration-700 ease-in-out break-words hyphens-auto ${
-          isVisible
+        className={`text-lg sm:text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold text-white text-center max-w-3xl leading-relaxed transition-all duration-700 ease-in-out break-words hyphens-auto ${isVisible
             ? 'opacity-100 translate-y-0 scale-100'
             : 'opacity-0 -translate-y-8 scale-95'
-        }`}
-        style={{ 
+          }`}
+        style={{
           textShadow: '0 2px 10px rgba(0, 0, 0, 0.5)',
           wordBreak: 'break-word',
           overflowWrap: 'break-word',

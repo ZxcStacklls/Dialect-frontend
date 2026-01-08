@@ -56,10 +56,13 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
   }, [])
 
   const hash = window.location.hash
-  const path = hash ? hash.slice(1) : '/'
-  const effectivePath = path || currentPath
-  const isAuthPage = effectivePath === '/login' || effectivePath === '/signup'
-  const isDark = isAuthPage ? true : theme === 'dark'
+  const rawPath = hash ? hash.slice(1) : '/'
+  /* Logic update for auth pages */
+  const effectivePath = rawPath || currentPath
+  // Robust check: remove query params, match start
+  const cleanPath = effectivePath.split('?')[0].replace(/\/$/, '') || '/'
+  const isAuthPage = ['/', '/login', '/signup', '/welcome'].includes(cleanPath)
+  const isDark = isAuthPage ? true : theme === 'dark' // Always dark/white text on auth pages
 
   useEffect(() => {
     if (!window.electron) return
@@ -102,9 +105,7 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
   const getTabName = (): string => {
     const path = effectivePath
 
-    // Скрываем текст ТОЛЬКО на страницах входа и регистрации
-    if (path === '/login') return ''
-    if (path === '/signup') return ''
+    if (isAuthPage) return ''
 
     // Для остальных страниц: activeTab (для модальных окон) > URL path
     if (activeTab === 'settings') return 'Настройки'
@@ -113,7 +114,7 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
     if (activeTab === 'calls') return 'Звонки'
 
     if (path === '/messenger') return 'Чаты'
-    if (path === '/') return 'Dialect'
+    if (path === '/') return 'Nayte'
     if (path === '/settings') return 'Настройки'
     if (path === '/contacts') return 'Контакты'
     if (path === '/calls') return 'Звонки'
@@ -122,26 +123,32 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
 
   return (
     <div
-      className="titlebar flex items-center justify-between h-10 select-none"
+      className={`flex items-center justify-between select-none z-50 ${isAuthPage
+        ? 'absolute top-0 left-0 w-full h-10 bg-transparent pointer-events-none'
+        : 'titlebar h-10 relative'
+        }`}
     >
       {/* Левая часть - Drag область */}
-      <div className="flex-1 drag-region cursor-move" />
+      <div className={`flex-1 drag-region ${isAuthPage ? 'pointer-events-auto' : 'cursor-move'}`} />
 
-      {/* Центральная часть - Текущее местоположение */}
-      <div
-        className={`absolute left-1/2 -translate-x-1/2 text-sm font-bold drag-region cursor-move transition-all duration-300 ${isDark ? 'text-gray-200' : 'text-gray-800'
-          }`}
-        style={{
-          fontFamily: "'Inter', 'Nunito', sans-serif",
-          letterSpacing: '0.01em',
-          textShadow: isDark ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
-        }}
-      >
-        {getTabName()}
-      </div>
+      {/* Центральная часть - Текущее местоположение (Скрыто на auth) */}
+      {!isAuthPage && (
+        <div
+          className={`absolute left-1/2 -translate-x-1/2 text-sm font-bold drag-region cursor-move transition-all duration-300 ${isDark ? 'text-gray-200' : 'text-gray-800'
+            }`}
+          style={{
+            fontFamily: "'Inter', 'Nunito', sans-serif",
+            letterSpacing: '0.01em',
+            textShadow: isDark ? '0 1px 2px rgba(0,0,0,0.5)' : 'none'
+          }}
+        >
+          {getTabName()}
+        </div>
+      )}
 
       {/* Правая часть - Кнопки управления */}
-      <div className="flex items-center h-full no-drag">
+      {/* Enable pointer events for buttons if parent has disabled them */}
+      <div className={`flex items-center h-full no-drag ${isAuthPage ? 'pointer-events-auto pr-2' : ''}`}>
         {/* Кнопка свернуть */}
         <button
           onClick={handleMinimize}

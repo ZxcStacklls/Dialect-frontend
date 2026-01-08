@@ -1,5 +1,5 @@
-appId: com.dialect.messenger
-productName: Dialect
+appId: com.nayte.messenger
+productName: Nayte
 directories:
   output: release
   buildResources: build
@@ -15,24 +15,24 @@ win:
     - target: nsis
       arch:
         - x64
-  icon: public/appicon_gradient.png
+  icon: public/nayte.png
 
 nsis:
   oneClick: false
   allowToChangeInstallationDirectory: true
   createDesktopShortcut: true
   createStartMenuShortcut: true
-  installerIcon: public/appicon_gradient.png
-  uninstallerIcon: public/appicon_gradient.png
-  installerHeaderIcon: public/appicon_gradient.png
+  installerIcon: public/nayte.png
+  uninstallerIcon: public/nayte.png
+  installerHeaderIcon: public/nayte.png
 
 mac:
   target: dmg
-  icon: public/appicon_gradient.png
+  icon: public/nayte.png
   category: public.app-category.social-networking
 
 linux:
   target: AppImage
-  icon: public/appicon_gradient.png
+  icon: public/nayte.png
   category: Network
 
