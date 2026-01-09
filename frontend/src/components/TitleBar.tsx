@@ -124,12 +124,13 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
   return (
     <div
       className={`flex items-center justify-between select-none z-50 ${isAuthPage
-        ? 'absolute top-0 left-0 w-full h-10 bg-transparent pointer-events-none'
+        ? 'fixed top-0 left-0 w-full h-10 bg-transparent'
         : 'titlebar h-10 relative'
         }`}
+      style={{ WebkitAppRegion: isAuthPage ? 'drag' : undefined } as React.CSSProperties}
     >
       {/* Левая часть - Drag область */}
-      <div className={`flex-1 drag-region ${isAuthPage ? 'pointer-events-auto' : 'cursor-move'}`} />
+      <div className="flex-1 drag-region cursor-move" />
 
       {/* Центральная часть - Текущее местоположение (Скрыто на auth) */}
       {!isAuthPage && (
@@ -147,8 +148,7 @@ const TitleBar = ({ activeTab }: TitleBarProps = {}) => {
       )}
 
       {/* Правая часть - Кнопки управления */}
-      {/* Enable pointer events for buttons if parent has disabled them */}
-      <div className={`flex items-center h-full no-drag ${isAuthPage ? 'pointer-events-auto pr-2' : ''}`}>
+      <div className={`flex items-center h-full no-drag ${isAuthPage ? 'pr-2' : ''}`}>
         {/* Кнопка свернуть */}
         <button
           onClick={handleMinimize}

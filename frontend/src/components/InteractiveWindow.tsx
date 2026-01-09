@@ -27,6 +27,7 @@ const InteractiveWindow = forwardRef<InteractiveWindowHandle, InteractiveWindowP
     const [renderWaves, setRenderWaves] = useState<Wave[]>([]) // For React rendering
     const animationFrameRef = useRef<number>()
     const nextId = useRef(0)
+    const lastRenderTimeRef = useRef(0) // Throttle React renders to prevent flickering
 
     // Configuration
     const BORDER_RADIUS = 16 // Matches rounded-2xl roughly
@@ -154,7 +155,7 @@ const InteractiveWindow = forwardRef<InteractiveWindowHandle, InteractiveWindowP
         return dist
     }, [EFFECTIVE_RADIUS, STROKE_INSET])
 
-    const addWave = useCallback((edge: 'top' | 'right' | 'bottom' | 'left', x: number, y: number) => {
+    const addWave = useCallback((_edge: 'top' | 'right' | 'bottom' | 'left', x: number, y: number) => {
         if (!dimensions.perimeter || !containerRef.current) return
 
         const rect = containerRef.current.getBoundingClientRect()
@@ -224,9 +225,16 @@ const InteractiveWindow = forwardRef<InteractiveWindowHandle, InteractiveWindowP
                 })
 
                 wavesRef.current = updatedWaves
-                setRenderWaves([...updatedWaves])
-            } else if (renderWaves.length > 0) {
-                setRenderWaves([])
+
+                // Throttle React state updates to ~60fps to prevent flickering
+                const now = performance.now()
+                if (now - lastRenderTimeRef.current >= 16) {
+                    lastRenderTimeRef.current = now
+                    setRenderWaves([...updatedWaves])
+                }
+            } else {
+                // Only clear if we have stale render waves
+                setRenderWaves(prev => prev.length > 0 ? [] : prev)
             }
 
             animationFrameRef.current = requestAnimationFrame(animate)
@@ -236,7 +244,8 @@ const InteractiveWindow = forwardRef<InteractiveWindowHandle, InteractiveWindowP
         return () => {
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
         }
-    }, [dimensions.perimeter, renderWaves.length])
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [dimensions.perimeter]) // Removed renderWaves.length to prevent animation restart on each render
 
     const getWavePathProps = (wave: Wave) => {
         const P = dimensions.perimeter
