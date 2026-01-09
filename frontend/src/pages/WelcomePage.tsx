@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import InteractiveSignalBackground from '../components/InteractiveSignalBackground'
 import InteractiveWindow, { InteractiveWindowHandle } from '../components/InteractiveWindow'
+import AnimatedLogo from '../components/AnimatedLogo'
 
 const WelcomePage = () => {
     const navigate = useNavigate()
@@ -47,17 +48,17 @@ const WelcomePage = () => {
                 className="w-full max-w-md mx-4 relative z-10"
             >
                 <InteractiveWindow ref={windowRef} className="min-h-[400px] flex flex-col items-center justify-center p-8">
-                    {/* Placeholder Content */}
+                    {/* Animated Logo Content */}
                     <div className="text-center space-y-6">
-                        <img
-                            src="/nayte.png"
-                            alt="Nayte Logo"
-                            className="w-20 h-20 rounded-2xl mx-auto shadow-xl shadow-primary-500/20"
+                        <AnimatedLogo
+                            size={280}
+                            strokeWidth={6}
+                            duration={1.5}
+                            delay={0.3}
+                            glowDelay={0.2}
+                            loop={true}
+                            className="mx-auto"
                         />
-
-                        <h1 className="text-3xl font-bold text-white tracking-tight">
-                            Nayte
-                        </h1>
 
                         <p className="text-gray-400">
                             Waiting for instructions...

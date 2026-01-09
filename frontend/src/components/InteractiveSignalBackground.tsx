@@ -35,6 +35,19 @@ const InteractiveSignalBackground: React.FC<InteractiveSignalBackgroundProps> = 
     // Scale factor computed from screen size (1.0 = reference 1920x1080)
     const scaleFactorRef = useRef(1)
 
+    // Store props in refs to avoid recreating callbacks and triggering effect re-runs
+    const windowRectRef = useRef<DOMRect | null | undefined>(windowRect)
+    const onSignalCollisionRef = useRef(onSignalCollision)
+
+    // Update refs when props change
+    useEffect(() => {
+        windowRectRef.current = windowRect
+    }, [windowRect])
+
+    useEffect(() => {
+        onSignalCollisionRef.current = onSignalCollision
+    }, [onSignalCollision])
+
     // Configuration - base values for 1920x1080 reference screen
     const config = useRef({
         baseLineCount: 50,           // Base count for 1920x1080
@@ -203,35 +216,36 @@ const InteractiveSignalBackground: React.FC<InteractiveSignalBackgroundProps> = 
         }
     }, [tryCreateSignal])
 
-    // Collision Logic Check
+    // Collision Logic Check - uses refs to avoid dependency changes
     const checkCollisions = useCallback((x: number, y: number) => {
-        if (!windowRect || !onSignalCollision) return
+        const rect = windowRectRef.current
+        const callback = onSignalCollisionRef.current
+        if (!rect || !callback) return
 
         // Simple AABB expansion for "touching"
         const threshold = 10
-        const r = windowRect
 
-        const inHorizontalRange = x >= r.left - threshold && x <= r.right + threshold
-        const inVerticalRange = y >= r.top - threshold && y <= r.bottom + threshold
+        const inHorizontalRange = x >= rect.left - threshold && x <= rect.right + threshold
+        const inVerticalRange = y >= rect.top - threshold && y <= rect.bottom + threshold
 
         if (!inHorizontalRange || !inVerticalRange) return
 
         // Determine which edge
-        const distLeft = Math.abs(x - r.left)
-        const distRight = Math.abs(x - r.right)
-        const distTop = Math.abs(y - r.top)
-        const distBottom = Math.abs(y - r.bottom)
+        const distLeft = Math.abs(x - rect.left)
+        const distRight = Math.abs(x - rect.right)
+        const distTop = Math.abs(y - rect.top)
+        const distBottom = Math.abs(y - rect.bottom)
 
         const minDist = Math.min(distLeft, distRight, distTop, distBottom)
 
         if (minDist > threshold) return // Inside but deep inside or just outside corner range but not close enough to line
 
-        if (minDist === distLeft) onSignalCollision('left', r.left, y)
-        else if (minDist === distRight) onSignalCollision('right', r.right, y)
-        else if (minDist === distTop) onSignalCollision('top', x, r.top)
-        else if (minDist === distBottom) onSignalCollision('bottom', x, r.bottom)
+        if (minDist === distLeft) callback('left', rect.left, y)
+        else if (minDist === distRight) callback('right', rect.right, y)
+        else if (minDist === distTop) callback('top', x, rect.top)
+        else if (minDist === distBottom) callback('bottom', x, rect.bottom)
 
-    }, [windowRect, onSignalCollision])
+    }, []) // No dependencies - uses refs
 
 
     useEffect(() => {
@@ -240,15 +254,61 @@ const InteractiveSignalBackground: React.FC<InteractiveSignalBackgroundProps> = 
         const ctx = canvas.getContext('2d')
         if (!ctx) return
 
+        let resizeTimeout: ReturnType<typeof setTimeout> | null = null
+
         const resize = () => {
+            // Store current signal progress values before resize
+            const signalProgressMap = signals.current.map(s => ({
+                progress: s.progress,
+                baseSpeed: s.baseSpeed,
+                opacity: s.opacity
+            }))
+
             canvas.width = window.innerWidth
             canvas.height = window.innerHeight
             initLines(canvas.width, canvas.height)
-            initSignals()
+
+            // Restore signals with preserved progress instead of full reinit
+            const newLineCount = lines.current.length
+            if (newLineCount > 0 && signalProgressMap.length > 0) {
+                signals.current = []
+                const effectiveSignalDensity = Math.max(5, Math.floor(config.current.baseSignalDensity * scaleFactorRef.current))
+                const targetCount = Math.min(effectiveSignalDensity, signalProgressMap.length)
+
+                for (let i = 0; i < targetCount; i++) {
+                    const saved = signalProgressMap[i]
+                    const newLineIndex = Math.floor(Math.random() * newLineCount)
+                    const effectiveSpeedMultiplier = config.current.baseSpeedMultiplier * scaleFactorRef.current
+
+                    signals.current.push({
+                        lineIndex: newLineIndex,
+                        progress: saved.progress,
+                        speed: saved.baseSpeed * effectiveSpeedMultiplier,
+                        baseSpeed: saved.baseSpeed,
+                        tailLength: Math.max(5, saved.baseSpeed * 12000),
+                        opacity: saved.opacity
+                    })
+                }
+
+                // Add more signals if needed
+                while (signals.current.length < effectiveSignalDensity) {
+                    tryCreateSignal(Math.random())
+                }
+            } else {
+                initSignals()
+            }
         }
 
-        window.addEventListener('resize', resize)
-        resize()
+        // Debounced resize to prevent rapid re-initialization
+        const debouncedResize = () => {
+            if (resizeTimeout) {
+                clearTimeout(resizeTimeout)
+            }
+            resizeTimeout = setTimeout(resize, 150)
+        }
+
+        window.addEventListener('resize', debouncedResize)
+        resize() // Initial call without debounce
 
         const animate = () => {
             ctx.fillStyle = config.current.backgroundColor
@@ -394,11 +454,12 @@ const InteractiveSignalBackground: React.FC<InteractiveSignalBackgroundProps> = 
         animate()
 
         return () => {
-            window.removeEventListener('resize', resize)
+            window.removeEventListener('resize', debouncedResize)
+            if (resizeTimeout) clearTimeout(resizeTimeout)
             if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current)
         }
-
-    }, [initLines, initSignals, checkCollisions, tryCreateSignal]) // Dependencies
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []) // Run only once on mount - all dependencies use refs
 
     return (
         <div className={`absolute inset-0 w-full h-full ${className}`} style={{ pointerEvents: 'none', zIndex: 0 }}>
